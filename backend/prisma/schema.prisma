@@ -1,0 +1,80 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EmployeeStatus {
+  probation
+  official
+  suspended
+  resigned
+}
+
+enum PositionLevel {
+  intern
+  junior
+  middle
+  senior
+  lead
+}
+
+model Employees {
+  id           String @id @default(uuid()) @db.Uuid
+  full_name    String
+  display_name String
+
+  email         String @unique
+  number_phone  String @unique
+  identify_card String @unique
+
+  family_number_phone String?
+  address             String?
+
+  max_leave_day        Int?
+  status               EmployeeStatus
+  is_active            Boolean        @default(true)
+  probation_start_date DateTime?
+  probation_end_date   DateTime?
+  official_start_date  DateTime
+  official_end_date    DateTime?
+  position_id          String?
+  position             Positions?     @relation(fields: [position_id], references: [id])
+
+  department_id String?
+  department    Departments? @relation(fields: [department_id], references: [id])
+  created_at    DateTime     @default(now())
+}
+
+model Departments {
+  id        String  @id @default(uuid())
+  code      String  @unique
+  name      String
+  is_active Boolean @default(true)
+
+  employees Employees[]
+  positions Positions[]
+
+  created_at DateTime @default(now())
+}
+
+model Positions {
+  id    String         @id @default(uuid())
+  name  String
+  level PositionLevel?
+
+  department_id String
+  department    Departments @relation(fields: [department_id], references: [id])
+
+  employees Employees[]
+
+  created_at DateTime @default(now())
+}

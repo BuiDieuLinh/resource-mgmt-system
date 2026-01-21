@@ -1,0 +1,23 @@
+{
+  "name": "resource-mgmt-system",
+  "version": "1.0.0",
+  "description": "> Hệ thống quản lý nhân sự (Resource / Employee Management)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "frontend/**/*.{ts,tsx,js,jsx}": "npx eslint --fix",
+    "backend/**/*.ts": [
+      "npm --prefix backend run lint:fix"
+    ]
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7"
+  }
+}
