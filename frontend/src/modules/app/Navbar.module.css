@@ -1,0 +1,29 @@
+.children {
+  position: relative;
+  margin-left: 12px;
+  padding-left: 12px;
+}
+
+.children::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background-color: var(--mantine-color-gray-3);
+  border-radius: 2px;
+}
+
+.children:has(a[data-active='true'])::before {
+  background-color: var(--mantine-color-blue-6);
+}
+
+
+.children[data-opened='true']::before {
+  opacity: 1;
+}
+.children::before {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}

@@ -1,0 +1,43 @@
+.header {
+  position: sticky;
+  top: 0;
+  background-color: var(--mantine-color-body);
+  transition: box-shadow 150ms ease;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-bottom: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-3));
+  }
+}
+
+.scrolled {
+  box-shadow: var(--mantine-shadow-sm);
+}
+
+.th {
+  user-select: none;
+}
+
+.thInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.sortIcon {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.thSortable:hover .sortIcon {
+  opacity: 0.6;
+}
+
+.thSorted .sortIcon {
+  opacity: 1;
+}
