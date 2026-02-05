@@ -14,10 +14,6 @@ import { useMemo, useState, type ReactNode } from 'react';
 import cx from 'clsx';
 import classes from './BaseTable.module.css';
 
-/* =======================
-   TYPES
-======================= */
-
 export type TableColumn<T> = {
   key: keyof T | string;
   title: ReactNode;
@@ -53,10 +49,6 @@ export type BaseTableProps<T> = {
   onRowClick?: (row: T) => void;
 };
 
-/* =======================
-   COMPONENT
-======================= */
-
 export function BaseTable<T extends Record<string, any>>({
   data,
   columns,
@@ -74,9 +66,6 @@ export function BaseTable<T extends Record<string, any>>({
 
   const [sort, setSort] = useState<SortState<T> | null>(null);
 
-  /* =======================
-     SORT HANDLER
-  ======================= */
   const handleSort = (col: TableColumn<T>) => {
     if (!col.sortable) return;
 
@@ -92,9 +81,6 @@ export function BaseTable<T extends Record<string, any>>({
     });
   };
 
-  /* =======================
-     SORT DATA
-  ======================= */
   const sortedData = useMemo(() => {
     if (!sort) return data;
 
@@ -127,10 +113,6 @@ export function BaseTable<T extends Record<string, any>>({
     });
   }, [data, sort, columns]);
 
-  /* =======================
-     RENDER
-  ======================= */
-
   return (
     <ScrollArea
       h={height}
@@ -146,7 +128,6 @@ export function BaseTable<T extends Record<string, any>>({
         horizontalSpacing="md"
         miw="100%"
       >
-        {/* ===== HEADER ===== */}
         <Table.Thead
           className={cx(classes.header, {
             [classes.scrolled]: scrolled,

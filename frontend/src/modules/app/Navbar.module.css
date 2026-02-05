@@ -1,29 +1,69 @@
+.navbar{
+  height: 100vh;
+}
+
+.navMain{
+  padding-top: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.header{
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--mantine-color-gray-3);
+  padding: 10px 0px;
+}
+
+.root {
+  border-radius: 8px;
+}
+
+.root:hover {
+  background-color: var(--mantine-color-gray-0);
+}
+
 .children {
+  padding-left: 36px;
   position: relative;
-  margin-left: 12px;
-  padding-left: 12px;
+  margin-top: 4px;
 }
 
 .children::before {
   content: '';
   position: absolute;
-  left: 0;
-  top: 8px;
-  bottom: 8px;
-  width: 2px;
+  left: 20px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
   background-color: var(--mantine-color-gray-3);
-  border-radius: 2px;
 }
 
-.children:has(a[data-active='true'])::before {
-  background-color: var(--mantine-color-blue-6);
+.children :global(.mantine-NavLink-root) {
+  border-radius: 8px;
+  margin: 2px 0;
+  padding-left: 12px;
 }
 
-
-.children[data-opened='true']::before {
-  opacity: 1;
+.children :global(.mantine-NavLink-root:hover) {
+  background-color: var(--mantine-color-gray-0);
 }
-.children::before {
-  opacity: 0;
-  transition: opacity 0.2s ease;
+
+.chevron {
+  transition: transform 150ms ease;
+}
+
+.chevron[data-opened] {
+  transform: rotate(90deg);
+}
+
+.footer{
+  cursor: pointer;
+  transition: background 0.15s ease;
+  padding: 10px 0px;
+  border-top: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+
+.userCard:hover {
+  background-color: var(--mantine-color-gray-1);
 }
