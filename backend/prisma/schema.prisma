@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -13,68 +13,79 @@ datasource db {
 }
 
 enum EmployeeStatus {
-  probation
-  official
-  suspended
-  resigned
-}
-
-enum PositionLevel {
-  intern
-  junior
-  middle
-  senior
-  lead
+  active
+  inactive
 }
 
 model Employees {
-  id           String @id @default(uuid()) @db.Uuid
-  full_name    String
-  display_name String
+  id            String         @id @default(uuid()) @db.Uuid
+  employee_code String         @db.VarChar(20)
+  full_name     String         @db.VarChar(100)
+  display_name  String?        @db.VarChar(100)
+  email         String         @unique @db.VarChar(100)
+  phone         String?        @db.VarChar(20)
+  identify_card String         @unique @db.VarChar(20)
+  gender        String?        @db.VarChar(10)
+  date_of_birth DateTime?      @db.Date
+  avatar_url    String?        @db.Text
+  hire_date     DateTime       @db.Date
+  status        EmployeeStatus @default(active)
 
-  email         String @unique
-  number_phone  String @unique
-  identify_card String @unique
+  department_id String      @db.Uuid
+  department    Departments @relation(fields: [department_id], references: [id])
 
-  family_number_phone String?
-  address             String?
+  position_id String    @db.Uuid
+  position    Positions @relation(fields: [position_id], references: [id])
 
-  max_leave_day        Int?
-  status               EmployeeStatus
-  is_active            Boolean        @default(true)
-  probation_start_date DateTime?
-  probation_end_date   DateTime?
-  official_start_date  DateTime
-  official_end_date    DateTime?
-  position_id          String?
-  position             Positions?     @relation(fields: [position_id], references: [id])
+  roles EmployeeRoles[]
 
-  department_id String?
-  department    Departments? @relation(fields: [department_id], references: [id])
-  created_at    DateTime     @default(now())
+  created_at DateTime @default(now())
+
+  @@map("employees")
+}
+
+model Roles {
+  id        String @id @default(uuid()) @db.Uuid
+  role_name String @db.VarChar(50)
+
+  employees EmployeeRoles[]
+
+  @@map("roles")
+}
+
+model EmployeeRoles {
+  id      String @id @default(uuid()) @db.Uuid
+  user_id String @db.Uuid
+  role_id String @db.Uuid
+
+  employee Employees @relation(fields: [user_id], references: [id])
+  role     Roles     @relation(fields: [role_id], references: [id])
+
+  @@map("employee_roles")
 }
 
 model Departments {
-  id        String  @id @default(uuid())
-  code      String  @unique
-  name      String
-  is_active Boolean @default(true)
+  id              String  @id @default(uuid()) @db.Uuid
+  department_code String  @db.VarChar(100)
+  department_name String  @db.VarChar(100)
+  description     String?
 
   employees Employees[]
   positions Positions[]
 
-  created_at DateTime @default(now())
+  @@map("departments")
 }
 
 model Positions {
-  id    String         @id @default(uuid())
-  name  String
-  level PositionLevel?
+  id            String  @id @default(uuid()) @db.Uuid
+  position_name String  @db.VarChar(100)
+  level         String  @db.VarChar(100)
+  description   String?
 
-  department_id String
+  department_id String      @db.Uuid
   department    Departments @relation(fields: [department_id], references: [id])
 
   employees Employees[]
 
-  created_at DateTime @default(now())
+  @@map("positions")
 }
