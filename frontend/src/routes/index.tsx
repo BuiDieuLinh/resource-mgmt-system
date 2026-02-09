@@ -3,6 +3,7 @@ import Home from "../modules/home/views/Home";
 import Layout from "../modules/app/Layout";
 import { Employee } from "../modules";
 import { employeeUrl } from "./url";
+import Error404 from "../components/error/Error404";
 
 export const router = createBrowserRouter([
   {
@@ -19,4 +20,8 @@ export const router = createBrowserRouter([
       },
     ],
   },
+  {
+    path: '*',
+    element: <Error404/>
+  }
 ]);

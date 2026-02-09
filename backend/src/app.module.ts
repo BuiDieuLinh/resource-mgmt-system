@@ -4,6 +4,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { EmployeeModule } from './modules/employees/employee.module';
+import { DepartmentModule } from './modules/departments/department.module';
+import { PositionModule } from './modules/positions/position.module';
 
 @Module({
   imports: [
@@ -12,6 +14,8 @@ import { EmployeeModule } from './modules/employees/employee.module';
     }),
     PrismaModule,
     EmployeeModule,
+    DepartmentModule,
+    PositionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

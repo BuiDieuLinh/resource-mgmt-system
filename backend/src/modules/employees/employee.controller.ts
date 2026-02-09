@@ -2,6 +2,7 @@ import { Controller, Post, Get, Patch, Delete, Body, Param, Query } from '@nestj
 import { EmployeeService } from './employee.service'
 import { CreateEmployeeDto } from './dto/create-employee.dto'
 import { UpdateEmployeeDto } from './dto/update-employee.dto'
+import { QueryEmployeeDto } from './dto/query-employee.dto'
 
 @Controller('employees')
 export class EmployeeController {
@@ -13,18 +14,8 @@ export class EmployeeController {
   }
 
   @Get()
-  findAll(
-    @Query('pageIndex') pageIndex?: string,
-    @Query('pageSize') pageSize?: string,
-    @Query('search') search?: string,
-    @Query('filter') filter?: string,
-  ) {
-    return this.service.findAll({
-      pageIndex: pageIndex ? parseInt(pageIndex) : undefined,
-      pageSize: pageSize ? parseInt(pageSize) : undefined,
-      search,
-      filter,
-    })
+  findAll(@Query() query: QueryEmployeeDto) {
+    return this.service.findAll(query)
   }
 
   @Get(':id')

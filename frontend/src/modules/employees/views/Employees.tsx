@@ -8,69 +8,44 @@ import {
   ActionIcon,
 } from '@mantine/core';
 import { IconEdit, IconSearch } from '@tabler/icons-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 import { BaseTable, type TableColumn } from '../../../components/BaseTable/BaseTable';
 import { TablePagination } from '../../../components/Pagination';
-import { BaseFormModal } from '../../../components/BaseFormModal';
 
-import type { IEmployee } from '../types';
-import {
-  EmployeeForm,
-  type EmployeeFormValues,
-} from '../components/EmployeeFormModal';
+import type { IEmployee, EmployeeFormValues } from '../types';
+import { EmployeeFormModal } from '../components/EmployeeFormModal';
+import { useGetEmployees } from '../api/get-employees';
+import { useCreateEmployee } from '../api/create-employee';
+import { useUpdateEmployee } from '../api/update-employee';
+import { Loading } from '../../../components/Loading/Loading';
 import { notify } from '../../../components/Notification';
-
-// Mock data
-const MOCK_USERS: IEmployee[] = [
-  { id: '1', name: 'Alice', email: 'alice@gmail.com', role: 'Admin', age: 18 },
-  { id: '2', name: 'Bob', email: 'bob@gmail.com', role: 'User', age: 22 },
-  { id: '3', name: 'Chris', email: 'chris@gmail.com', role: 'User', age: 25 },
-  { id: '4', name: 'David', email: 'david@gmail.com', role: 'Manager', age: 30 },
-  { id: '5', name: 'Emma', email: 'emma@gmail.com', role: 'Admin', age: 28 },
-  { id: '6', name: 'Frank', email: 'frank@gmail.com', role: 'User', age: 19 },
-  { id: '7', name: 'Grace', email: 'grace@gmail.com', role: 'User', age: 24 },
-  { id: '8', name: 'Helen', email: 'helen@gmail.com', role: 'Manager', age: 35 },
-  { id: '9', name: 'Ivan', email: 'ivan@gmail.com', role: 'User', age: 21 },
-  { id: '10', name: 'Jane', email: 'jane@gmail.com', role: 'Admin', age: 27 },
-];
-
-export const DEFAULT_EMPLOYEE_VALUES: EmployeeFormValues = {
-  name: '',
-  email: '',
-  role: '',
-  age: 0,
-};
-
+import { mapEmployeeToFormValues } from '../utils/employee-mapper';
 
 export default function EmployeesPage() {
   const [search, setSearch] = useState('');
-  const [role, setRole] = useState<string | null>(null);
+  const [filter, setFilter] = useState<string | null>(null);
 
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
+  const [pageSize, setPageSize] = useState(10);
 
   const [opened, setOpened] = useState(false);
   const [editEmployee, setEditEmployee] = useState<IEmployee | null>(null);
 
   const isEdit = Boolean(editEmployee);
 
-  const filteredData = useMemo(() => {
-    return MOCK_USERS.filter((u) => {
-      const matchSearch =
-        u.name.toLowerCase().includes(search.toLowerCase()) ||
-        u.email.toLowerCase().includes(search.toLowerCase());
+  const { data, isLoading, error, refetch } = useGetEmployees({
+    pageIndex: page,
+    pageSize,
+    search: search || undefined,
+    filter: filter || undefined,
+  });
 
-      const matchRole = role ? u.role === role : true;
+  const employees = data?.data || [];
+  const totalCount = data?.count || 0;
 
-      return matchSearch && matchRole;
-    });
-  }, [search, role]);
-
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filteredData.slice(start, start + pageSize);
-  }, [filteredData, page, pageSize]);
+  const createMutation = useCreateEmployee();
+  const updateMutation = useUpdateEmployee();
 
   const handleAdd = () => {
     setEditEmployee(null);
@@ -82,40 +57,99 @@ export default function EmployeesPage() {
     setOpened(true);
   };
 
-  const handleSubmit = async (values: EmployeeFormValues) => {
-    const notiId = notify.loading('Creating employee...');
+  const handleSubmit = async (values: EmployeeFormValues, id?: string) => {
+    const notiId = notify.loading(isEdit ? 'Updating employee...' : 'Creating employee...');
 
     try {
-      await new Promise((r) => setTimeout(r, 1000));
+      const payload = {
+        employee_code: values.employee_code,
+        full_name: values.full_name,
+        display_name: values.display_name,
+        email: values.email,
+        phone: values.phone,
+        identify_card: values.identify_card,
+        gender: values.gender,
+        date_of_birth: values.date_of_birth instanceof Date 
+          ? values.date_of_birth.toISOString() 
+          : values.date_of_birth,
+        hire_date: values.hire_date instanceof Date 
+          ? values.hire_date.toISOString() 
+          : values.hire_date || new Date().toISOString(),
+        department_id: values.department_id,
+        position_id: values.position_id,
+        status: values.status,
+      };
+
+      if (isEdit && id) {
+        await updateMutation.mutateAsync({
+          id,
+          payload,
+        });
+      } else {
+        await createMutation.mutateAsync(payload);
+      }
 
       notify.success(notiId, {
-        message: 'Employee created successfully',
+        message: isEdit ? 'Employee updated successfully' : 'Employee created successfully',
       });
 
       setOpened(false);
       setEditEmployee(null);
-    } catch (e) {
+    } catch (e: any) {
       notify.error(notiId, {
-        message: 'Create employee failed',
+        message: e?.response?.data?.message || (isEdit ? 'Update employee failed' : 'Create employee failed'),
       });
     }
   };
 
+  const handleSearch = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
+
+  const handleFilterChange = (value: string | null) => {
+    setFilter(value);
+    setPage(1);
+  };
+
+  const handlePageSizeChange = (value: number) => {
+    setPageSize(value);
+    setPage(1);
+  }
+
+  const handleCloseModal = () => {
+    setOpened(false);
+    setEditEmployee(null);
+  }
+
   const columns: TableColumn<IEmployee>[] = [
-    { key: 'name', title: 'Name', sortable: true },
-    { key: 'email', title: 'Email', sortable: true },
-    {
-      key: 'role',
-      title: 'Role',
-      align: 'center',
-      render: (row) => <Text fw={500}>{row.role}</Text>,
+    { 
+      key: 'employee_code', 
+      title: 'Code', 
+      sortable: true 
+    },
+    { 
+      key: 'full_name', 
+      title: 'Name', 
+      sortable: true 
+    },
+    { 
+      key: 'email', 
+      title: 'Email', 
+      sortable: true 
     },
     {
-      key: 'age',
-      title: 'Age',
-      sortable: true,
+      key: 'status',
+      title: 'Status',
       align: 'center',
-      sortAccessor: (row) => row.age,
+      render: (row) => (
+        <Text 
+          fw={500} 
+          c={row.status === 'active' ? 'green' : 'gray'}
+        >
+          {row.status}
+        </Text>
+      ),
     },
     {
       key: 'action',
@@ -133,72 +167,70 @@ export default function EmployeesPage() {
     },
   ];
 
+  if (error) {
+    return (
+      <Stack gap="md">
+        <Text c="red">Error loading employees: {error.message}</Text>
+        <Button onClick={() => refetch()}>Retry</Button>
+      </Stack>
+    );
+  }
+
   return (
     <Stack gap="md">
       <Group>
         <Button onClick={handleAdd}>Add employee</Button>
-        {/* <Button onClick={() => notify.info({title: 'New Notification', message: 'Happy hour!!!'})}>Notify</Button> */}
 
         <TextInput
-          placeholder="Search by name or email"
+          placeholder="Search by name, email or code"
           leftSection={<IconSearch size={16} />}
           value={search}
-          onChange={(e) => {
-            setSearch(e.currentTarget.value);
-            setPage(1);
-          }}
+          onChange={(e) => handleSearch(e.currentTarget.value)}
         />
 
         <Select
-          placeholder="Filter by role"
+          placeholder="Filter by status"
           clearable
-          data={['Admin', 'Manager', 'User']}
-          value={role}
-          onChange={(v) => {
-            setRole(v);
-            setPage(1);
-          }}
+          data={[
+            { value: 'active', label: 'Active' },
+            { value: 'inactive', label: 'Inactive' },
+          ]}
+          value={filter}
+          onChange={handleFilterChange}
         />
       </Group>
 
-      <BaseTable
-        data={paginatedData}
-        columns={columns}
-        withTableBorder
-        withColumnBorders
-        stickyHeader
-      />
+      {isLoading ? (
+        <Loading/>
+      ) : (
+        <>
+          <BaseTable
+            data={employees}
+            columns={columns}
+            withTableBorder
+            withColumnBorders
+            stickyHeader
+          />
 
-      <TablePagination
-        page={page}
-        pageSize={pageSize}
-        total={filteredData.length}
-        onPageChange={setPage}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setPage(1);
-        }}
-      />
+          <TablePagination
+            page={page}
+            pageSize={pageSize}
+            total={totalCount}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => {handlePageSizeChange(size)}}
+          />
+        </>
+      )}
 
-      <BaseFormModal
+      <EmployeeFormModal
         opened={opened}
-        onClose={() => {
-          setOpened(false);
-          setEditEmployee(null);
-        }}
-        title={isEdit ? 'EDIT EMPLOYEE' : 'ADD EMPLOYEE'}
-      >
-        <EmployeeForm
-          mode={isEdit ? 'edit' : 'add'}
-          initialValues={isEdit && editEmployee ? {
-            name: editEmployee.name,
-            email: editEmployee.email,
-            role: editEmployee.role,
-            age: editEmployee.age,
-          } : DEFAULT_EMPLOYEE_VALUES}
-          onSubmit={handleSubmit}
-        />
-      </BaseFormModal>
+        onClose={() => {handleCloseModal}}
+        mode={isEdit ? 'edit' : 'add'}
+        initialValues={mapEmployeeToFormValues(editEmployee)}
+        employeeId={editEmployee?.id}
+        onSubmit={handleSubmit}
+        loading={createMutation.isPending || updateMutation.isPending}
+      />
     </Stack>
   );
 }

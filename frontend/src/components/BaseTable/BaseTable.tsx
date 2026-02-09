@@ -82,6 +82,7 @@ export function BaseTable<T extends Record<string, any>>({
   };
 
   const sortedData = useMemo(() => {
+    if (!Array.isArray(data)) return [];
     if (!sort) return data;
 
     const column = columns.find((c) => c.key === sort.key);

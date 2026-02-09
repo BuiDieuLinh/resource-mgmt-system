@@ -5,8 +5,11 @@ import {
   ThemeIcon,
   Text,
   Avatar,
+  Popover,
+  UnstyledButton,
+  Button,
 } from '@mantine/core';
-import { IconChevronRight, IconHierarchy } from '@tabler/icons-react';
+import { IconChevronRight, IconHierarchy, IconLogout } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { MENUS } from './Menu';
@@ -15,6 +18,7 @@ import classes from './Navbar.module.css';
 export function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [opened, setOpened] = useState(false);
 
   return (
     <Stack gap={4} p={10} className={classes.navbar}>
@@ -102,22 +106,51 @@ export function Navbar() {
       </div>
 
       <div className={classes.footer}>
-        <Group wrap='nowrap'>
-          <Avatar
-            src="/avatar.jpg"
-            radius="xl"
-            size={40}
-          />
+        <Popover
+          opened={opened}
+          onChange={setOpened}
+          position="right"
+          offset={12}
+          withArrow
+          shadow="md"
+        >
+          <Popover.Target>
+            <UnstyledButton
+              style={{ width: '100%' }}
+              onClick={() => setOpened((o) => !o)} 
+              className={classes.userCard}
+            >
+              <Group wrap="nowrap" >
+                <Avatar
+                  src="/avatar.jpg"
+                  radius="xl"
+                  size={40}
+                />
 
-          <div>
-            <Text size="sm" fw={600}>
-              Bui Dieu Linh
-            </Text>
-            <Text size="xs" c="dimmed">
-              linh.bui@outlook.com
-            </Text>
-          </div>
-        </Group>
+                <div style={{ flex: 1 }}>
+                  <Text size="sm" fw={600}>
+                    Bui Dieu Linh
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    linh.bui@outlook.com
+                  </Text>
+                </div>
+              </Group>
+            </UnstyledButton>
+          </Popover.Target>
+
+          <Popover.Dropdown>
+            <Button
+              fullWidth
+              variant='light'
+              color="red"
+              leftSection={<IconLogout size={16} />}
+              // onClick={handleLogout}
+            >
+              Đăng xuất
+            </Button>
+          </Popover.Dropdown>
+        </Popover>
       </div>
     </Stack>
   );

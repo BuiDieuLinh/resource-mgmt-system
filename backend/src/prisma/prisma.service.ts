@@ -5,36 +5,33 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 
 @Injectable()
-export class PrismaService implements OnModuleInit, OnModuleDestroy {
-  private prisma: PrismaClient;
+export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private pool: Pool;
 
-  constructor(private configService: ConfigService) {}
-
-  async onModuleInit() {
-    const databaseUrl = this.configService.get<string>('DATABASE_URL');
+  constructor(private configService: ConfigService) {
+    const databaseUrl = configService.get<string>('DATABASE_URL');
     
     if (!databaseUrl) {
       throw new Error('DATABASE_URL is not defined in environment variables');
     }
 
-    this.pool = new Pool({ connectionString: databaseUrl });
-    const adapter = new PrismaPg(this.pool);
+    const pool = new Pool({ connectionString: databaseUrl });
+    const adapter = new PrismaPg(pool);
     
-    this.prisma = new PrismaClient({
+    super({
       adapter,
       log: ['error', 'warn'],
     });
 
-    await this.prisma.$connect();
+    this.pool = pool;
+  }
+
+  async onModuleInit() {
+    await this.$connect();
   }
 
   async onModuleDestroy() {
-    await this.prisma?.$disconnect();
+    await this.$disconnect();
     await this.pool?.end();
-  }
-
-  get client() {
-    return this.prisma;
   }
 }

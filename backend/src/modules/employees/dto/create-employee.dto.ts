@@ -1,3 +1,4 @@
-import { EmployeeDto } from "./employee.dto";
+import { OmitType } from '@nestjs/mapped-types';
+import { EmployeeDto } from './employee.dto';
 
-export class CreateEmployeeDto extends EmployeeDto{}
+export class CreateEmployeeDto extends OmitType(EmployeeDto, ['id'] as const) {}
