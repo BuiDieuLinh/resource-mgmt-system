@@ -1,0 +1,51 @@
+# Node modules
+node_modules
+
+# Build folders
+dist
+build
+.next
+out
+coverage
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Generated files
+generated
+prisma/migrations
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Docker
+docker-compose.yml
+
+# Test output
+test-results
+playwright-report
+
+# Static assets (nếu không muốn format)
+public

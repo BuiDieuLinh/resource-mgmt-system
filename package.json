@@ -6,13 +6,12 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
     "prepare": "husky"
   },
   "lint-staged": {
-    "frontend/**/*.{ts,tsx,js,jsx}": "npx eslint --fix",
-    "backend/**/*.ts": [
-      "npm --prefix backend run lint:fix"
-    ]
+    "*.{js,jsx,ts,tsx,json,md,css,scss}": "prettier --write"
   },
   "keywords": [],
   "author": "",
@@ -24,6 +23,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
+    "prettier": "^3.8.0",
     "typescript-eslint": "^8.54.0"
   }
 }
