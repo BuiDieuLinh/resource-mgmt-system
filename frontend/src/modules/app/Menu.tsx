@@ -1,47 +1,5 @@
-// import {
-//   IconGauge,
-//   IconUsers,
-//   IconSettings,
-// } from "@tabler/icons-react";
-// import { ScrollArea } from "@mantine/core";
-// import classes from "./Navbar.module.css";
-// import { NavbarLink } from "./Navbar";
-// import { employeeUrl } from "../../routes/url";
-
-// const menus = [
-//   {
-//     label: "Dashboard",
-//     icon: IconGauge,
-//     path: "/",
-//   },
-//   {
-//     label: "Employees",
-//     icon: IconUsers,
-//     path: employeeUrl,
-//   },
-//   {
-//     label: "Settings",
-//     icon: IconSettings,
-//     path: "/settings",
-//   },
-// ];
-
-// export function Navbar() {
-//   return (
-//     <nav className={classes.navbar}>
-//       <ScrollArea>
-//         {menus.map((item) => (
-//           <NavbarLink key={item.label} {...item} />
-//         ))}
-//       </ScrollArea>
-//     </nav>
-//   );
-// }
-import {
-  IconGauge,
-  IconUsers,
-  IconSettings,
-} from '@tabler/icons-react';
+import { employeeListUrl, employeeOrgChartUrl } from '@/routes/url';
+import { IconGauge, IconUsers, IconSettings } from '@tabler/icons-react';
 
 export type AppMenu = {
   label: string;
@@ -60,8 +18,8 @@ export const MENUS: AppMenu[] = [
     label: 'Employees',
     icon: IconUsers,
     children: [
-      { label: 'List', path: '/employees' },
-      { label: 'Profile', path: '/employees/profile' },
+      { label: 'List', path: employeeListUrl },
+      { label: 'Org Chart', path: employeeOrgChartUrl },
     ],
   },
   {

@@ -1,27 +1,32 @@
-import { createBrowserRouter } from "react-router-dom";
-import Home from "../modules/home/views/Home";
-import Layout from "../modules/app/Layout";
-import { Employee } from "../modules";
-import { employeeUrl } from "./url";
-import Error404 from "../components/error/Error404";
+import { createBrowserRouter } from 'react-router-dom';
+import Home from '../modules/home/views/Home';
+import Layout from '../modules/app/Layout';
+import { Employee } from '../modules';
+import { employeeListUrl, employeeOrgChartUrl } from './url';
+import Error404 from '../components/error/Error404';
+import OrgChart from '@/modules/employees/views/OrgChart';
 
 export const router = createBrowserRouter([
   {
-    path: "/",
+    path: '/',
     element: <Layout />,
     children: [
       {
         path: '',
-        element: <Home/>,
+        element: <Home />,
       },
       {
-        path: employeeUrl,
-        element: <Employee/>,
+        path: employeeListUrl,
+        element: <Employee />,
+      },
+      {
+        path: employeeOrgChartUrl,
+        element: <OrgChart />,
       },
     ],
   },
   {
     path: '*',
-    element: <Error404/>
-  }
+    element: <Error404 />,
+  },
 ]);

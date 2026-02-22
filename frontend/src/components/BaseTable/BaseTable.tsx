@@ -1,15 +1,5 @@
-import {
-  Table,
-  ScrollArea,
-  Center,
-  Loader,
-  Text,
-} from '@mantine/core';
-import {
-  IconChevronUp,
-  IconChevronDown,
-  IconSelector,
-} from '@tabler/icons-react';
+import { Table, ScrollArea, Center, Loader, Text } from '@mantine/core';
+import { IconChevronUp, IconChevronDown, IconSelector } from '@tabler/icons-react';
 import { useMemo, useState, type ReactNode } from 'react';
 import cx from 'clsx';
 import classes from './BaseTable.module.css';
@@ -89,9 +79,7 @@ export function BaseTable<T extends Record<string, any>>({
     if (!column) return data;
 
     const getValue = (row: T) =>
-      column.sortAccessor
-        ? column.sortAccessor(row)
-        : row[sort.key as keyof T];
+      column.sortAccessor ? column.sortAccessor(row) : row[sort.key as keyof T];
 
     return [...data].sort((a, b) => {
       const aVal = getValue(a);
@@ -99,14 +87,12 @@ export function BaseTable<T extends Record<string, any>>({
 
       if (aVal == null || bVal == null) return 0;
 
-        if (typeof aVal === 'string' && typeof bVal === 'string') {
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
         const aStr = String(aVal);
         const bStr = String(bVal);
 
-        return sort.direction === 'asc'
-            ? aStr.localeCompare(bStr)
-            : bStr.localeCompare(aStr);
-        }
+        return sort.direction === 'asc' ? aStr.localeCompare(bStr) : bStr.localeCompare(aStr);
+      }
 
       if (aVal > bVal) return sort.direction === 'asc' ? 1 : -1;
       if (aVal < bVal) return sort.direction === 'asc' ? -1 : 1;
@@ -115,10 +101,7 @@ export function BaseTable<T extends Record<string, any>>({
   }, [data, sort, columns]);
 
   return (
-    <ScrollArea
-      h={height}
-      onScrollPositionChange={({ y }) => setScrolled(y !== 0)}
-    >
+    <ScrollArea h={height} onScrollPositionChange={({ y }) => setScrolled(y !== 0)}>
       <Table
         striped={striped}
         highlightOnHover={highlightOnHover}
@@ -138,25 +121,22 @@ export function BaseTable<T extends Record<string, any>>({
             {columns.map((col) => {
               const isSorted = sort?.key === col.key;
 
-              const SortIcon =
-                !col.sortable
-                    ? IconSelector
-                    : !isSorted
-                    ? IconSelector
-                    : sort!.direction === 'asc'
+              const SortIcon = !col.sortable
+                ? IconSelector
+                : !isSorted
+                  ? IconSelector
+                  : sort!.direction === 'asc'
                     ? IconChevronUp
                     : IconChevronDown;
 
               return (
                 <Table.Th
                   key={String(col.key)}
-                  onClick={
-                    col.sortable ? () => handleSort(col) : undefined
-                  }
+                  onClick={col.sortable ? () => handleSort(col) : undefined}
                   className={cx(
                     classes.th,
                     col.sortable && classes.thSortable,
-                    isSorted && classes.thSorted
+                    isSorted && classes.thSorted,
                   )}
                   style={{
                     width: col.width,
@@ -167,12 +147,7 @@ export function BaseTable<T extends Record<string, any>>({
                   <div className={classes.thInner}>
                     <span>{col.title}</span>
 
-                    {col.sortable && (
-                      <SortIcon
-                        size={14}
-                        className={classes.sortIcon}
-                      />
-                    )}
+                    {col.sortable && <SortIcon size={14} className={classes.sortIcon} />}
                   </div>
                 </Table.Th>
               );
@@ -180,7 +155,6 @@ export function BaseTable<T extends Record<string, any>>({
           </Table.Tr>
         </Table.Thead>
 
-        {/* ===== BODY ===== */}
         <Table.Tbody>
           {loading ? (
             <Table.Tr>
@@ -208,13 +182,8 @@ export function BaseTable<T extends Record<string, any>>({
                 }}
               >
                 {columns.map((col) => (
-                  <Table.Td
-                    key={String(col.key)}
-                    style={{ textAlign: col.align ?? 'left' }}
-                  >
-                    {col.render
-                      ? col.render(row, index)
-                      : row[col.key as keyof T]}
+                  <Table.Td key={String(col.key)} style={{ textAlign: col.align ?? 'left' }}>
+                    {col.render ? col.render(row, index) : row[col.key as keyof T]}
                   </Table.Td>
                 ))}
               </Table.Tr>

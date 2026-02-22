@@ -1,2 +1,3 @@
-export const homeUrl = "/";
-export const employeeUrl = "/employees";
+export const homeUrl = '/';
+export const employeeListUrl = '/employees';
+export const employeeOrgChartUrl = '/employees/org-chart';

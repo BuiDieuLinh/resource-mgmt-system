@@ -24,13 +24,8 @@ export function Navbar() {
     <Stack gap={4} p={10} className={classes.navbar}>
       <div className={classes.header}>
         <Group gap="sm">
-          <ThemeIcon
-            size={36}
-            radius="md"
-            variant="light"
-            color="blue"
-          >
-            <IconHierarchy  size={20} />
+          <ThemeIcon size={36} radius="md" variant="light" color="deepPurple">
+            <IconHierarchy size={20} />
           </ThemeIcon>
 
           <Text fw={700} size="lg">
@@ -38,17 +33,14 @@ export function Navbar() {
           </Text>
         </Group>
       </div>
-    
-      <div className={classes.navMain}>  
+
+      <div className={classes.navMain}>
         {MENUS.map((menu) => {
           const hasChildren = !!menu.children?.length;
 
-          const childActive = menu.children?.some(
-            (c) => c.path === location.pathname
-          );
+          const childActive = menu.children?.some((c) => c.path === location.pathname);
 
-          const isActive =
-            location.pathname === menu.path || childActive;
+          const isActive = location.pathname === menu.path || childActive;
 
           const [opened, setOpened] = useState(childActive);
 
@@ -60,12 +52,7 @@ export function Navbar() {
               opened={opened}
               leftSection={
                 menu.icon && (
-                  <ThemeIcon
-                    variant="light"
-                    color="blue"
-                    size="sm"
-                    radius="sm"
-                  >
+                  <ThemeIcon variant="light" color="deepPurple" size="sm" radius="sm">
                     <menu.icon size={16} />
                   </ThemeIcon>
                 )
@@ -102,7 +89,7 @@ export function Navbar() {
               ))}
             </NavLink>
           );
-        })}        
+        })}
       </div>
 
       <div className={classes.footer}>
@@ -117,15 +104,11 @@ export function Navbar() {
           <Popover.Target>
             <UnstyledButton
               style={{ width: '100%' }}
-              onClick={() => setOpened((o) => !o)} 
+              onClick={() => setOpened((o) => !o)}
               className={classes.userCard}
             >
-              <Group wrap="nowrap" >
-                <Avatar
-                  src="/avatar.jpg"
-                  radius="xl"
-                  size={40}
-                />
+              <Group wrap="nowrap">
+                <Avatar src="/avatar.jpg" radius="xl" size={40} />
 
                 <div style={{ flex: 1 }}>
                   <Text size="sm" fw={600}>
@@ -142,7 +125,7 @@ export function Navbar() {
           <Popover.Dropdown>
             <Button
               fullWidth
-              variant='light'
+              variant="light"
               color="red"
               leftSection={<IconLogout size={16} />}
               // onClick={handleLogout}

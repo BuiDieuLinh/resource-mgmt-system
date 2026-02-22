@@ -1,4 +1,15 @@
-import { Modal, Button, Group, TextInput, Select, Grid, Avatar, FileButton, Text, Box, Center, Stack } from '@mantine/core';
+import {
+  Modal,
+  Button,
+  Group,
+  TextInput,
+  Select,
+  Grid,
+  Avatar,
+  FileButton,
+  Text,
+  Stack,
+} from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { useForm } from '@mantine/form';
 import { useState, useMemo, useEffect } from 'react';
@@ -13,7 +24,7 @@ interface EmployeeFormModalProps {
   onClose: () => void;
   mode: 'add' | 'edit';
   initialValues?: Partial<EmployeeFormValues>;
-  employeeId?: string; 
+  employeeId?: string;
   onSubmit: (values: EmployeeFormValues, id?: string) => void | Promise<void>;
   loading?: boolean;
 }
@@ -81,7 +92,7 @@ export function EmployeeFormModal({
         status: initialValues.status || 'active',
         avatar: null,
       });
-      
+
       if (initialValues.avatar) {
         setAvatarPreview(initialValues.avatar as any);
       }
@@ -90,7 +101,7 @@ export function EmployeeFormModal({
 
   const handleAvatarChange = (file: File | null) => {
     form.setFieldValue('avatar', file);
-    
+
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -135,17 +146,42 @@ export function EmployeeFormModal({
       opened={opened}
       onClose={handleClose}
       title={
-        <Text size="xl" fw={700}>
+        <Text size="xl" fw={700} c="deepPurple">
           {mode === 'edit' ? 'EDIT EMPLOYEE' : 'ADD EMPLOYEE'}
         </Text>
       }
-      size="xl"
+      size="lg"
       centered
+      styles={{
+        header: {
+          borderBottom: '2px solid #e9ecef',
+          padding: '5px 15px',
+        },
+        body: {
+          paddingTop: '10px',
+        },
+      }}
     >
       <form onSubmit={form.onSubmit(handleSubmit)}>
-        <Grid gutter="lg">
-          <Grid.Col span={{ base: 12, md: 4 }}>
-            <Stack gap="md">
+        <Group justify="center">
+          <Avatar src={avatarPreview} size={90} radius="xl" />
+          <Stack gap={1}>
+            <FileButton onChange={handleAvatarChange} accept="image/png,image/jpeg,image/jpg">
+              {(props) => (
+                <Button {...props} variant="light" size="xs" leftSection={<IconUpload size={14} />}>
+                  Upload Avatar
+                </Button>
+              )}
+            </FileButton>
+            <Text size="xs" c="dimmed">
+              PNG, JPG up to 5MB
+            </Text>
+          </Stack>
+        </Group>
+
+        <Stack gap="sm">
+          <Grid gutter="sm">
+            <Grid.Col span={6}>
               <TextInput
                 label="Employee Code"
                 placeholder="e.g., EMP-001"
@@ -153,20 +189,26 @@ export function EmployeeFormModal({
                 disabled={mode === 'edit'}
                 {...form.getInputProps('employee_code')}
               />
-
+            </Grid.Col>
+            <Grid.Col span={6}>
               <TextInput
                 label="Full Name"
                 placeholder="Enter full name"
                 required
                 {...form.getInputProps('full_name')}
               />
+            </Grid.Col>
+          </Grid>
 
+          <Grid gutter="sm">
+            <Grid.Col span={6}>
               <TextInput
                 label="Display Name"
                 placeholder="Enter display name (optional)"
                 {...form.getInputProps('display_name')}
               />
-
+            </Grid.Col>
+            <Grid.Col span={6}>
               <TextInput
                 label="Email"
                 placeholder="example@company.com"
@@ -174,24 +216,79 @@ export function EmployeeFormModal({
                 required
                 {...form.getInputProps('email')}
               />
+            </Grid.Col>
+          </Grid>
 
+          <Grid gutter="sm">
+            <Grid.Col span={6}>
               <TextInput
                 label="Phone Number"
                 placeholder="+84 123 456 789"
                 {...form.getInputProps('phone')}
               />
-
+            </Grid.Col>
+            <Grid.Col span={6}>
               <TextInput
                 label="Identity Card"
                 placeholder="Enter ID card number"
                 required
                 {...form.getInputProps('identify_card')}
               />
-            </Stack>
-          </Grid.Col>
+            </Grid.Col>
+          </Grid>
 
-          <Grid.Col span={{ base: 12, md: 4 }}>
-            <Stack gap="md">
+          <Grid gutter="sm">
+            <Grid.Col span={6}>
+              <Select
+                label="Department"
+                placeholder="Select department"
+                required
+                data={departmentOptions}
+                searchable
+                disabled={isDepartmentsLoading}
+                {...form.getInputProps('department_id')}
+              />
+            </Grid.Col>
+            <Grid.Col span={6}>
+              <Select
+                label="Position"
+                placeholder="Select position"
+                required
+                data={positionOptions}
+                searchable
+                disabled={isPositionsLoading}
+                {...form.getInputProps('position_id')}
+              />
+            </Grid.Col>
+          </Grid>
+
+          <Grid gutter="sm">
+            <Grid.Col span={6}>
+              <DateInput
+                label="Hire Date"
+                placeholder="Select hire date"
+                valueFormat="DD/MM/YYYY"
+                required
+                maxDate={new Date()}
+                {...form.getInputProps('hire_date')}
+              />
+            </Grid.Col>
+            <Grid.Col span={6}>
+              <Select
+                label="Status"
+                placeholder="Select status"
+                required
+                data={[
+                  { value: 'active', label: 'Active' },
+                  { value: 'inactive', label: 'Inactive' },
+                ]}
+                {...form.getInputProps('status')}
+              />
+            </Grid.Col>
+          </Grid>
+
+          <Grid gutter="sm">
+            <Grid.Col span={6}>
               <Select
                 label="Gender"
                 placeholder="Select gender"
@@ -203,7 +300,8 @@ export function EmployeeFormModal({
                 clearable
                 {...form.getInputProps('gender')}
               />
-
+            </Grid.Col>
+            <Grid.Col span={6}>
               <DateInput
                 label="Date of Birth"
                 placeholder="Select date of birth"
@@ -212,88 +310,11 @@ export function EmployeeFormModal({
                 maxDate={new Date()}
                 {...form.getInputProps('date_of_birth')}
               />
+            </Grid.Col>
+          </Grid>
+        </Stack>
 
-              <DateInput
-                label="Hire Date"
-                placeholder="Select hire date"
-                valueFormat="DD/MM/YYYY"
-                required
-                maxDate={new Date()}
-                {...form.getInputProps('hire_date')}
-              />
-
-              <Select
-                label="Department"
-                placeholder="Select department"
-                required
-                data={departmentOptions}
-                searchable
-                disabled={isDepartmentsLoading}
-                {...form.getInputProps('department_id')}
-              />
-
-              <Select
-                label="Position"
-                placeholder="Select position"
-                required
-                data={positionOptions}
-                searchable
-                disabled={isPositionsLoading}
-                {...form.getInputProps('position_id')}
-              />
-
-              <Select
-                label="Status"
-                placeholder="Select status"
-                required
-                data={[
-                  { value: 'active', label: 'Active' },
-                  { value: 'inactive', label: 'Inactive' },
-                ]}
-                {...form.getInputProps('status')}
-              />
-            </Stack>
-          </Grid.Col>
-
-          <Grid.Col span={{ base: 12, md: 4 }}>
-            <Center h="100%">
-              <Stack align="center" gap="sm">
-                <Avatar
-                  src={avatarPreview}
-                  size={120}
-                  radius="md"
-                />
-                <FileButton
-                  onChange={handleAvatarChange}
-                  accept="image/png,image/jpeg,image/jpg"
-                >
-                  {(props) => (
-                    <Box
-                      {...props}
-                      style={{
-                        cursor: 'pointer',
-                        padding: '8px 16px',
-                        border: '1px dashed #ccc',
-                        borderRadius: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                      }}
-                    >
-                      <IconUpload size={16} />
-                      <Text size="sm">Upload Avatar</Text>
-                    </Box>
-                  )}
-                </FileButton>
-                <Text size="xs" c="dimmed">
-                  PNG, JPG up to 5MB
-                </Text>
-              </Stack>
-            </Center>
-          </Grid.Col>
-        </Grid>
-
-        <Group justify="flex-end" mt="xl">
+        <Group justify="flex-end" mt="md">
           <Button variant="subtle" onClick={handleClose} disabled={loading}>
             Cancel
           </Button>
