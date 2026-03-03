@@ -1,11 +1,4 @@
-import {
-  Container,
-  Title,
-  Text,
-  Button,
-  Stack,
-  Transition,
-} from '@mantine/core';
+import { Container, Title, Text, Button, Stack, Transition } from '@mantine/core';
 import { IconMoodSad } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,12 +6,7 @@ export default function Error404() {
   const navigate = useNavigate();
 
   return (
-    <Transition
-      mounted
-      transition="fade-up"
-      duration={400}
-      timingFunction="ease"
-    >
+    <Transition mounted transition="fade-up" duration={400} timingFunction="ease">
       {(styles) => (
         <Container
           size="sm"
@@ -43,9 +31,7 @@ export default function Error404() {
               Trang bạn đang tìm không tồn tại hoặc đã bị xoá.
             </Text>
 
-            <Button onClick={() => navigate('/')}>
-              Quay về trang chủ
-            </Button>
+            <Button onClick={() => navigate('/')}>Quay về trang chủ</Button>
           </Stack>
         </Container>
       )}

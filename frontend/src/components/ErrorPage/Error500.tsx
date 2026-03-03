@@ -1,11 +1,4 @@
-import {
-  Container,
-  Title,
-  Text,
-  Button,
-  Stack,
-  Transition,
-} from '@mantine/core';
+import { Container, Title, Text, Button, Stack, Transition } from '@mantine/core';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,12 +6,7 @@ export default function Error500() {
   const navigate = useNavigate();
 
   return (
-    <Transition
-      mounted
-      transition="scale"
-      duration={400}
-      timingFunction="ease"
-    >
+    <Transition mounted transition="scale" duration={400} timingFunction="ease">
       {(styles) => (
         <Container
           size="sm"
