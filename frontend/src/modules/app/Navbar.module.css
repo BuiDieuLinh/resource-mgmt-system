@@ -1,14 +1,16 @@
-.navbar{
+.navbar {
   height: 100vh;
+  /* background-color:ghostwhite; */
+  background-color: whitesmoke;
 }
 
-.navMain{
+.navMain {
   padding-top: 20px;
   flex: 1;
   overflow-y: auto;
 }
 
-.header{
+.header {
   display: flex;
   justify-content: space-between;
   border-bottom: 1px solid var(--mantine-color-gray-3);
@@ -17,6 +19,7 @@
 
 .root {
   border-radius: 8px;
+  font-weight: 600;
 }
 
 .root:hover {
@@ -27,6 +30,7 @@
   padding-left: 36px;
   position: relative;
   margin-top: 4px;
+  font-weight: 600;
 }
 
 .children::before {
@@ -57,14 +61,14 @@
   transform: rotate(90deg);
 }
 
-.footer{
+.footer {
   cursor: pointer;
   transition: background 0.15s ease;
   padding: 10px 0px;
   border-top: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
 }
 
-.userCard{
+.userCard {
   padding: 5px;
 }
 

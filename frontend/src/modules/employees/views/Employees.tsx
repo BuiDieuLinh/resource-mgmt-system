@@ -1,17 +1,11 @@
-import {
-  Text,
-  Stack,
-  Group,
-  TextInput,
-  Select,
-  Button,
-  ActionIcon,
-} from '@mantine/core';
-import { IconEdit, IconSearch } from '@tabler/icons-react';
+import { Stack, Group, TextInput, Select, Button, ActionIcon, Badge } from '@mantine/core';
+import { IconEdit, IconSearch, IconEye, IconSitemap } from '@tabler/icons-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { BaseTable, type TableColumn } from '../../../components/BaseTable/BaseTable';
 import { TablePagination } from '../../../components/Pagination';
+import ErrorState from '../../../components/ErrorState/ErrorState';
 
 import type { IEmployee, EmployeeFormValues } from '../types';
 import { EmployeeFormModal } from '../components/EmployeeFormModal';
@@ -23,6 +17,7 @@ import { notify } from '../../../components/Notification';
 import { mapEmployeeToFormValues } from '../utils/employee-mapper';
 
 export default function EmployeesPage() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<string | null>(null);
 
@@ -31,6 +26,8 @@ export default function EmployeesPage() {
 
   const [opened, setOpened] = useState(false);
   const [editEmployee, setEditEmployee] = useState<IEmployee | null>(null);
+
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
 
   const isEdit = Boolean(editEmployee);
 
@@ -69,12 +66,14 @@ export default function EmployeesPage() {
         phone: values.phone,
         identify_card: values.identify_card,
         gender: values.gender,
-        date_of_birth: values.date_of_birth instanceof Date 
-          ? values.date_of_birth.toISOString() 
-          : values.date_of_birth,
-        hire_date: values.hire_date instanceof Date 
-          ? values.hire_date.toISOString() 
-          : values.hire_date || new Date().toISOString(),
+        date_of_birth:
+          values.date_of_birth instanceof Date
+            ? values.date_of_birth.toISOString()
+            : values.date_of_birth,
+        hire_date:
+          values.hire_date instanceof Date
+            ? values.hire_date.toISOString()
+            : values.hire_date || new Date().toISOString(),
         department_id: values.department_id,
         position_id: values.position_id,
         status: values.status,
@@ -97,7 +96,9 @@ export default function EmployeesPage() {
       setEditEmployee(null);
     } catch (e: any) {
       notify.error(notiId, {
-        message: e?.response?.data?.message || (isEdit ? 'Update employee failed' : 'Create employee failed'),
+        message:
+          e?.response?.data?.message ||
+          (isEdit ? 'Update employee failed' : 'Create employee failed'),
       });
     }
   };
@@ -115,93 +116,137 @@ export default function EmployeesPage() {
   const handlePageSizeChange = (value: number) => {
     setPageSize(value);
     setPage(1);
-  }
+  };
 
   const handleCloseModal = () => {
     setOpened(false);
     setEditEmployee(null);
-  }
+  };
 
   const columns: TableColumn<IEmployee>[] = [
-    { 
-      key: 'employee_code', 
-      title: 'Code', 
-      sortable: true 
+    {
+      key: 'employee_code',
+      title: 'Code',
+      sortable: true,
+      width: 120,
     },
-    { 
-      key: 'full_name', 
-      title: 'Name', 
-      sortable: true 
+    {
+      key: 'full_name',
+      title: 'Name',
+      sortable: true,
+      width: 200,
     },
-    { 
-      key: 'email', 
-      title: 'Email', 
-      sortable: true 
+    {
+      key: 'email',
+      title: 'Email',
+      sortable: true,
+      width: 220,
+    },
+    {
+      key: 'phone',
+      title: 'Phone',
+      width: 130,
+      render: (row) => row.phone || '-',
+    },
+    {
+      key: 'position.position_name',
+      title: 'Position',
+      width: 150,
+      render: (row) =>
+        row.position ? (
+          <Badge variant="light" color="cyan" fw={400}>
+            {row.position.position_name}
+          </Badge>
+        ) : (
+          <Badge variant="light" color="gray" fw={400}>
+            Unknown
+          </Badge>
+        ),
+      sortable: true,
+    },
+    {
+      key: 'hire_date',
+      title: 'Hire Date',
+      sortable: true,
+      width: 120,
+      render: (row) => new Date(row.hire_date).toLocaleDateString('vi-VN'),
     },
     {
       key: 'status',
       title: 'Status',
       align: 'center',
+      width: 100,
       render: (row) => (
-        <Text 
-          fw={500} 
-          c={row.status === 'active' ? 'green' : 'gray'}
-        >
+        <Badge variant="light" color={row.status === 'active' ? 'green' : 'gray'} fw={400}>
           {row.status}
-        </Text>
+        </Badge>
       ),
     },
     {
       key: 'action',
       title: 'Actions',
       align: 'center',
+      width: 100,
       render: (row) => (
-        <ActionIcon
-          variant="subtle"
-          color="blue"
-          onClick={() => handleEdit(row)}
-        >
-          <IconEdit size={16} />
-        </ActionIcon>
+        <Group gap="xs" justify="center">
+          <ActionIcon
+            variant="subtle"
+            color="blue"
+            onClick={() => navigate(`/employees/${row.id}/profile`)}
+            title="View Profile"
+          >
+            <IconEye size={16} />
+          </ActionIcon>
+          <ActionIcon variant="subtle" color="gray" onClick={() => handleEdit(row)} title="Edit">
+            <IconEdit size={16} />
+          </ActionIcon>
+        </Group>
       ),
     },
   ];
 
   if (error) {
-    return (
-      <Stack gap="md">
-        <Text c="red">Error loading employees: {error.message}</Text>
-        <Button onClick={() => refetch()}>Retry</Button>
-      </Stack>
-    );
+    return <ErrorState message={`Error loading employees: ${error.message}`} onRetry={refetch} />;
   }
 
   return (
     <Stack gap="md">
-      <Group>
-        <Button onClick={handleAdd}>Add employee</Button>
+      <Group justify="space-between">
+        <Group>
+          <Button onClick={handleAdd}>Add employee</Button>
 
-        <TextInput
-          placeholder="Search by name, email or code"
-          leftSection={<IconSearch size={16} />}
-          value={search}
-          onChange={(e) => handleSearch(e.currentTarget.value)}
-        />
+          <Button
+            variant="light"
+            leftSection={<IconSitemap size={16} />}
+            onClick={() => navigate('/employees/org-chart')}
+          >
+            View Org Chart
+          </Button>
+        </Group>
 
-        <Select
-          placeholder="Filter by status"
-          clearable
-          data={[
-            { value: 'active', label: 'Active' },
-            { value: 'inactive', label: 'Inactive' },
-          ]}
-          value={filter}
-          onChange={handleFilterChange}
-        />
+        <Group>
+          <TextInput
+            placeholder="Search by name, email or code"
+            leftSection={<IconSearch size={16} />}
+            value={search}
+            onChange={(e) => handleSearch(e.currentTarget.value)}
+          />
+
+          <Select
+            placeholder="Filter by status"
+            clearable
+            data={[
+              { value: 'active', label: 'Active' },
+              { value: 'inactive', label: 'Inactive' },
+            ]}
+            value={filter}
+            onChange={handleFilterChange}
+          />
+        </Group>
       </Group>
 
       {isLoading ? (
-        <Loading/>
+        <Loading />
       ) : (
         <>
           <BaseTable
@@ -210,6 +255,9 @@ export default function EmployeesPage() {
             withTableBorder
             withColumnBorders
             stickyHeader
+            withCheckbox
+            selectedRows={selectedRows}
+            onSelectionChange={setSelectedRows}
           />
 
           <TablePagination
@@ -217,14 +265,18 @@ export default function EmployeesPage() {
             pageSize={pageSize}
             total={totalCount}
             onPageChange={setPage}
-            onPageSizeChange={(size) => {handlePageSizeChange(size)}}
+            onPageSizeChange={(size) => {
+              handlePageSizeChange(size);
+            }}
           />
         </>
       )}
 
       <EmployeeFormModal
         opened={opened}
-        onClose={() => {handleCloseModal}}
+        onClose={() => {
+          handleCloseModal;
+        }}
         mode={isEdit ? 'edit' : 'add'}
         initialValues={mapEmployeeToFormValues(editEmployee)}
         employeeId={editEmployee?.id}

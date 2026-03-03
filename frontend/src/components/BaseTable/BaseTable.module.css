@@ -38,12 +38,12 @@
 }
 
 .sortIcon {
-  opacity: 0;
+  opacity: 0.6;
   transition: opacity 0.15s ease;
 }
 
 .thSortable:hover .sortIcon {
-  opacity: 0.6;
+  opacity: 1;
 }
 
 .thSorted .sortIcon {
