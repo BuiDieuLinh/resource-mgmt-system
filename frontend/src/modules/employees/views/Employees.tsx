@@ -128,30 +128,25 @@ export default function EmployeesPage() {
       key: 'employee_code',
       title: 'Code',
       sortable: true,
-      width: 120,
     },
     {
       key: 'full_name',
       title: 'Name',
       sortable: true,
-      width: 200,
     },
     {
       key: 'email',
       title: 'Email',
       sortable: true,
-      width: 220,
     },
     {
       key: 'phone',
       title: 'Phone',
-      width: 130,
       render: (row) => row.phone || '-',
     },
     {
       key: 'position.position_name',
       title: 'Position',
-      width: 150,
       render: (row) =>
         row.position ? (
           <Badge variant="light" color="cyan" fw={400}>
@@ -168,14 +163,12 @@ export default function EmployeesPage() {
       key: 'hire_date',
       title: 'Hire Date',
       sortable: true,
-      width: 120,
       render: (row) => new Date(row.hire_date).toLocaleDateString('vi-VN'),
     },
     {
       key: 'status',
       title: 'Status',
       align: 'center',
-      width: 100,
       render: (row) => (
         <Badge variant="light" color={row.status === 'active' ? 'green' : 'gray'} fw={400}>
           {row.status}
@@ -186,7 +179,6 @@ export default function EmployeesPage() {
       key: 'action',
       title: 'Actions',
       align: 'center',
-      width: 100,
       render: (row) => (
         <Group gap="xs" justify="center">
           <ActionIcon

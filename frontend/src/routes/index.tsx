@@ -7,17 +7,11 @@ import {
   employeeDepartmentsUrl,
   employeePositionsUrl,
   employeeOrgChartUrl,
-  employeeProfileUrl,
-  attendanceUrl,
-  timesheetUrl,
 } from './url';
 import Error404 from '../components/ErrorPage/Error404';
 import OrgChart from '@/modules/employees/views/OrgChart';
 import Departments from '@/modules/employees/views/Departments';
 import Positions from '@/modules/employees/views/Positions';
-import EmployeeProfile from '@/modules/employees/views/EmployeeProfile';
-import AttendancePage from '@/modules/attendance/views/Attendance';
-import TimesheetPage from '@/modules/attendance/views/Timesheet';
 
 export const router = createBrowserRouter([
   {
