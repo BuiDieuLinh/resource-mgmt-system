@@ -1,6 +1,7 @@
 .header {
   position: sticky;
   transition: box-shadow 150ms ease;
+  background-color: var(--header-bg-color, #f8f9fa) !important;
 
   &::after {
     content: '';
@@ -12,8 +13,12 @@
   }
 }
 
+.header th {
+  background-color: var(--header-bg-color, #f8f9fa) !important;
+}
+
 .scrolled {
-  box-shadow: var(--mantine-shadow-md);
+  box-shadow: var(--mantine-shadow-sm);
 }
 
 .th {
@@ -28,23 +33,14 @@
 }
 
 .sortIcon {
-  opacity: 0.5;
+  opacity: 0.6;
   transition: opacity 0.15s ease;
-  color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-gray-5));
 }
 
 .thSortable:hover .sortIcon {
-  opacity: 0.8;
+  opacity: 1;
 }
 
 .thSorted .sortIcon {
   opacity: 1;
-  color: light-dark(var(--mantine-color-deepPurple-6), var(--mantine-color-deepPurple-4));
-}
-
-.thSortable:hover {
-  background-color: light-dark(
-    color-mix(in srgb, var(--header-bg-color, #f8f9fa) 90%, var(--mantine-color-gray-9) 10%),
-    color-mix(in srgb, var(--header-bg-color, #f8f9fa) 90%, var(--mantine-color-gray-0) 10%)
-  ) !important;
 }

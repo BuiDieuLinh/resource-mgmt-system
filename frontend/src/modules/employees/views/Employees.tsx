@@ -157,6 +157,7 @@ export default function EmployeesPage() {
   };
 
   const handleImportFile = async (file: File | null) => {
+    console.log('Uploading ....');
     if (!file) return;
 
     console.log('File selected:', file.name, file.type, file.size);
@@ -286,7 +287,7 @@ export default function EmployeesPage() {
         <Group>
           <Button onClick={handleAdd}>Add employee</Button>
 
-          <Menu shadow="md" width={200}>
+          <Menu shadow="md" width={200} position="bottom-start">
             <Menu.Target>
               <Button variant="light" leftSection={<IconDotsVertical size={16} />}>
                 Actions
@@ -294,32 +295,29 @@ export default function EmployeesPage() {
             </Menu.Target>
 
             <Menu.Dropdown>
+              <Menu.Item
+                variant="light"
+                leftSection={<IconSitemap size={16} />}
+                onClick={() => navigate('/employees/org-chart')}
+              >
+                View Org Chart
+              </Menu.Item>
               <Menu.Item leftSection={<IconFileExport size={16} />} onClick={handleExport}>
                 Export to Excel
               </Menu.Item>
               <FileButton onChange={handleImportFile} accept=".xlsx,.xls">
                 {(props) => (
-                  <Menu.Item {...props} leftSection={<IconFileImport size={16} />}>
+                  <Menu.Item
+                    {...props}
+                    leftSection={<IconFileImport size={16} />}
+                    closeMenuOnClick={false}
+                  >
                     Import from Excel
                   </Menu.Item>
                 )}
               </FileButton>
             </Menu.Dropdown>
           </Menu>
-
-          <TextInput
-            placeholder="Search by name, email or code"
-            leftSection={<IconSearch size={16} />}
-            value={search}
-            onChange={(e) => handleSearch(e.currentTarget.value)}
-          />
-          <Button
-            variant="light"
-            leftSection={<IconSitemap size={16} />}
-            onClick={() => navigate('/employees/org-chart')}
-          >
-            View Org Chart
-          </Button>
         </Group>
 
         <Group>

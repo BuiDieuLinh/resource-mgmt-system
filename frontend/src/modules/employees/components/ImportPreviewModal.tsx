@@ -57,7 +57,6 @@ export function ImportPreviewModal({
                 <Table.Th>Phone</Table.Th>
                 <Table.Th>Department</Table.Th>
                 <Table.Th>Position</Table.Th>
-                <Table.Th>Status</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -69,15 +68,6 @@ export function ImportPreviewModal({
                   <Table.Td>{emp.phone || '-'}</Table.Td>
                   <Table.Td>{emp.department_name}</Table.Td>
                   <Table.Td>{emp.position_name}</Table.Td>
-                  <Table.Td>
-                    <Badge
-                      size="sm"
-                      color={emp.status === 'active' ? 'green' : 'gray'}
-                      variant="light"
-                    >
-                      {emp.status}
-                    </Badge>
-                  </Table.Td>
                 </Table.Tr>
               ))}
             </Table.Tbody>
