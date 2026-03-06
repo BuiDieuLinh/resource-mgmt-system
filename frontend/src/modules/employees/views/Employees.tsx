@@ -1,26 +1,30 @@
+import { saveAs } from 'file-saver';
 import {
-  Text,
   Stack,
   Group,
   TextInput,
   Select,
   Button,
   ActionIcon,
-  FileButton,
+  Badge,
   Menu,
+  FileButton,
 } from '@mantine/core';
 import {
   IconEdit,
   IconSearch,
+  IconEye,
+  IconSitemap,
   IconFileExport,
   IconFileImport,
   IconDotsVertical,
 } from '@tabler/icons-react';
 import { useState } from 'react';
-import { saveAs } from 'file-saver';
+import { useNavigate } from 'react-router-dom';
 
 import { BaseTable, type TableColumn } from '../../../components/BaseTable/BaseTable';
 import { TablePagination } from '../../../components/Pagination';
+import ErrorState from '../../../components/ErrorState/ErrorState';
 
 import type { IEmployee, EmployeeFormValues } from '../types';
 import { EmployeeFormModal } from '../components/EmployeeFormModal';
@@ -36,6 +40,7 @@ import { notify } from '../../../components/Notification';
 import { mapEmployeeToFormValues } from '../utils/employee-mapper';
 
 export default function EmployeesPage() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<string | null>(null);
 
@@ -47,6 +52,7 @@ export default function EmployeesPage() {
 
   const [previewOpened, setPreviewOpened] = useState(false);
   const [previewData, setPreviewData] = useState<PreviewEmployee[]>([]);
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
 
   const isEdit = Boolean(editEmployee);
 
@@ -214,17 +220,38 @@ export default function EmployeesPage() {
     },
     {
       key: 'phone',
-      title: 'Phone Number',
+      title: 'Phone',
+      render: (row) => row.phone || '-',
+    },
+    {
+      key: 'position.position_name',
+      title: 'Position',
+      render: (row) =>
+        row.position ? (
+          <Badge variant="light" color="cyan" fw={400}>
+            {row.position.position_name}
+          </Badge>
+        ) : (
+          <Badge variant="light" color="gray" fw={400}>
+            Unknown
+          </Badge>
+        ),
       sortable: true,
+    },
+    {
+      key: 'hire_date',
+      title: 'Hire Date',
+      sortable: true,
+      render: (row) => new Date(row.hire_date).toLocaleDateString('vi-VN'),
     },
     {
       key: 'status',
       title: 'Status',
       align: 'center',
       render: (row) => (
-        <Text fw={500} c={row.status === 'active' ? 'green' : 'gray'}>
+        <Badge variant="light" color={row.status === 'active' ? 'green' : 'gray'} fw={400}>
           {row.status}
-        </Text>
+        </Badge>
       ),
     },
     {
@@ -232,65 +259,88 @@ export default function EmployeesPage() {
       title: 'Actions',
       align: 'center',
       render: (row) => (
-        <ActionIcon variant="subtle" color="blue" onClick={() => handleEdit(row)}>
-          <IconEdit size={16} />
-        </ActionIcon>
+        <Group gap="xs" justify="center">
+          <ActionIcon
+            variant="subtle"
+            color="blue"
+            onClick={() => navigate(`/employees/${row.id}/profile`)}
+            title="View Profile"
+          >
+            <IconEye size={16} />
+          </ActionIcon>
+          <ActionIcon variant="subtle" color="gray" onClick={() => handleEdit(row)} title="Edit">
+            <IconEdit size={16} />
+          </ActionIcon>
+        </Group>
       ),
     },
   ];
 
   if (error) {
-    return (
-      <Stack gap="md">
-        <Text c="red">Error loading employees: {error.message}</Text>
-        <Button onClick={() => refetch()}>Retry</Button>
-      </Stack>
-    );
+    return <ErrorState message={`Error loading employees: ${error.message}`} onRetry={refetch} />;
   }
 
   return (
     <Stack gap="md">
-      <Group>
-        <Button onClick={handleAdd}>Add employee</Button>
+      <Group justify="space-between">
+        <Group>
+          <Button onClick={handleAdd}>Add employee</Button>
 
-        <Menu shadow="md" width={200}>
-          <Menu.Target>
-            <Button variant="light" leftSection={<IconDotsVertical size={16} />}>
-              Actions
-            </Button>
-          </Menu.Target>
+          <Menu shadow="md" width={200}>
+            <Menu.Target>
+              <Button variant="light" leftSection={<IconDotsVertical size={16} />}>
+                Actions
+              </Button>
+            </Menu.Target>
 
-          <Menu.Dropdown>
-            <Menu.Item leftSection={<IconFileExport size={16} />} onClick={handleExport}>
-              Export to Excel
-            </Menu.Item>
-            <FileButton onChange={handleImportFile} accept=".xlsx,.xls">
-              {(props) => (
-                <Menu.Item {...props} leftSection={<IconFileImport size={16} />}>
-                  Import from Excel
-                </Menu.Item>
-              )}
-            </FileButton>
-          </Menu.Dropdown>
-        </Menu>
+            <Menu.Dropdown>
+              <Menu.Item leftSection={<IconFileExport size={16} />} onClick={handleExport}>
+                Export to Excel
+              </Menu.Item>
+              <FileButton onChange={handleImportFile} accept=".xlsx,.xls">
+                {(props) => (
+                  <Menu.Item {...props} leftSection={<IconFileImport size={16} />}>
+                    Import from Excel
+                  </Menu.Item>
+                )}
+              </FileButton>
+            </Menu.Dropdown>
+          </Menu>
 
-        <TextInput
-          placeholder="Search by name, email or code"
-          leftSection={<IconSearch size={16} />}
-          value={search}
-          onChange={(e) => handleSearch(e.currentTarget.value)}
-        />
+          <TextInput
+            placeholder="Search by name, email or code"
+            leftSection={<IconSearch size={16} />}
+            value={search}
+            onChange={(e) => handleSearch(e.currentTarget.value)}
+          />
+          <Button
+            variant="light"
+            leftSection={<IconSitemap size={16} />}
+            onClick={() => navigate('/employees/org-chart')}
+          >
+            View Org Chart
+          </Button>
+        </Group>
 
-        <Select
-          placeholder="Filter by status"
-          clearable
-          data={[
-            { value: 'active', label: 'Active' },
-            { value: 'inactive', label: 'Inactive' },
-          ]}
-          value={filter}
-          onChange={handleFilterChange}
-        />
+        <Group>
+          <TextInput
+            placeholder="Search by name, email or code"
+            leftSection={<IconSearch size={16} />}
+            value={search}
+            onChange={(e) => handleSearch(e.currentTarget.value)}
+          />
+
+          <Select
+            placeholder="Filter by status"
+            clearable
+            data={[
+              { value: 'active', label: 'Active' },
+              { value: 'inactive', label: 'Inactive' },
+            ]}
+            value={filter}
+            onChange={handleFilterChange}
+          />
+        </Group>
       </Group>
 
       {isLoading ? (
@@ -303,6 +353,9 @@ export default function EmployeesPage() {
             withTableBorder
             withColumnBorders
             stickyHeader
+            withCheckbox
+            selectedRows={selectedRows}
+            onSelectionChange={setSelectedRows}
           />
 
           <TablePagination

@@ -1,7 +1,5 @@
 .header {
   position: sticky;
-  top: 0;
-  background-color: var(--mantine-color-body);
   transition: box-shadow 150ms ease;
 
   &::after {
@@ -14,16 +12,8 @@
   }
 }
 
-.header tr th:first-child {
-  border-top-left-radius: 8px;
-}
-
-.header tr th:last-child {
-  border-top-right-radius: 8px;
-}
-
 .scrolled {
-  box-shadow: var(--mantine-shadow-sm);
+  box-shadow: var(--mantine-shadow-md);
 }
 
 .th {
@@ -38,14 +28,23 @@
 }
 
 .sortIcon {
-  opacity: 0;
+  opacity: 0.5;
   transition: opacity 0.15s ease;
+  color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-gray-5));
 }
 
 .thSortable:hover .sortIcon {
-  opacity: 0.6;
+  opacity: 0.8;
 }
 
 .thSorted .sortIcon {
   opacity: 1;
+  color: light-dark(var(--mantine-color-deepPurple-6), var(--mantine-color-deepPurple-4));
+}
+
+.thSortable:hover {
+  background-color: light-dark(
+    color-mix(in srgb, var(--header-bg-color, #f8f9fa) 90%, var(--mantine-color-gray-9) 10%),
+    color-mix(in srgb, var(--header-bg-color, #f8f9fa) 90%, var(--mantine-color-gray-0) 10%)
+  ) !important;
 }

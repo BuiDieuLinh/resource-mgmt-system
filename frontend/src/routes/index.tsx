@@ -2,9 +2,16 @@ import { createBrowserRouter } from 'react-router-dom';
 import Home from '../modules/home/views/Home';
 import Layout from '../modules/app/Layout';
 import { Employee } from '../modules';
-import { employeeListUrl, employeeOrgChartUrl } from './url';
-import Error404 from '../components/error/Error404';
+import {
+  employeeListUrl,
+  employeeDepartmentsUrl,
+  employeePositionsUrl,
+  employeeOrgChartUrl,
+} from './url';
+import Error404 from '../components/ErrorPage/Error404';
 import OrgChart from '@/modules/employees/views/OrgChart';
+import Departments from '@/modules/employees/views/Departments';
+import Positions from '@/modules/employees/views/Positions';
 
 export const router = createBrowserRouter([
   {
@@ -18,6 +25,14 @@ export const router = createBrowserRouter([
       {
         path: employeeListUrl,
         element: <Employee />,
+      },
+      {
+        path: employeeDepartmentsUrl,
+        element: <Departments />,
+      },
+      {
+        path: employeePositionsUrl,
+        element: <Positions />,
       },
       {
         path: employeeOrgChartUrl,

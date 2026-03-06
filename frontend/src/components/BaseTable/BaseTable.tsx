@@ -1,4 +1,4 @@
-import { Table, ScrollArea, Center, Loader, Text } from '@mantine/core';
+import { Table, Center, Loader, Text, Checkbox } from '@mantine/core';
 import { IconChevronUp, IconChevronDown, IconSelector } from '@tabler/icons-react';
 import { useMemo, useState, type ReactNode } from 'react';
 import cx from 'clsx';
@@ -37,6 +37,10 @@ export type BaseTableProps<T> = {
   height?: number;
 
   onRowClick?: (row: T) => void;
+
+  withCheckbox?: boolean;
+  selectedRows?: Set<number>;
+  onSelectionChange?: (selectedRows: Set<number>) => void;
 };
 
 export function BaseTable<T extends Record<string, any>>({
@@ -51,10 +55,35 @@ export function BaseTable<T extends Record<string, any>>({
   stickyHeader = true,
   height = 500,
   onRowClick,
+  withCheckbox = false,
+  selectedRows = new Set(),
+  onSelectionChange,
 }: BaseTableProps<T>) {
   const [scrolled, setScrolled] = useState(false);
 
   const [sort, setSort] = useState<SortState<T> | null>(null);
+
+  const isAllSelected = data.length > 0 && selectedRows.size === data.length;
+  const isIndeterminate = selectedRows.size > 0 && selectedRows.size < data.length;
+
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      onSelectionChange?.(new Set());
+    } else {
+      const allIndices = new Set(data.map((_, index) => index));
+      onSelectionChange?.(allIndices);
+    }
+  };
+
+  const handleSelectRow = (index: number) => {
+    const newSelection = new Set(selectedRows);
+    if (newSelection.has(index)) {
+      newSelection.delete(index);
+    } else {
+      newSelection.add(index);
+    }
+    onSelectionChange?.(newSelection);
+  };
 
   const handleSort = (col: TableColumn<T>) => {
     if (!col.sortable) return;
@@ -101,14 +130,13 @@ export function BaseTable<T extends Record<string, any>>({
   }, [data, sort, columns]);
 
   return (
-    <ScrollArea h={height} onScrollPositionChange={({ y }) => setScrolled(y !== 0)}>
+    <Table.ScrollContainer minWidth={height} maxHeight={height}>
       <Table
-        striped={striped}
         highlightOnHover={highlightOnHover}
-        withTableBorder={withTableBorder}
-        withColumnBorders={withColumnBorders}
+        // withTableBorder={withTableBorder}
+        // withColumnBorders={withColumnBorders}
         stickyHeader={stickyHeader}
-        verticalSpacing="sm"
+        verticalSpacing="xs"
         horizontalSpacing="md"
         miw="100%"
       >
@@ -118,6 +146,15 @@ export function BaseTable<T extends Record<string, any>>({
           })}
         >
           <Table.Tr>
+            {withCheckbox && (
+              <Table.Th className={classes.th} style={{ width: 50, textAlign: 'center' }}>
+                <Checkbox
+                  checked={isAllSelected}
+                  indeterminate={isIndeterminate}
+                  onChange={handleSelectAll}
+                />
+              </Table.Th>
+            )}
             {columns.map((col) => {
               const isSorted = sort?.key === col.key;
 
@@ -158,7 +195,7 @@ export function BaseTable<T extends Record<string, any>>({
         <Table.Tbody>
           {loading ? (
             <Table.Tr>
-              <Table.Td colSpan={columns.length}>
+              <Table.Td colSpan={columns.length + (withCheckbox ? 1 : 0)}>
                 <Center py="xl">
                   <Loader size="sm" />
                 </Center>
@@ -166,7 +203,7 @@ export function BaseTable<T extends Record<string, any>>({
             </Table.Tr>
           ) : sortedData.length === 0 ? (
             <Table.Tr>
-              <Table.Td colSpan={columns.length}>
+              <Table.Td colSpan={columns.length + (withCheckbox ? 1 : 0)}>
                 <Center py="xl">
                   <Text c="dimmed">{emptyText}</Text>
                 </Center>
@@ -181,6 +218,15 @@ export function BaseTable<T extends Record<string, any>>({
                   cursor: onRowClick ? 'pointer' : 'default',
                 }}
               >
+                {withCheckbox && (
+                  <Table.Td style={{ textAlign: 'center' }}>
+                    <Checkbox
+                      checked={selectedRows.has(index)}
+                      onChange={() => handleSelectRow(index)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </Table.Td>
+                )}
                 {columns.map((col) => (
                   <Table.Td key={String(col.key)} style={{ textAlign: col.align ?? 'left' }}>
                     {col.render ? col.render(row, index) : row[col.key as keyof T]}
@@ -191,6 +237,6 @@ export function BaseTable<T extends Record<string, any>>({
           )}
         </Table.Tbody>
       </Table>
-    </ScrollArea>
+    </Table.ScrollContainer>
   );
 }

@@ -1,4 +1,4 @@
-import type { EmployeeStatus } from "../../../constant";
+import type { EmployeeStatus } from '../../../constant';
 
 export interface IEmployee {
   id: string;
@@ -11,14 +11,19 @@ export interface IEmployee {
   identify_card: string;
 
   gender?: string;
-  date_of_birth?: string; 
+  date_of_birth?: string;
   avatar_url?: string;
 
-  hire_date: string; 
+  hire_date: string;
   status: EmployeeStatus;
 
   department_id: string;
-  position_id: string;
+  position: {
+    id: string;
+    position_name: string;
+    level: string;
+    description: string;
+  };
 
   created_at: string;
 }

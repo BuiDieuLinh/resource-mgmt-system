@@ -1,5 +1,18 @@
-import { employeeListUrl, employeeOrgChartUrl } from '@/routes/url';
-import { IconGauge, IconUsers, IconSettings } from '@tabler/icons-react';
+import {
+  employeeListUrl,
+  employeeDepartmentsUrl,
+  employeePositionsUrl,
+  attendanceUrl,
+  timesheetUrl,
+} from '@/routes/url';
+import {
+  IconGauge,
+  IconUsers,
+  IconSettings,
+  IconTimelineEvent,
+  IconBuilding,
+  IconBriefcase,
+} from '@tabler/icons-react';
 
 export type AppMenu = {
   label: string;
@@ -18,8 +31,17 @@ export const MENUS: AppMenu[] = [
     label: 'Employees',
     icon: IconUsers,
     children: [
-      { label: 'List', path: employeeListUrl },
-      { label: 'Org Chart', path: employeeOrgChartUrl },
+      { label: 'Employee List', path: employeeListUrl, icon: IconUsers },
+      { label: 'Departments', path: employeeDepartmentsUrl, icon: IconBuilding },
+      { label: 'Positions', path: employeePositionsUrl, icon: IconBriefcase },
+    ],
+  },
+  {
+    label: 'Attendance',
+    icon: IconTimelineEvent,
+    children: [
+      { label: 'Overview', path: attendanceUrl },
+      { label: 'Timesheet', path: timesheetUrl },
     ],
   },
   {
