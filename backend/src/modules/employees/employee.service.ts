@@ -9,6 +9,11 @@ import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { QueryEmployeeDto } from './dto/query-employee.dto';
 import * as ExcelJS from 'exceljs';
+import {
+  getCellValue,
+  parseDate,
+  validateHeaders,
+} from 'src/modules/employees/utils/excel.util';
 
 @Injectable()
 export class EmployeeService {
@@ -161,33 +166,63 @@ export class EmployeeService {
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
 
-      const worksheet = workbook.getWorksheet('Employees');
+      const worksheet = workbook.worksheets[0];
+
       if (!worksheet) {
-        throw new BadRequestException('Worksheet "Employees" not found');
+        throw new BadRequestException('No worksheet found in the Excel file');
+      }
+
+      const requiredHeaders = [
+        'Employee Code',
+        'Full Name',
+        'Email',
+        'Identify Card',
+        'Department',
+        'Position',
+      ];
+
+      const validation = validateHeaders(worksheet, requiredHeaders);
+
+      if (!validation.valid) {
+        throw new BadRequestException(
+          `Missing required columns: ${validation.missing.join(', ')}. Found columns: ${validation.found.join(', ')}`,
+        );
       }
 
       const employees: any[] = [];
 
       worksheet.eachRow((row, rowNumber) => {
-        if (rowNumber === 1) return;
+        if (rowNumber === 1) return; // Skip header
 
         const employeeData = {
-          employee_code: row.getCell(1).value?.toString() || '',
-          full_name: row.getCell(2).value?.toString() || '',
-          display_name: row.getCell(3).value?.toString() || '',
-          email: row.getCell(4).value?.toString() || '',
-          phone: row.getCell(5).value?.toString() || '',
-          identify_card: row.getCell(6).value?.toString() || '',
-          gender: row.getCell(7).value?.toString() || '',
-          date_of_birth: row.getCell(8).value?.toString() || '',
-          hire_date: row.getCell(9).value?.toString() || '',
-          department_name: row.getCell(10).value?.toString() || '',
-          position_name: row.getCell(11).value?.toString() || '',
-          status: row.getCell(12).value?.toString() || 'active',
+          employee_code: getCellValue(row.getCell(1)),
+          full_name: getCellValue(row.getCell(2)),
+          display_name: getCellValue(row.getCell(3)),
+          email: getCellValue(row.getCell(4)),
+          phone: getCellValue(row.getCell(5)),
+          identify_card: getCellValue(row.getCell(6)),
+          gender: getCellValue(row.getCell(7)),
+          date_of_birth: getCellValue(row.getCell(8)),
+          hire_date: getCellValue(row.getCell(9)),
+          department_name: getCellValue(row.getCell(10)),
+          position_name: getCellValue(row.getCell(11)),
         };
 
-        employees.push(employeeData);
+        // Only add if has required data
+        if (
+          employeeData.employee_code &&
+          employeeData.full_name &&
+          employeeData.email
+        ) {
+          employees.push(employeeData);
+        }
       });
+
+      if (employees.length === 0) {
+        throw new BadRequestException(
+          'No valid employee data found in the file',
+        );
+      }
 
       return ResponseHelper.success(employees, 'Preview loaded successfully');
     } catch (error) {
@@ -217,6 +252,9 @@ export class EmployeeService {
           continue;
         }
 
+        const dateOfBirth = parseDate(empData.date_of_birth);
+        const hireDate = parseDate(empData.hire_date) || new Date();
+
         await this.prisma.employees.create({
           data: {
             employee_code: empData.employee_code,
@@ -226,15 +264,10 @@ export class EmployeeService {
             phone: empData.phone || null,
             identify_card: empData.identify_card,
             gender: empData.gender || null,
-            date_of_birth: empData.date_of_birth
-              ? new Date(empData.date_of_birth)
-              : null,
-            hire_date: empData.hire_date
-              ? new Date(empData.hire_date)
-              : new Date(),
+            date_of_birth: dateOfBirth,
+            hire_date: hireDate,
             department_id: department.id,
             position_id: position.id,
-            status: empData.status as any,
           },
         });
 
