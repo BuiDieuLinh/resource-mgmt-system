@@ -10,8 +10,8 @@ import {
 } from './url';
 import Error404 from '../components/ErrorPage/Error404';
 import OrgChart from '@/modules/employees/views/OrgChart';
-import Departments from '@/modules/employees/views/Departments';
-import Positions from '@/modules/employees/views/Positions';
+import Departments from '@/modules/departments/views/Departments';
+import Positions from '@/modules/positions/views/Positions';
 
 export const router = createBrowserRouter([
   {
