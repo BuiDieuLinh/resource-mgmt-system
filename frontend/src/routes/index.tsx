@@ -7,11 +7,13 @@ import {
   employeeDepartmentsUrl,
   employeePositionsUrl,
   employeeOrgChartUrl,
+  employeeProfileUrl,
 } from './url';
 import Error404 from '../components/ErrorPage/Error404';
 import OrgChart from '@/modules/employees/views/OrgChart';
 import Departments from '@/modules/departments/views/Departments';
 import Positions from '@/modules/positions/views/Positions';
+import EmployeeProfile from '@/modules/employees/views/EmployeeProfile';
 
 export const router = createBrowserRouter([
   {
@@ -37,6 +39,10 @@ export const router = createBrowserRouter([
       {
         path: employeeOrgChartUrl,
         element: <OrgChart />,
+      },
+      {
+        path: employeeProfileUrl,
+        element: <EmployeeProfile />,
       },
     ],
   },

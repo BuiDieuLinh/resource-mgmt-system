@@ -17,7 +17,11 @@ export interface IEmployee {
   hire_date: string;
   status: EmployeeStatus;
 
-  department_id: string;
+  department: {
+    id: string;
+    department_name: string;
+    description: string;
+  };
   position: {
     id: string;
     position_name: string;
