@@ -27,6 +27,7 @@ import { useGetEmployee } from '../api/get-employee';
 import { Loading } from '../../../components/Loading/Loading';
 import ErrorState from '../../../components/ErrorState/ErrorState';
 import { employeeListUrl } from '../../../routes/url';
+import LabelValue from '../components/LabelValue';
 
 export default function EmployeeProfile() {
   const navigate = useNavigate();
@@ -145,47 +146,30 @@ export default function EmployeeProfile() {
             </Text>
             <Grid gutter="md">
               <Grid.Col span={6}>
-                <Stack gap="xs">
-                  <Text size="sm" c="dimmed">
-                    Employee Code
-                  </Text>
-                  <Text fw={500}>{employee.employee_code}</Text>
-                </Stack>
+                <LabelValue label="Employee Code" value={employee.employee_code} />
               </Grid.Col>
               <Grid.Col span={6}>
-                <Stack gap="xs">
-                  <Text size="sm" c="dimmed">
-                    Gender
-                  </Text>
-                  <Group gap="xs">
-                    {getGenderIcon(employee.gender!)}
-                    <Text fw={500}>{employee.gender || 'Not specified'}</Text>
-                  </Group>
-                </Stack>
+                <LabelValue
+                  label="Gender"
+                  value={employee.gender || 'Not specified'}
+                  icon={getGenderIcon(employee.gender!)}
+                />
               </Grid.Col>
               {employee.date_of_birth && (
                 <Grid.Col span={6}>
-                  <Stack gap="xs">
-                    <Text size="sm" c="dimmed">
-                      Date of Birth
-                    </Text>
-                    <Group gap="xs">
-                      <IconCalendar size={16} />
-                      <Text fw={500}>{formatDate(employee.date_of_birth)}</Text>
-                    </Group>
-                  </Stack>
+                  <LabelValue
+                    label="Date of Birth"
+                    value={formatDate(employee.date_of_birth)}
+                    icon={<IconCalendar size={16} />}
+                  />
                 </Grid.Col>
               )}
               <Grid.Col span={6}>
-                <Stack gap="xs">
-                  <Text size="sm" c="dimmed">
-                    Hire Date
-                  </Text>
-                  <Group gap="xs">
-                    <IconCalendar size={16} />
-                    <Text fw={500}>{formatDate(employee.hire_date)}</Text>
-                  </Group>
-                </Stack>
+                <LabelValue
+                  label="Hire Date"
+                  value={formatDate(employee.hire_date)}
+                  icon={<IconCalendar size={16} />}
+                />
               </Grid.Col>
             </Grid>
           </Card>
@@ -196,37 +180,29 @@ export default function EmployeeProfile() {
             </Text>
             <Grid gutter="md">
               <Grid.Col span={6}>
-                <Stack gap="xs">
-                  <Text size="sm" c="dimmed">
-                    Department
-                  </Text>
-                  <Group gap="xs">
-                    <IconBuilding size={16} />
-                    <Text fw={500}>{employee.department?.department_name || 'Not assigned'}</Text>
-                  </Group>
-                </Stack>
+                <LabelValue
+                  label="Department"
+                  value={employee.department?.department_name || 'Not assigned'}
+                  icon={<IconBuilding size={16} />}
+                />
               </Grid.Col>
               <Grid.Col span={6}>
-                <Stack gap="xs">
-                  <Text size="sm" c="dimmed">
-                    Position
-                  </Text>
-                  <Group gap="xs">
-                    <IconBriefcase size={16} />
-                    <Text fw={500}>{employee.position?.position_name || 'Not assigned'}</Text>
-                  </Group>
-                </Stack>
+                <LabelValue
+                  label="Position"
+                  value={employee.position?.position_name || 'Not assigned'}
+                  icon={<IconBriefcase size={16} />}
+                />
               </Grid.Col>
               {employee.position?.level && (
                 <Grid.Col span={6}>
-                  <Stack gap="xs">
-                    <Text size="sm" c="dimmed">
-                      Level
-                    </Text>
-                    <Badge variant="light" color="blue">
-                      {employee.position.level}
-                    </Badge>
-                  </Stack>
+                  <LabelValue
+                    label="Level"
+                    value={
+                      <Badge variant="light" color="blue">
+                        {employee.position.level}
+                      </Badge>
+                    }
+                  />
                 </Grid.Col>
               )}
             </Grid>
@@ -239,20 +215,13 @@ export default function EmployeeProfile() {
               </Text>
               <Stack gap="md">
                 {employee.position?.description && (
-                  <div>
-                    <Text size="sm" c="dimmed" mb="xs">
-                      Position Description
-                    </Text>
-                    <Text size="sm">{employee.position.description}</Text>
-                  </div>
+                  <LabelValue label="Position Description" value={employee.position.description} />
                 )}
                 {employee.department?.description && (
-                  <div>
-                    <Text size="sm" c="dimmed" mb="xs">
-                      Department Description
-                    </Text>
-                    <Text size="sm">{employee.department.description}</Text>
-                  </div>
+                  <LabelValue
+                    label="Department Description"
+                    value={employee.department.description}
+                  />
                 )}
               </Stack>
             </Card>
