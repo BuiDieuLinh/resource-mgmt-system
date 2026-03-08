@@ -73,6 +73,10 @@ export class EmployeeService {
   async findOne(id: string) {
     const position = await this.prisma.employees.findUnique({
       where: { id },
+      include: {
+        department: true,
+        position: true,
+      },
     });
     if (!position) throw new NotFoundException('Position not found');
     return ResponseHelper.success(position);

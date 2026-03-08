@@ -137,7 +137,7 @@ export function EmployeeFormModal({
     if (!positionsData?.data) return [];
     return positionsData.data.map((pos) => ({
       value: pos.id,
-      label: pos.position_name,
+      label: `${pos.position_name}${pos.level ? ` (${pos.level})` : ''}`,
     }));
   }, [positionsData]);
 
@@ -181,7 +181,6 @@ export function EmployeeFormModal({
         </Group> */}
 
         <Stack gap="sm">
-          {/* row 1: code, full name, display name */}
           <Grid gutter="sm">
             <Grid.Col span={4}>
               <TextInput
@@ -209,7 +208,6 @@ export function EmployeeFormModal({
             </Grid.Col>
           </Grid>
 
-          {/* row 2: email, phone, id card */}
           <Grid gutter="sm">
             <Grid.Col span={4}>
               <TextInput
@@ -237,7 +235,6 @@ export function EmployeeFormModal({
             </Grid.Col>
           </Grid>
 
-          {/* row 3: department, position, hire date */}
           <Grid gutter="sm">
             <Grid.Col span={4}>
               <Select
@@ -273,7 +270,6 @@ export function EmployeeFormModal({
             </Grid.Col>
           </Grid>
 
-          {/* row 4: status, gender, date of birth */}
           <Grid gutter="sm">
             <Grid.Col span={4}>
               <Select
