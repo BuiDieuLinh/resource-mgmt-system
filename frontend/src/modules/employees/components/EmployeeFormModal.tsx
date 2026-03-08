@@ -150,7 +150,7 @@ export function EmployeeFormModal({
           {mode === 'edit' ? 'EDIT EMPLOYEE' : 'ADD EMPLOYEE'}
         </Text>
       }
-      size="lg"
+      size="xl"
       centered
       styles={{
         header: {
@@ -163,9 +163,10 @@ export function EmployeeFormModal({
       }}
     >
       <form onSubmit={form.onSubmit(handleSubmit)}>
-        <Group justify="center">
-          <Avatar src={avatarPreview} size={90} radius="xl" />
-          <Stack gap={1}>
+        {/* avatar centered above the form */}
+        {/* <Group  mb="md">
+          <Stack align="center">
+            <Avatar src={avatarPreview} size={80} radius="xl" />
             <FileButton onChange={handleAvatarChange} accept="image/png,image/jpeg,image/jpg">
               {(props) => (
                 <Button {...props} variant="light" size="xs" leftSection={<IconUpload size={14} />}>
@@ -177,11 +178,12 @@ export function EmployeeFormModal({
               PNG, JPG up to 5MB
             </Text>
           </Stack>
-        </Group>
+        </Group> */}
 
         <Stack gap="sm">
+          {/* row 1: code, full name, display name */}
           <Grid gutter="sm">
-            <Grid.Col span={6}>
+            <Grid.Col span={4}>
               <TextInput
                 label="Employee Code"
                 placeholder="e.g., EMP-001"
@@ -190,7 +192,7 @@ export function EmployeeFormModal({
                 {...form.getInputProps('employee_code')}
               />
             </Grid.Col>
-            <Grid.Col span={6}>
+            <Grid.Col span={4}>
               <TextInput
                 label="Full Name"
                 placeholder="Enter full name"
@@ -198,17 +200,18 @@ export function EmployeeFormModal({
                 {...form.getInputProps('full_name')}
               />
             </Grid.Col>
-          </Grid>
-
-          <Grid gutter="sm">
-            <Grid.Col span={6}>
+            <Grid.Col span={4}>
               <TextInput
                 label="Display Name"
                 placeholder="Enter display name (optional)"
                 {...form.getInputProps('display_name')}
               />
             </Grid.Col>
-            <Grid.Col span={6}>
+          </Grid>
+
+          {/* row 2: email, phone, id card */}
+          <Grid gutter="sm">
+            <Grid.Col span={4}>
               <TextInput
                 label="Email"
                 placeholder="example@company.com"
@@ -217,17 +220,14 @@ export function EmployeeFormModal({
                 {...form.getInputProps('email')}
               />
             </Grid.Col>
-          </Grid>
-
-          <Grid gutter="sm">
-            <Grid.Col span={6}>
+            <Grid.Col span={4}>
               <TextInput
                 label="Phone Number"
                 placeholder="+84 123 456 789"
                 {...form.getInputProps('phone')}
               />
             </Grid.Col>
-            <Grid.Col span={6}>
+            <Grid.Col span={4}>
               <TextInput
                 label="Identity Card"
                 placeholder="Enter ID card number"
@@ -237,8 +237,9 @@ export function EmployeeFormModal({
             </Grid.Col>
           </Grid>
 
+          {/* row 3: department, position, hire date */}
           <Grid gutter="sm">
-            <Grid.Col span={6}>
+            <Grid.Col span={4}>
               <Select
                 label="Department"
                 placeholder="Select department"
@@ -249,7 +250,7 @@ export function EmployeeFormModal({
                 {...form.getInputProps('department_id')}
               />
             </Grid.Col>
-            <Grid.Col span={6}>
+            <Grid.Col span={4}>
               <Select
                 label="Position"
                 placeholder="Select position"
@@ -260,10 +261,7 @@ export function EmployeeFormModal({
                 {...form.getInputProps('position_id')}
               />
             </Grid.Col>
-          </Grid>
-
-          <Grid gutter="sm">
-            <Grid.Col span={6}>
+            <Grid.Col span={4}>
               <DateInput
                 label="Hire Date"
                 placeholder="Select hire date"
@@ -273,7 +271,11 @@ export function EmployeeFormModal({
                 {...form.getInputProps('hire_date')}
               />
             </Grid.Col>
-            <Grid.Col span={6}>
+          </Grid>
+
+          {/* row 4: status, gender, date of birth */}
+          <Grid gutter="sm">
+            <Grid.Col span={4}>
               <Select
                 label="Status"
                 placeholder="Select status"
@@ -285,10 +287,7 @@ export function EmployeeFormModal({
                 {...form.getInputProps('status')}
               />
             </Grid.Col>
-          </Grid>
-
-          <Grid gutter="sm">
-            <Grid.Col span={6}>
+            <Grid.Col span={4}>
               <Select
                 label="Gender"
                 placeholder="Select gender"
@@ -301,7 +300,7 @@ export function EmployeeFormModal({
                 {...form.getInputProps('gender')}
               />
             </Grid.Col>
-            <Grid.Col span={6}>
+            <Grid.Col span={4}>
               <DateInput
                 label="Date of Birth"
                 placeholder="Select date of birth"

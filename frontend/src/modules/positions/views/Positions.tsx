@@ -1,5 +1,5 @@
 import { Stack, Button, Group, TextInput, ActionIcon, Badge, Select } from '@mantine/core';
-import { IconSearch, IconEdit, IconPlus } from '@tabler/icons-react';
+import { IconSearch, IconEdit } from '@tabler/icons-react';
 import { useState, useMemo } from 'react';
 import { BaseTable, type TableColumn } from '../../../components/BaseTable/BaseTable';
 import { TablePagination } from '../../../components/Pagination';
@@ -7,13 +7,22 @@ import { Loading } from '../../../components/Loading/Loading';
 import ErrorState from '../../../components/ErrorState/ErrorState';
 import { useGetPositions } from '../../positions/api/get-positions';
 import { useGetAllDepartments } from '../../departments/api/get-departments';
-import type { IPosition } from '../../positions/types';
+import { useCreatePosition } from '../api/create-position';
+import { useUpdatePosition } from '../api/update-position';
+import { PositionFormModal } from '../components/PositionFormModal';
+import { mapPositionToFormValues } from '../utils/position-mapper';
+import { notify } from '../../../components/Notification';
+import type { IPosition, PositionFormValues } from '../../positions/types';
 
 export default function PositionsPage() {
   const [search, setSearch] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [opened, setOpened] = useState(false);
+  const [editPosition, setEditPosition] = useState<IPosition | null>(null);
+
+  const isEdit = Boolean(editPosition);
 
   const { data, isLoading, error, refetch } = useGetPositions({
     pageIndex: page,
@@ -24,6 +33,52 @@ export default function PositionsPage() {
 
   const { data: departmentsData } = useGetAllDepartments();
   const departments = departmentsData?.data || [];
+
+  const createMutation = useCreatePosition();
+  const updateMutation = useUpdatePosition();
+
+  const handleAdd = () => {
+    setEditPosition(null);
+    setOpened(true);
+  };
+
+  const handleEdit = (position: IPosition) => {
+    setEditPosition(position);
+    setOpened(true);
+  };
+
+  const handleSubmit = async (values: PositionFormValues, id?: string) => {
+    const notiId = notify.loading(isEdit ? 'Updating position...' : 'Creating position...');
+
+    try {
+      if (isEdit && id) {
+        await updateMutation.mutateAsync({
+          id,
+          payload: values,
+        });
+      } else {
+        await createMutation.mutateAsync(values);
+      }
+
+      notify.success(notiId, {
+        message: isEdit ? 'Position updated successfully' : 'Position created successfully',
+      });
+
+      setOpened(false);
+      setEditPosition(null);
+    } catch (e: any) {
+      notify.error(notiId, {
+        message:
+          e?.response?.data?.message ||
+          (isEdit ? 'Update position failed' : 'Create position failed'),
+      });
+    }
+  };
+
+  const handleCloseModal = () => {
+    setOpened(false);
+    setEditPosition(null);
+  };
 
   const departmentMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -90,7 +145,7 @@ export default function PositionsPage() {
       align: 'center',
       width: 100,
       render: (row) => (
-        <ActionIcon variant="subtle" color="gray">
+        <ActionIcon variant="subtle" color="gray" onClick={() => handleEdit(row)} title="Edit">
           <IconEdit size={16} />
         </ActionIcon>
       ),
@@ -104,7 +159,7 @@ export default function PositionsPage() {
   return (
     <Stack gap="md">
       <Group>
-        <Button leftSection={<IconPlus size={16} />}>Add Position</Button>
+        <Button onClick={handleAdd}>Add Position</Button>
 
         <TextInput
           placeholder="Search positions..."
@@ -146,6 +201,16 @@ export default function PositionsPage() {
           />
         </>
       )}
+
+      <PositionFormModal
+        opened={opened}
+        onClose={handleCloseModal}
+        mode={isEdit ? 'edit' : 'add'}
+        initialValues={mapPositionToFormValues(editPosition)}
+        positionId={editPosition?.id}
+        onSubmit={handleSubmit}
+        loading={createMutation.isPending || updateMutation.isPending}
+      />
     </Stack>
   );
 }
