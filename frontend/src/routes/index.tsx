@@ -20,7 +20,6 @@ import Positions from '@/modules/positions/views/Positions';
 import EmployeeProfile from '@/modules/employees/views/EmployeeProfile';
 import Attendance from '@/modules/attendances/views/Attendances';
 import Timesheet from '@/modules/attendances/views/Timesheet';
-import AttendanceFlow from '@/modules/attendances/views/Flow';
 import AttendanceDetail from '@/modules/attendances/views/AttendanceDetail';
 
 export const router = createBrowserRouter([
@@ -55,10 +54,6 @@ export const router = createBrowserRouter([
       {
         path: attendanceUrl,
         element: <Attendance />,
-      },
-      {
-        path: attendanceFlowUrl,
-        element: <AttendanceFlow />,
       },
       {
         path: timesheetUrl,
