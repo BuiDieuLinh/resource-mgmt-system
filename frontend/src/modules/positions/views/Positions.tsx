@@ -13,6 +13,7 @@ import { PositionFormModal } from '../components/PositionFormModal';
 import { mapPositionToFormValues } from '../utils/position-mapper';
 import { notify } from '../../../components/Notification';
 import type { IPosition, PositionFormValues } from '../../positions/types';
+import { PRIMARY_COLOR } from '@/theme';
 
 export default function PositionsPage() {
   const [search, setSearch] = useState('');
@@ -119,7 +120,7 @@ export default function PositionsPage() {
       sortable: true,
       width: 150,
       render: (row) => (
-        <Badge variant="light" color="deepPurple" tt="capitalize" fw={400}>
+        <Badge variant="light" color={PRIMARY_COLOR} tt="capitalize" fw={400}>
           {row.level}
         </Badge>
       ),

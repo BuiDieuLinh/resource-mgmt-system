@@ -1,20 +1,23 @@
 import { createTheme, type MantineColorsTuple } from '@mantine/core';
 
 const deepPurple: MantineColorsTuple = [
-  '#e8d5f0', // lightest
-  '#d1abdf',
-  '#ba81ce',
-  '#a357bd',
-  '#8c2dac',
-  '#2a0c50', // PRIMARY
-  '#42127d',
-  '#3a106e',
-  '#320e5f',
-  '#1a0830',
+  '#f3eaff', // lightest
+  '#e0c8ff',
+  '#c49ef5',
+  '#a872ec',
+  '#9155e3',
+  '#7c3aed',
+  '#6d28d9',
+  '#5b21b6',
+  '#4c1d95',
+  '#2e1065', // darkest
 ];
+
+export const PRIMARY_COLOR = deepPurple[9];
 
 export const theme = createTheme({
   primaryColor: 'deepPurple',
+  primaryShade: 9,
   colors: {
     deepPurple,
   },

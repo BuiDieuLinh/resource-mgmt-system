@@ -182,7 +182,7 @@ export default function EmployeeProfile() {
               <Grid.Col span={6}>
                 <LabelValue
                   label="Department"
-                  value={employee.department?.department_name || 'Not assigned'}
+                  value={employee.position.department?.department_name || 'Not assigned'}
                   icon={<IconBuilding size={16} />}
                 />
               </Grid.Col>
@@ -208,7 +208,7 @@ export default function EmployeeProfile() {
             </Grid>
           </Card>
 
-          {(employee.position?.description || employee.department?.description) && (
+          {(employee.position?.description || employee.position?.department?.description) && (
             <Card withBorder padding="lg" radius="md" mt="md">
               <Text size="lg" fw={600} mb="md">
                 Additional Information
@@ -217,10 +217,10 @@ export default function EmployeeProfile() {
                 {employee.position?.description && (
                   <LabelValue label="Position Description" value={employee.position.description} />
                 )}
-                {employee.department?.description && (
+                {employee.position.department?.description && (
                   <LabelValue
                     label="Department Description"
-                    value={employee.department.description}
+                    value={employee.position.department.description}
                   />
                 )}
               </Stack>

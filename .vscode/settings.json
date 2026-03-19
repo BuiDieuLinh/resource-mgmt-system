@@ -1,2 +1,4 @@
 {
+    "js/ts.tsdk.path": "node_modules/typescript/lib",
+    "kiroAgent.configureMCP": "Disabled"
 }

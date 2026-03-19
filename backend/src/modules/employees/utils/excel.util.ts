@@ -38,27 +38,27 @@ export function formatDateToString(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-export function parseDate(dateStr: string): Date | null {
-  if (!dateStr || dateStr.trim() === '') return null;
+export function parseDate(dateStr: string): Date | string {
+  if (!dateStr || dateStr.trim() === '') return '';
 
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
     const [year, month, day] = dateStr.split('-').map(Number);
     const date = new Date(year, month - 1, day);
 
-    if (isNaN(date.getTime())) return null;
+    if (isNaN(date.getTime())) return '';
     if (
       date.getFullYear() !== year ||
       date.getMonth() !== month - 1 ||
       date.getDate() !== day
     ) {
-      return null;
+      return '';
     }
 
     return date;
   }
 
   const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return null;
+  if (isNaN(date.getTime())) return '';
 
   return date;
 }

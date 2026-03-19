@@ -8,36 +8,83 @@ import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { QueryEmployeeDto } from './dto/query-employee.dto';
+import {
+  resolvePagination,
+  buildPaginatedResult,
+} from 'src/common/utils/pagination.util';
 import * as ExcelJS from 'exceljs';
 import {
   getCellValue,
   parseDate,
   validateHeaders,
 } from 'src/modules/employees/utils/excel.util';
+import { WorkScheduleService } from 'src/modules/work-schedules/work-schedule.service';
 
 @Injectable()
 export class EmployeeService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly workScheduleService: WorkScheduleService,
+  ) {}
+
+  async checkExists(
+    field: 'employee_code' | 'email' | 'identify_card',
+    value: string,
+    excludeId?: string,
+  ) {
+    if (!value?.trim()) return ResponseHelper.success({ exists: false });
+
+    const where: any = { [field]: value };
+    if (excludeId) where.NOT = { id: excludeId };
+
+    const found = await this.prisma.employees.findFirst({ where });
+    return ResponseHelper.success({ exists: !!found });
+  }
 
   async create(dto: CreateEmployeeDto) {
+    const [existingCode, existingEmail, existingCard] =
+      await this.prisma.$transaction([
+        this.prisma.employees.findFirst({
+          where: { employee_code: dto.employee_code },
+        }),
+        this.prisma.employees.findFirst({ where: { email: dto.email } }),
+        this.prisma.employees.findFirst({
+          where: { identify_card: dto.identify_card },
+        }),
+      ]);
+
+    if (existingCode)
+      throw new BadRequestException(
+        `Employee code "${dto.employee_code}" already exists`,
+      );
+    if (existingEmail)
+      throw new BadRequestException(`Email "${dto.email}" is already in use`);
+    if (existingCard)
+      throw new BadRequestException(
+        `Identity card "${dto.identify_card}" already exists`,
+      );
+
+    const { date_of_birth, hire_date, gender, work_schedules, ...rest } = dto;
+
     const data = {
-      ...dto,
-      date_of_birth:
-        dto.date_of_birth && dto.date_of_birth.trim() !== ''
-          ? new Date(dto.date_of_birth)
-          : null,
-      hire_date: new Date(dto.hire_date),
-      gender: dto.gender && dto.gender.trim() !== '' ? dto.gender : null,
+      ...rest,
+      hire_date: new Date(hire_date),
+      date_of_birth: new Date(date_of_birth),
+      gender: gender?.trim(),
     };
 
     const created = await this.prisma.employees.create({ data });
+
+    if (work_schedules) {
+      await this.workScheduleService.setSchedule(created.id, work_schedules);
+    }
+
     return ResponseHelper.success(created, 'Employee created successfully');
   }
 
   async findAll(query: QueryEmployeeDto) {
-    const pageIndex = query.pageIndex || 1;
-    const pageSize = query.pageSize || 10;
-    const skip = (pageIndex - 1) * pageSize;
+    const pagination = resolvePagination(query);
+    const { skip, take } = pagination;
 
     const where: any = {};
 
@@ -57,24 +104,28 @@ export class EmployeeService {
       this.prisma.employees.findMany({
         where,
         skip,
-        take: pageSize,
+        take,
         orderBy: { created_at: 'desc' },
         include: {
-          department: true,
-          position: true,
+          position: {
+            include: {
+              department: true,
+            },
+          },
         },
       }),
       this.prisma.employees.count({ where }),
     ]);
 
-    return ResponseHelper.success({ data: employees, count });
+    return ResponseHelper.success(
+      buildPaginatedResult(employees, count, pagination),
+    );
   }
 
   async findOne(id: string) {
     const position = await this.prisma.employees.findUnique({
       where: { id },
       include: {
-        department: true,
         position: true,
       },
     });
@@ -83,22 +134,81 @@ export class EmployeeService {
   }
 
   async update(id: string, dto: UpdateEmployeeDto) {
-    await this.findOne(id);
+    const existing = await this.prisma.employees.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Employee not found');
+
+    const checks: Promise<any>[] = [];
+    const checkKeys: string[] = [];
+
+    if (dto.employee_code && dto.employee_code !== existing.employee_code) {
+      checks.push(
+        this.prisma.employees.findFirst({
+          where: { employee_code: dto.employee_code, NOT: { id } },
+        }),
+      );
+      checkKeys.push('employee_code');
+    }
+    if (dto.email && dto.email !== existing.email) {
+      checks.push(
+        this.prisma.employees.findFirst({
+          where: { email: dto.email, NOT: { id } },
+        }),
+      );
+      checkKeys.push('email');
+    }
+    if (dto.identify_card && dto.identify_card !== existing.identify_card) {
+      checks.push(
+        this.prisma.employees.findFirst({
+          where: { identify_card: dto.identify_card, NOT: { id } },
+        }),
+      );
+      checkKeys.push('identify_card');
+    }
+    if (dto.position_id) {
+      checks.push(
+        this.prisma.positions.findUnique({ where: { id: dto.position_id } }),
+      );
+      checkKeys.push('position_id');
+    }
+
+    if (checks.length > 0) {
+      const results = await Promise.all(checks);
+      results.forEach((result, i) => {
+        const key = checkKeys[i];
+        if (key === 'position_id' && !result)
+          throw new BadRequestException(
+            `Position with id "${dto.position_id}" not found`,
+          );
+        if (key === 'employee_code' && result)
+          throw new BadRequestException(
+            `Employee code "${dto.employee_code}" already exists`,
+          );
+        if (key === 'email' && result)
+          throw new BadRequestException(
+            `Email "${dto.email}" is already in use`,
+          );
+        if (key === 'identify_card' && result)
+          throw new BadRequestException(
+            `Identity card "${dto.identify_card}" already exists`,
+          );
+      });
+    }
+
+    const { date_of_birth, hire_date, gender, work_schedules, ...rest } = dto;
 
     const data = {
-      ...dto,
-      date_of_birth:
-        dto.date_of_birth && dto.date_of_birth.trim() !== ''
-          ? new Date(dto.date_of_birth)
-          : null,
-      hire_date: dto.hire_date ? new Date(dto.hire_date) : undefined,
-      gender: dto.gender && dto.gender.trim() !== '' ? dto.gender : null,
+      ...rest,
+      ...(hire_date ? { hire_date: new Date(hire_date) } : {}),
+      ...(date_of_birth ? { date_of_birth: new Date(date_of_birth) } : {}),
+      ...(gender !== undefined ? { gender: gender?.trim() || undefined } : {}),
     };
 
-    const updated = await this.prisma.employees.update({
-      where: { id },
-      data,
-    });
+    const updated = await this.prisma.employees.update({ where: { id }, data });
+
+    if (work_schedules) {
+      await this.workScheduleService.setSchedule(id, work_schedules);
+    }
+
     return ResponseHelper.success(updated, 'Employee updated successfully');
   }
 
@@ -111,8 +221,11 @@ export class EmployeeService {
   async exportToExcel(): Promise<any> {
     const employees = await this.prisma.employees.findMany({
       include: {
-        department: true,
-        position: true,
+        position: {
+          include: {
+            department: true,
+          },
+        },
       },
       orderBy: { created_at: 'desc' },
     });
@@ -156,7 +269,7 @@ export class EmployeeService {
           ? new Date(emp.date_of_birth).toLocaleDateString()
           : '',
         hire_date: new Date(emp.hire_date).toLocaleDateString(),
-        department: emp.department.department_name,
+        department: emp.position.department.department_name,
         position: emp.position.position_name,
         status: emp.status,
       });
@@ -240,18 +353,14 @@ export class EmployeeService {
 
     for (const empData of employeesData) {
       try {
-        const department = await this.prisma.departments.findFirst({
-          where: { department_name: empData.department_name },
-        });
-
         const position = await this.prisma.positions.findFirst({
           where: { position_name: empData.position_name },
         });
 
-        if (!department || !position) {
+        if (!position) {
           failed.push({
             employee_code: empData.employee_code,
-            reason: 'Department or Position not found',
+            reason: 'Position not found',
           });
           continue;
         }
@@ -263,14 +372,14 @@ export class EmployeeService {
           data: {
             employee_code: empData.employee_code,
             full_name: empData.full_name,
-            display_name: empData.display_name || null,
+            display_name: empData.display_name || undefined,
             email: empData.email,
-            phone: empData.phone || null,
+            phone: empData.phone || '',
             identify_card: empData.identify_card,
-            gender: empData.gender || null,
+            gender: empData.gender || '',
+            address: empData.address || '',
             date_of_birth: dateOfBirth,
             hire_date: hireDate,
-            department_id: department.id,
             position_id: position.id,
           },
         });

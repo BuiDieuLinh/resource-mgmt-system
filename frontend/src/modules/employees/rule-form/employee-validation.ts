@@ -1,9 +1,12 @@
+import type { CheckExistsField } from '../api/check-employee-exists';
+
 export const employeeValidationRules = {
   employee_code: (value: string) => {
     if (!value || value.trim() === '') return 'Employee code is required';
     if (value.length < 3) return 'Employee code must be at least 3 characters';
     if (value.length > 20) return 'Employee code must not exceed 20 characters';
-    if (!/^[A-Z0-9-]+$/.test(value)) return 'Employee code must contain only uppercase letters, numbers, and hyphens';
+    if (!/^[A-Z0-9-]+$/.test(value))
+      return 'Employee code must contain only uppercase letters, numbers, and hyphens';
     return null;
   },
 
@@ -37,7 +40,8 @@ export const employeeValidationRules = {
   identify_card: (value: string) => {
     if (!value || value.trim() === '') return 'Identity card is required';
     if (!/^[0-9]+$/.test(value)) return 'Identity card must contain only numbers';
-    if (value.length < 9 || value.length > 20) return 'Identity card must be between 9 and 20 digits';
+    if (value.length < 9 || value.length > 20)
+      return 'Identity card must be between 9 and 20 digits';
     return null;
   },
 
@@ -49,29 +53,29 @@ export const employeeValidationRules = {
   },
 
   date_of_birth: (value: Date | string | null | undefined) => {
-    if (!value) return null; 
-    
+    if (!value) return null;
+
     const date = new Date(value);
     const today = new Date();
     const age = today.getFullYear() - date.getFullYear();
-    
+
     if (isNaN(date.getTime())) return 'Invalid date format';
     if (date > today) return 'Date of birth cannot be in the future';
     if (age < 18) return 'Employee must be at least 18 years old';
     if (age > 100) return 'Invalid date of birth';
-    
+
     return null;
   },
 
   hire_date: (value: Date | string | null | undefined) => {
     if (!value) return 'Hire date is required';
-    
+
     const date = new Date(value);
     const today = new Date();
-    
+
     if (isNaN(date.getTime())) return 'Invalid date format';
     if (date > today) return 'Hire date cannot be in the future';
-    
+
     return null;
   },
 
@@ -85,9 +89,19 @@ export const employeeValidationRules = {
     return null;
   },
 
+  address: (value: string) => {
+    if (!value || value.trim() === '') return 'Address is required';
+    return null;
+  },
+
   status: (value: string) => {
     if (!value) return 'Status is required';
     if (!['active', 'inactive'].includes(value)) return 'Invalid status';
     return null;
   },
+};
+export const EXISTS_MSG: Record<CheckExistsField, string> = {
+  employee_code: 'Employee code already exists',
+  email: 'Email is already in use',
+  identify_card: 'Identity card already exists',
 };

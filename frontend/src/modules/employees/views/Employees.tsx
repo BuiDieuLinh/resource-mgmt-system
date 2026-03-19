@@ -97,13 +97,14 @@ export default function EmployeesPage() {
           values.date_of_birth instanceof Date
             ? values.date_of_birth.toISOString()
             : values.date_of_birth,
+        address: values.address,
         hire_date:
           values.hire_date instanceof Date
             ? values.hire_date.toISOString()
             : values.hire_date || new Date().toISOString(),
-        department_id: values.department_id,
         position_id: values.position_id,
         status: values.status,
+        work_schedules: values.work_schedules,
       };
 
       if (isEdit && id) {

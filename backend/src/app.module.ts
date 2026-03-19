@@ -6,16 +6,19 @@ import { PrismaModule } from './prisma/prisma.module';
 import { EmployeeModule } from './modules/employees/employee.module';
 import { DepartmentModule } from './modules/departments/department.module';
 import { PositionModule } from './modules/positions/position.module';
+import { AttendancesModule } from './modules/attendances/attendances.module';
+
+import { WorkScheduleModule } from './modules/work-schedules/work-schedule.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
+    ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     EmployeeModule,
     DepartmentModule,
     PositionModule,
+    AttendancesModule,
+    WorkScheduleModule,
   ],
   controllers: [AppController],
   providers: [AppService],

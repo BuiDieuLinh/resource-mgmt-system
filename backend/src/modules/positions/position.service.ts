@@ -4,6 +4,10 @@ import { CreatePositionDto } from './dto/create-position.dto';
 import { UpdatePositionDto } from './dto/update-position.dto';
 import { QueryPositionDto } from './dto/query-position.dto';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
+import {
+  resolvePagination,
+  buildPaginatedResult,
+} from 'src/common/utils/pagination.util';
 
 @Injectable()
 export class PositionService {
@@ -15,9 +19,8 @@ export class PositionService {
   }
 
   async findAll(query: QueryPositionDto) {
-    const pageIndex = query.pageIndex || 1;
-    const pageSize = query.pageSize || 10;
-    const skip = (pageIndex - 1) * pageSize;
+    const pagination = resolvePagination(query);
+    const { skip, take } = pagination;
 
     const where: any = {};
 
@@ -36,16 +39,16 @@ export class PositionService {
       this.prisma.positions.findMany({
         where,
         skip,
-        take: pageSize,
+        take,
         orderBy: { position_name: 'asc' },
-        include: {
-          department: true,
-        },
+        include: { department: true },
       }),
       this.prisma.positions.count({ where }),
     ]);
 
-    return ResponseHelper.success({ data: positions, count });
+    return ResponseHelper.success(
+      buildPaginatedResult(positions, count, pagination),
+    );
   }
 
   async findOne(id: string) {
