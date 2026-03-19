@@ -14,6 +14,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { MENUS } from './Menu';
 import classes from './Navbar.module.css';
+import { PRIMARY_COLOR } from '@/theme';
 
 export function Navbar() {
   const location = useLocation();
@@ -24,7 +25,7 @@ export function Navbar() {
     <Stack gap={4} p={10} className={classes.navbar}>
       <div className={classes.header}>
         <Group gap="sm">
-          <ThemeIcon size={36} radius="md" variant="light" color="deepPurple">
+          <ThemeIcon size={36} radius="md" variant="light" color={PRIMARY_COLOR}>
             <IconHierarchy size={20} />
           </ThemeIcon>
 
@@ -52,7 +53,7 @@ export function Navbar() {
               opened={opened}
               leftSection={
                 menu.icon && (
-                  <ThemeIcon variant="light" color="deepPurple" size="sm" radius="sm">
+                  <ThemeIcon variant="light" color={PRIMARY_COLOR} size="sm" radius="sm">
                     <menu.icon size={16} />
                   </ThemeIcon>
                 )

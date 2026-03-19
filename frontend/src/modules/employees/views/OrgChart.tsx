@@ -1,10 +1,10 @@
 import { Stack, Card, Text, Group, Avatar, Badge, Box, Title } from '@mantine/core';
 import { IconUser, IconBuilding } from '@tabler/icons-react';
 import { useGetEmployees } from '../api/get-employees';
-import { useGetAllDepartments } from '../../departments/api/get-departments';
 import { Loading } from '../../../components/Loading/Loading';
 import type { IEmployee } from '../types';
 import './OrgChart.css';
+import { PRIMARY_COLOR } from '@/theme';
 
 interface DepartmentNode {
   id: string;
@@ -13,33 +13,38 @@ interface DepartmentNode {
 }
 
 export default function OrgChartPage() {
-  const { data: employeesData, isLoading: isLoadingEmployees } = useGetEmployees({
+  const { data: employeesData, isLoading } = useGetEmployees({
     pageIndex: 1,
     pageSize: 1000,
   });
 
-  const { data: departmentsData, isLoading: isLoadingDepts } = useGetAllDepartments();
-
   const employees = employeesData?.data || [];
-  const departments = departmentsData?.data || [];
 
+  // Build department tree from employee -> position -> department
   const buildDepartmentTree = (): DepartmentNode[] => {
-    return departments.map((dept) => ({
-      id: dept.id,
-      name: dept.department_name,
-      employees: employees.filter((emp) => emp.department_id === dept.id),
-    }));
+    const deptMap = new Map<string, DepartmentNode>();
+
+    for (const emp of employees) {
+      const dept = emp.position?.department;
+      if (!dept) continue;
+      if (!deptMap.has(dept.id)) {
+        deptMap.set(dept.id, { id: dept.id, name: dept.department_name, employees: [] });
+      }
+      deptMap.get(dept.id)!.employees.push(emp);
+    }
+
+    return Array.from(deptMap.values());
   };
 
   const deptTree = buildDepartmentTree();
 
-  if (isLoadingEmployees || isLoadingDepts) return <Loading />;
+  if (isLoading) return <Loading />;
 
   return (
     <Stack gap="xl">
       <Group justify="space-between">
         <Stack gap={0}>
-          <Title order={2} c="deepPurple">
+          <Title order={2} c={PRIMARY_COLOR}>
             Organization Chart
           </Title>
           <Text size="sm" c="dimmed">
@@ -48,8 +53,8 @@ export default function OrgChartPage() {
         </Stack>
 
         <Group gap="md">
-          <Badge size="lg" variant="light" color="deepPurple">
-            {departments.length} Departments
+          <Badge size="lg" variant="light" color={PRIMARY_COLOR}>
+            {deptTree.length} Departments
           </Badge>
           <Badge size="lg" variant="light" color="green">
             {employees.length} Employees
@@ -62,7 +67,7 @@ export default function OrgChartPage() {
           <div className="org-node root-node">
             <Card shadow="md" padding="md" radius="md" withBorder className="node-card">
               <Group gap="sm" wrap="nowrap">
-                <Avatar size={40} radius="md" color="deepPurple">
+                <Avatar size={40} radius="md" color={PRIMARY_COLOR}>
                   <IconBuilding size={20} />
                 </Avatar>
                 <div>
@@ -121,7 +126,7 @@ function EmployeeCard({ employee }: { employee: IEmployee }) {
     <div className="org-node employee-node">
       <Card shadow="sm" padding="xs" radius="md" withBorder className="node-card employee-card">
         <Group gap="xs" wrap="nowrap">
-          <Avatar src={employee.avatar_url} size={28} radius="md" color="deepPurple">
+          <Avatar src={employee.avatar_url} size={28} radius="md" color={PRIMARY_COLOR}>
             <IconUser size={14} />
           </Avatar>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -129,7 +134,7 @@ function EmployeeCard({ employee }: { employee: IEmployee }) {
               {employee.full_name}
             </Text>
             <Text size="10px" c="dimmed" lineClamp={1}>
-              {(employee as any).position?.position_name || 'N/A'}
+              {employee.position?.position_name || 'N/A'}
             </Text>
           </div>
           <div

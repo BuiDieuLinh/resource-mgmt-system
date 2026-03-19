@@ -23,23 +23,23 @@ model Employees {
   full_name     String         @db.VarChar(100)
   display_name  String?        @db.VarChar(100)
   email         String         @unique @db.VarChar(100)
-  phone         String?        @db.VarChar(20)
+  phone         String         @db.VarChar(20)
   identify_card String         @unique @db.VarChar(20)
-  gender        String?        @db.VarChar(10)
-  date_of_birth DateTime?      @db.Date
+  gender        String         @db.VarChar(10)
+  date_of_birth DateTime       @db.Date
+  address       String         @db.Text
   avatar_url    String?        @db.Text
   hire_date     DateTime       @db.Date
   status        EmployeeStatus @default(active)
 
-  department_id String      @db.Uuid
-  department    Departments @relation(fields: [department_id], references: [id])
-
   position_id String    @db.Uuid
+  created_at  DateTime  @default(now())
   position    Positions @relation(fields: [position_id], references: [id])
 
-  roles EmployeeRoles[]
-
-  created_at DateTime @default(now())
+  roles          EmployeeRoles[]
+  work_schedules EmployeeWorkSchedules[]
+  attendances    Attendances[]
+  leave_requests LeaveRequests[]
 
   @@map("employees")
 }
@@ -65,21 +65,27 @@ model EmployeeRoles {
 }
 
 model Departments {
-  id              String  @id @default(uuid()) @db.Uuid
-  department_code String  @db.VarChar(100)
-  department_name String  @db.VarChar(100)
+  id              String      @id @default(uuid()) @db.Uuid
+  department_code String      @db.VarChar(100)
+  department_name String      @db.VarChar(100)
   description     String?
-
-  employees Employees[]
-  positions Positions[]
+  positions       Positions[]
 
   @@map("departments")
 }
 
+enum PositionLevel {
+  junior
+  mid
+  senior
+  lead
+  manager
+}
+
 model Positions {
-  id            String  @id @default(uuid()) @db.Uuid
-  position_name String  @db.VarChar(100)
-  level         String  @db.VarChar(100)
+  id            String        @id @default(uuid()) @db.Uuid
+  position_name String        @db.VarChar(100)
+  level         PositionLevel
   description   String?
 
   department_id String      @db.Uuid
@@ -88,4 +94,105 @@ model Positions {
   employees Employees[]
 
   @@map("positions")
+}
+
+model EmployeeWorkSchedules {
+  id          String   @id @default(uuid()) @db.Uuid
+  employee_id String   @db.Uuid
+  day_of_week Int
+  start_time  DateTime @db.Time
+  end_time    DateTime @db.Time
+
+  employee Employees @relation(fields: [employee_id], references: [id])
+
+  @@map("employee_work_schedules")
+}
+
+enum AttendanceStatus {
+  approved
+  pending
+  rejected
+}
+
+model Attendances {
+  id             String           @id @default(uuid()) @db.Uuid
+  employee_id    String           @db.Uuid
+  work_date      DateTime         @db.Date
+  check_in_time  DateTime?        @db.Timestamptz
+  check_out_time DateTime?        @db.Timestamptz
+  check_in_lat   Decimal?         @db.Decimal(10, 6)
+  check_in_lng   Decimal?         @db.Decimal(10, 6)
+  check_out_lat  Decimal?         @db.Decimal(10, 6)
+  check_out_lng  Decimal?         @db.Decimal(10, 6)
+  late           Int              @default(0)
+  early_leave    Int              @default(0)
+  overtime       Int              @default(0)
+  status         AttendanceStatus @default(pending)
+  created_at     DateTime         @default(now())
+
+  employee Employees        @relation(fields: [employee_id], references: [id])
+  logs     AttendanceLogs[]
+
+  @@map("attendances")
+}
+
+enum AttendanceAction {
+  check_in
+  check_out
+}
+
+model AttendanceLogs {
+  id            String           @id @default(uuid()) @db.Uuid
+  attendance_id String           @db.Uuid
+  action        AttendanceAction
+  timestamp     DateTime         @db.Timestamptz
+  latitude      Decimal?         @db.Decimal(10, 6)
+  longitude     Decimal?         @db.Decimal(10, 6)
+  ip_address    String?          @db.VarChar(50)
+  user_agent    String?
+
+  attendance Attendances @relation(fields: [attendance_id], references: [id])
+
+  @@map("attendance_logs")
+}
+
+model Holidays {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @db.VarChar(100)
+  holiday_date DateTime @db.Date
+  description  String?
+  is_paid      Boolean  @default(true)
+
+  @@map("holidays")
+}
+
+enum LeaveType {
+  annual
+  sick
+  maternity
+  paternity
+  unpaid
+}
+
+enum LeaveStatus {
+  pending
+  approved
+  rejected
+}
+
+model LeaveRequests {
+  id                  String      @id @default(uuid()) @db.Uuid
+  employee_id         String      @db.Uuid
+  leave_type          LeaveType
+  start_date          DateTime    @db.Date
+  end_date            DateTime    @db.Date
+  reason              String?
+  status              LeaveStatus @default(pending)
+  approved_by_manager String?     @db.Uuid
+  approved_by_admin   String?     @db.Uuid
+  created_at          DateTime    @default(now())
+
+  employee Employees @relation(fields: [employee_id], references: [id])
+
+  @@map("leave_requests")
 }

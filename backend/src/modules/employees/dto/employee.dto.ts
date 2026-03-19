@@ -5,51 +5,56 @@ import {
   IsEmail,
   IsDateString,
   IsEnum,
-} from 'class-validator'
-import { EmployeeStatus } from '@prisma/client'
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { EmployeeStatus } from '@prisma/client';
+import { WorkScheduleDto } from 'src/modules/work-schedules/dto/work-schedule.dto';
 
 export class EmployeeDto {
   @IsUUID()
-  id: string
+  id: string;
 
   @IsString()
-  employee_code: string
+  employee_code: string;
 
   @IsString()
-  full_name: string
+  full_name: string;
 
   @IsOptional()
   @IsString()
-  display_name?: string
+  display_name?: string;
 
   @IsEmail()
-  email: string
-
-  @IsOptional()
-  @IsString()
-  phone?: string
+  email: string;
 
   @IsString()
-  identify_card: string
+  phone: string;
 
-  @IsOptional()
   @IsString()
-  gender?: string
+  identify_card: string;
 
-  @IsOptional()
-  @IsDateString()
-  date_of_birth?: string
-
-  @IsUUID()
-  department_id: string
-
-  @IsUUID()
-  position_id: string
+  @IsString()
+  gender: string;
 
   @IsDateString()
-  hire_date: string
+  date_of_birth: Date;
+
+  @IsString()
+  address: string;
+
+  @IsUUID()
+  position_id: string;
+
+  @IsDateString()
+  hire_date: string;
 
   @IsOptional()
   @IsEnum(EmployeeStatus)
-  status?: EmployeeStatus
+  status?: EmployeeStatus;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => WorkScheduleDto)
+  work_schedules?: WorkScheduleDto;
 }

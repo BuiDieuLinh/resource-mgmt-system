@@ -3,6 +3,7 @@ import { useForm } from '@mantine/form';
 import { useEffect } from 'react';
 import { departmentValidationRules } from '../rule-form/department-validation';
 import type { DepartmentFormValues } from '../types';
+import { PRIMARY_COLOR } from '@/theme';
 
 interface DepartmentFormModalProps {
   opened: boolean;
@@ -61,7 +62,7 @@ export function DepartmentFormModal({
       opened={opened}
       onClose={handleClose}
       title={
-        <Text size="xl" fw={700} c="deepPurple">
+        <Text size="xl" fw={700} c={PRIMARY_COLOR}>
           {mode === 'edit' ? 'EDIT DEPARTMENT' : 'ADD DEPARTMENT'}
         </Text>
       }

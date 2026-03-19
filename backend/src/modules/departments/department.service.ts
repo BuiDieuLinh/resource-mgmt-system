@@ -4,6 +4,10 @@ import { CreateDepartmentDto } from './dto/create-department.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
 import { QueryDepartmentDto } from './dto/query-department.dto';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
+import {
+  resolvePagination,
+  buildPaginatedResult,
+} from 'src/common/utils/pagination.util';
 
 @Injectable()
 export class DepartmentService {
@@ -15,9 +19,8 @@ export class DepartmentService {
   }
 
   async findAll(query: QueryDepartmentDto) {
-    const pageIndex = query.pageIndex || 1;
-    const pageSize = query.pageSize || 10;
-    const skip = (pageIndex - 1) * pageSize;
+    const pagination = resolvePagination(query);
+    const { skip, take } = pagination;
 
     const where: any = {};
 
@@ -32,13 +35,15 @@ export class DepartmentService {
       this.prisma.departments.findMany({
         where,
         skip,
-        take: pageSize,
+        take,
         orderBy: { department_name: 'asc' },
       }),
       this.prisma.departments.count({ where }),
     ]);
 
-    return ResponseHelper.success({ data: departments, count });
+    return ResponseHelper.success(
+      buildPaginatedResult(departments, count, pagination),
+    );
   }
 
   async findOne(id: string) {

@@ -4,6 +4,7 @@ import { useMemo, useEffect } from 'react';
 import { positionValidationRules } from '../rule-form/position-validation';
 import type { PositionFormValues } from '../types';
 import { useGetAllDepartments } from '../../departments/api/get-departments';
+import { PRIMARY_COLOR } from '@/theme';
 
 interface PositionFormModalProps {
   opened: boolean;
@@ -75,7 +76,7 @@ export function PositionFormModal({
       opened={opened}
       onClose={handleClose}
       title={
-        <Text size="xl" fw={700} c="deepPurple">
+        <Text size="xl" fw={700} c={PRIMARY_COLOR}>
           {mode === 'edit' ? 'EDIT POSITION' : 'ADD POSITION'}
         </Text>
       }

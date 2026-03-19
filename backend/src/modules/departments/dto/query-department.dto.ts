@@ -1,19 +1,7 @@
-import { IsOptional, IsInt, Min, IsString } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsOptional, IsString } from 'class-validator';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
-export class QueryDepartmentDto {
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  pageIndex?: number;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  pageSize?: number;
-
+export class QueryDepartmentDto extends PaginationDto {
   @IsOptional()
   @IsString()
   search?: string;

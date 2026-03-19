@@ -1,6 +1,7 @@
 import { Modal, Stack, Group, Button, Text, Badge, ScrollArea, Table } from '@mantine/core';
 import { IconCheck, IconX } from '@tabler/icons-react';
 import type { PreviewEmployee } from '../api/preview-import';
+import { PRIMARY_COLOR } from '@/theme';
 
 interface ImportPreviewModalProps {
   opened: boolean;
@@ -23,10 +24,10 @@ export function ImportPreviewModal({
       onClose={onClose}
       title={
         <Group gap="sm">
-          <Text fw={700} size="lg" c="deepPurple">
+          <Text fw={700} size="lg" c={PRIMARY_COLOR}>
             Import Preview
           </Text>
-          <Badge size="lg" variant="light" color="deepPurple">
+          <Badge size="lg" variant="light" color={PRIMARY_COLOR}>
             {data.length} employees
           </Badge>
         </Group>

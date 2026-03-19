@@ -4,6 +4,7 @@ import {
   employeePositionsUrl,
   attendanceUrl,
   timesheetUrl,
+  attendanceFlowUrl,
 } from '@/routes/url';
 import {
   IconGauge,
@@ -42,6 +43,7 @@ export const MENUS: AppMenu[] = [
     children: [
       { label: 'Overview', path: attendanceUrl },
       { label: 'Timesheet', path: timesheetUrl },
+      // { label: 'Quick Check‑In', path: attendanceFlowUrl },
     ],
   },
   {

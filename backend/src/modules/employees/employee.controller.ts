@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Patch,
+  Put,
   Delete,
   Body,
   Param,
@@ -17,10 +18,15 @@ import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { QueryEmployeeDto } from './dto/query-employee.dto';
+import { WorkScheduleService } from 'src/modules/work-schedules/work-schedule.service';
+import { WorkScheduleDto } from 'src/modules/work-schedules/dto/work-schedule.dto';
 
 @Controller('employees')
 export class EmployeeController {
-  constructor(private readonly service: EmployeeService) {}
+  constructor(
+    private readonly service: EmployeeService,
+    private readonly workScheduleService: WorkScheduleService,
+  ) {}
 
   @Post()
   create(@Body() dto: CreateEmployeeDto) {
@@ -30,6 +36,15 @@ export class EmployeeController {
   @Get()
   findAll(@Query() query: QueryEmployeeDto) {
     return this.service.findAll(query);
+  }
+
+  @Get('check-exists')
+  checkExists(
+    @Query('field') field: 'employee_code' | 'email' | 'identify_card',
+    @Query('value') value: string,
+    @Query('excludeId') excludeId?: string,
+  ) {
+    return this.service.checkExists(field, value, excludeId);
   }
 
   @Get('export')
@@ -71,6 +86,16 @@ export class EmployeeController {
     }
 
     return this.service.importFromExcel(body.employees);
+  }
+
+  @Get(':id/work-schedule')
+  getWorkSchedule(@Param('id') id: string) {
+    return this.workScheduleService.findByEmployee(id);
+  }
+
+  @Put(':id/work-schedule')
+  setWorkSchedule(@Param('id') id: string, @Body() dto: WorkScheduleDto) {
+    return this.workScheduleService.setSchedule(id, dto);
   }
 
   @Get(':id')

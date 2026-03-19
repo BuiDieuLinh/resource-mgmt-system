@@ -7,29 +7,38 @@ export interface IEmployee {
   display_name?: string;
 
   email: string;
-  phone?: string;
+  phone: string;
   identify_card: string;
 
-  gender?: string;
-  date_of_birth?: string;
+  gender: string;
+  date_of_birth: string;
+  address: string;
   avatar_url?: string;
 
   hire_date: string;
   status: EmployeeStatus;
 
-  department: {
-    id: string;
-    department_name: string;
-    description: string;
-  };
   position: {
     id: string;
     position_name: string;
     level: string;
     description: string;
+    department: {
+      id: string;
+      department_name: string;
+      description: string;
+    };
   };
 
+  work_schedules?: IWorkSchedule;
   created_at: string;
+}
+
+export interface IWorkSchedule {
+  id?: string;
+  working_days: number;
+  start_time: string;
+  end_time: string;
 }
 
 export interface IEmployeePayload {
@@ -37,15 +46,16 @@ export interface IEmployeePayload {
   full_name: string;
   display_name?: string;
   email: string;
-  phone?: string;
+  phone: string;
   identify_card: string;
-  gender?: string;
+  gender: string;
   date_of_birth?: Date | string | null;
+  address: string;
   hire_date: Date | string | null;
-  department_id: string;
   position_id: string;
   status: string;
   avatar?: File | null;
+  work_schedules?: IWorkSchedule;
 }
 
 export type EmployeeFormValues = IEmployeePayload;

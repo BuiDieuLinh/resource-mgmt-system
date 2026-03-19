@@ -5,3 +5,5 @@ export const URL_API_GET_EMPLOYEES = 'employees';
 export const URL_API_GET_DEPARTMENTS = 'departments';
 
 export const URL_API_GET_POSITIONS = 'positions';
+
+export const URL_API_GET_ATTENDANCES = 'attendances';
