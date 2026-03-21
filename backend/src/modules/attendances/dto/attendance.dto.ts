@@ -1,19 +1,49 @@
 import {
   IsString,
   IsOptional,
-  IsNumber,
+  IsInt,
   IsDateString,
   IsEnum,
+  Min,
+  IsNumber,
 } from 'class-validator';
 import { AttendanceStatus } from '@prisma/client';
 
-export class CreateAttendanceDto {
+export class AttendanceDto {
   @IsString()
   employee_id: string;
 
   @IsDateString()
   work_date: string;
 
+  @IsInt()
+  @Min(0)
+  scheduled_start: number;
+
+  @IsInt()
+  @Min(0)
+  scheduled_end: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  break_start?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  break_end?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  flexible_start?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  flexible_end?: number;
+
   @IsOptional()
   @IsDateString()
   check_in_time?: string;
@@ -22,75 +52,21 @@ export class CreateAttendanceDto {
   @IsDateString()
   check_out_time?: string;
 
-  @IsOptional()
   @IsNumber()
-  check_in_lat?: number;
-
-  @IsOptional()
-  @IsNumber()
-  check_in_lng?: number;
-
-  @IsOptional()
-  @IsNumber()
-  check_out_lat?: number;
-
-  @IsOptional()
-  @IsNumber()
-  check_out_lng?: number;
-
-  @IsOptional()
-  @IsNumber()
+  @Min(0)
   late?: number;
 
-  @IsOptional()
   @IsNumber()
+  @Min(0)
   early_leave?: number;
 
-  @IsOptional()
   @IsNumber()
-  overtime?: number;
+  @Min(0)
+  overtime: number;
 
-  @IsOptional()
-  @IsEnum(AttendanceStatus)
-  status?: AttendanceStatus;
-}
-
-export class UpdateAttendanceDto {
-  @IsOptional()
-  @IsDateString()
-  check_in_time?: string;
-
-  @IsOptional()
-  @IsDateString()
-  check_out_time?: string;
-
-  @IsOptional()
   @IsNumber()
-  check_in_lat?: number;
-
-  @IsOptional()
-  @IsNumber()
-  check_in_lng?: number;
-
-  @IsOptional()
-  @IsNumber()
-  check_out_lat?: number;
-
-  @IsOptional()
-  @IsNumber()
-  check_out_lng?: number;
-
-  @IsOptional()
-  @IsNumber()
-  late?: number;
-
-  @IsOptional()
-  @IsNumber()
-  early_leave?: number;
-
-  @IsOptional()
-  @IsNumber()
-  overtime?: number;
+  @Min(0)
+  work_minutes: number;
 
   @IsOptional()
   @IsEnum(AttendanceStatus)

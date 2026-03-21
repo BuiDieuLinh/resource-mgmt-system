@@ -1,4 +1,4 @@
-import { IsOptional, IsInt, Min } from 'class-validator';
+import { IsOptional, IsInt, IsString, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 
@@ -14,4 +14,8 @@ export class QueryAttendanceDto extends PaginationDto {
   @IsInt()
   @Min(1)
   year?: number;
+
+  @IsOptional()
+  @IsString()
+  employee_id?: string;
 }

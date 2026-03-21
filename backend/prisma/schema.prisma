@@ -96,12 +96,31 @@ model Positions {
   @@map("positions")
 }
 
+model WorkPolicies {
+  id String @id @default(uuid()) @db.Uuid
+
+  is_flexible_enabled    Boolean @default(false)
+  flexible_start Int?   
+  flexible_end   Int?   
+
+  break_start Int?
+  break_end   Int?
+
+  effective_from DateTime
+  effective_to   DateTime?
+
+  created_at DateTime @default(now())
+
+  @@index([effective_from, effective_to])
+  @@map("work_policies")
+}
+
 model EmployeeWorkSchedules {
-  id          String   @id @default(uuid()) @db.Uuid
-  employee_id String   @db.Uuid
-  day_of_week Int
-  start_time  DateTime @db.Time
-  end_time    DateTime @db.Time
+  id           String @id @default(uuid()) @db.Uuid
+  employee_id  String @db.Uuid
+  day_of_week  Int                    
+  start_time   Int                    
+  end_time     Int                    
 
   employee Employees @relation(fields: [employee_id], references: [id])
 
@@ -112,27 +131,38 @@ enum AttendanceStatus {
   approved
   pending
   rejected
+  on_leave
+  absent
 }
 
 model Attendances {
-  id             String           @id @default(uuid()) @db.Uuid
-  employee_id    String           @db.Uuid
-  work_date      DateTime         @db.Date
-  check_in_time  DateTime?        @db.Timestamptz
-  check_out_time DateTime?        @db.Timestamptz
-  check_in_lat   Decimal?         @db.Decimal(10, 6)
-  check_in_lng   Decimal?         @db.Decimal(10, 6)
-  check_out_lat  Decimal?         @db.Decimal(10, 6)
-  check_out_lng  Decimal?         @db.Decimal(10, 6)
-  late           Int              @default(0)
-  early_leave    Int              @default(0)
-  overtime       Int              @default(0)
-  status         AttendanceStatus @default(pending)
-  created_at     DateTime         @default(now())
+  id              String   @id @default(uuid()) @db.Uuid
+  employee_id     String   @db.Uuid
+  work_date       DateTime @db.Date
+  scheduled_start Int
+  scheduled_end   Int
+
+  break_start Int?
+  break_end   Int?
+
+  flexible_start Int?  
+  flexible_end   Int?  
+
+  check_in_time  DateTime? @db.Timestamptz
+  check_out_time DateTime? @db.Timestamptz
+
+  late         Int @default(0)
+  early_leave  Int @default(0)
+  overtime     Int @default(0)
+  work_minutes Int @default(0)
+
+  status     AttendanceStatus @default(pending)
+  created_at DateTime         @default(now())
 
   employee Employees        @relation(fields: [employee_id], references: [id])
   logs     AttendanceLogs[]
 
+  @@unique([employee_id, work_date])
   @@map("attendances")
 }
 
@@ -153,6 +183,7 @@ model AttendanceLogs {
 
   attendance Attendances @relation(fields: [attendance_id], references: [id])
 
+  @@index([attendance_id])
   @@map("attendance_logs")
 }
 
@@ -163,6 +194,7 @@ model Holidays {
   description  String?
   is_paid      Boolean  @default(true)
 
+  @@unique([holiday_date])
   @@map("holidays")
 }
 
@@ -186,13 +218,18 @@ model LeaveRequests {
   leave_type          LeaveType
   start_date          DateTime    @db.Date
   end_date            DateTime    @db.Date
+  leave_start_minutes Int?
+  leave_end_minutes   Int?
   reason              String?
   status              LeaveStatus @default(pending)
   approved_by_manager String?     @db.Uuid
+  manager_approved_at DateTime?   @db.Timestamptz
   approved_by_admin   String?     @db.Uuid
+  admin_approved_at   DateTime?   @db.Timestamptz
   created_at          DateTime    @default(now())
 
   employee Employees @relation(fields: [employee_id], references: [id])
 
+  @@index([employee_id, start_date, end_date])
   @@map("leave_requests")
 }

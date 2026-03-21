@@ -6,9 +6,10 @@ import { PrismaModule } from './prisma/prisma.module';
 import { EmployeeModule } from './modules/employees/employee.module';
 import { DepartmentModule } from './modules/departments/department.module';
 import { PositionModule } from './modules/positions/position.module';
-import { AttendancesModule } from './modules/attendances/attendances.module';
-
 import { WorkScheduleModule } from './modules/work-schedules/work-schedule.module';
+import { WorkPolicyModule } from './modules/work-policies/work-policy.module';
+import { AttendancesModule } from './modules/attendances/attendances.module';
+import { LeaveRequestModule } from './modules/leave-requests/leave-request.module';
 
 @Module({
   imports: [
@@ -17,8 +18,10 @@ import { WorkScheduleModule } from './modules/work-schedules/work-schedule.modul
     EmployeeModule,
     DepartmentModule,
     PositionModule,
-    AttendancesModule,
     WorkScheduleModule,
+    WorkPolicyModule,
+    AttendancesModule,
+    LeaveRequestModule,
   ],
   controllers: [AppController],
   providers: [AppService],
