@@ -1,36 +1,189 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateAttendanceDto, UpdateAttendanceDto } from './dto/attendance.dto';
 import { QueryAttendanceDto } from './dto/query-attendance.dto';
 import {
   getMonthRange,
   getWorkingDaysInMonth,
+  dateToMinutes,
+  overlapMinutes,
 } from '../../common/utils/date.util';
 import {
   resolvePagination,
   buildPaginatedResult,
 } from '../../common/utils/pagination.util';
 import { ResponseHelper } from '../../common/helpers/response.helper';
-import { AttendanceStatus, LeaveStatus } from '@prisma/client';
+import { AttendanceAction, AttendanceStatus } from '@prisma/client';
+import { WorkPolicyService } from '../work-policies/work-policy.service';
+import { CheckInDto } from './dto/check-in.dto';
+import { CheckOutDto } from './dto/check-out.dto';
+import { CreateAttendanceDto } from './dto/create-attendance.dto';
+import { UpdateAttendanceDto } from './dto/update-attendance.dto';
 
 @Injectable()
 export class AttendancesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly workPolicyService: WorkPolicyService,
+  ) {}
+
+  async checkIn(dto: CheckInDto) {
+    const timestamp = dto.timestamp ? new Date(dto.timestamp) : new Date();
+    const workDate = new Date(timestamp);
+    workDate.setHours(0, 0, 0, 0);
+
+    const schedule = await this.prisma.employeeWorkSchedules.findFirst({
+      where: { employee_id: dto.employee_id },
+    });
+    if (!schedule)
+      throw new BadRequestException('No work schedule found for employee');
+
+    // Snapshot active policy at check-in time
+    const policyRes = await this.workPolicyService.getActive(timestamp);
+    const policy = policyRes.data;
+
+    const attendance = await this.prisma.attendances.upsert({
+      where: {
+        employee_id_work_date: {
+          employee_id: dto.employee_id,
+          work_date: workDate,
+        },
+      },
+      create: {
+        employee_id: dto.employee_id,
+        work_date: workDate,
+        scheduled_start: schedule.start_time,
+        scheduled_end: schedule.end_time,
+        break_start: policy?.break_start ?? null,
+        break_end: policy?.break_end ?? null,
+        flexible_start: policy?.is_flexible_enabled
+          ? (policy.flexible_start_minutes ?? null)
+          : null,
+        flexible_end: policy?.is_flexible_enabled
+          ? (policy.flexible_end_minutes ?? null)
+          : null,
+        check_in_time: timestamp,
+        status: AttendanceStatus.pending,
+      },
+      update: { check_in_time: timestamp },
+    });
+
+    await this.prisma.attendanceLogs.create({
+      data: {
+        attendance_id: attendance.id,
+        action: AttendanceAction.check_in,
+        timestamp,
+        latitude: dto.latitude ?? null,
+        longitude: dto.longitude ?? null,
+        ip_address: dto.ip_address ?? null,
+        user_agent: dto.user_agent ?? null,
+      },
+    });
+
+    const checkInMinutes = dateToMinutes(timestamp);
+    // Grace window: check-in within flexible_start_minutes after scheduled_start = on time
+    const graceLate = policy?.is_flexible_enabled
+      ? (policy.flexible_start_minutes ?? 0)
+      : 0;
+    const late = Math.max(
+      0,
+      checkInMinutes - (schedule.start_time + graceLate),
+    );
+
+    await this.prisma.attendances.update({
+      where: { id: attendance.id },
+      data: { late },
+    });
+
+    return ResponseHelper.success(
+      { ...attendance, late },
+      'Checked in successfully',
+    );
+  }
+
+  async checkOut(dto: CheckOutDto) {
+    const timestamp = dto.timestamp ? new Date(dto.timestamp) : new Date();
+    const workDate = new Date(timestamp);
+    workDate.setHours(0, 0, 0, 0);
+
+    const attendance = await this.prisma.attendances.findUnique({
+      where: {
+        employee_id_work_date: {
+          employee_id: dto.employee_id,
+          work_date: workDate,
+        },
+      },
+    });
+    if (!attendance) throw new NotFoundException('No check-in found for today');
+    if (!attendance.check_in_time)
+      throw new BadRequestException('Must check-in first');
+
+    await this.prisma.attendanceLogs.create({
+      data: {
+        attendance_id: attendance.id,
+        action: AttendanceAction.check_out,
+        timestamp,
+        latitude: dto.latitude ?? null,
+        longitude: dto.longitude ?? null,
+        ip_address: dto.ip_address ?? null,
+        user_agent: dto.user_agent ?? null,
+      },
+    });
+
+    const checkInMin = dateToMinutes(attendance.check_in_time);
+    const checkOutMin = dateToMinutes(timestamp);
+    const gross = Math.max(0, checkOutMin - checkInMin);
+
+    let breakDeduction = 0;
+    if (attendance.break_start != null && attendance.break_end != null) {
+      breakDeduction = overlapMinutes(
+        checkInMin,
+        checkOutMin,
+        attendance.break_start,
+        attendance.break_end,
+      );
+    }
+    const workMinutes = Math.max(0, gross - breakDeduction);
+    const earlyLeave = Math.max(0, attendance.scheduled_end - checkOutMin);
+    // Grace window: check-out within flexible_end_minutes before scheduled_end = full day
+    const graceEarly = attendance.flexible_end ?? 0;
+    const earlyLeaveAdjusted = Math.max(0, earlyLeave - graceEarly);
+    const overtime = Math.max(0, checkOutMin - attendance.scheduled_end);
+
+    const updated = await this.prisma.attendances.update({
+      where: { id: attendance.id },
+      data: {
+        check_out_time: timestamp,
+        work_minutes: workMinutes,
+        early_leave: earlyLeaveAdjusted,
+        overtime,
+      },
+    });
+
+    return ResponseHelper.success(updated, 'Checked out successfully');
+  }
 
   async findAll(query: QueryAttendanceDto) {
     const { skip, take, ...meta } = resolvePagination(query);
-
     const where: any = {};
-    if (query.month && query.year) {
+    if (query.month && query.year)
       where.work_date = getMonthRange(query.month, query.year);
-    }
+    if (query.employee_id) where.employee_id = query.employee_id;
 
     const [attendances, count] = await this.prisma.$transaction([
       this.prisma.attendances.findMany({
         where,
         skip,
         take,
-        include: { employee: true },
+        include: {
+          employee: {
+            include: { position: { include: { department: true } } },
+          },
+          logs: { orderBy: { timestamp: 'asc' } },
+        },
         orderBy: { work_date: 'desc' },
       }),
       this.prisma.attendances.count({ where }),
@@ -42,41 +195,52 @@ export class AttendancesService {
   }
 
   async findSummaries(month: number, year: number) {
-    const attendances = await this.prisma.attendances.findMany({
-      where: { work_date: getMonthRange(month, year) },
-      include: { employee: true },
-    });
+    const [attendances, employees] = await this.prisma.$transaction([
+      this.prisma.attendances.findMany({
+        where: { work_date: getMonthRange(month, year) },
+        include: {
+          employee: {
+            include: { position: { include: { department: true } } },
+          },
+        },
+      }),
+      this.prisma.employees.findMany({
+        include: { position: { include: { department: true } } },
+      }),
+    ]);
 
-    const employees = await this.prisma.employees.findMany();
-
-    const summaryMap = new Map();
+    const planDay = getWorkingDaysInMonth(month, year);
+    const summaryMap = new Map<string, any>();
 
     employees.forEach((emp) => {
       summaryMap.set(emp.id, {
         employee_id: emp.id,
         employee: emp,
-        plan_day: getWorkingDaysInMonth(month, year),
+        plan_day: planDay,
         actual_day: 0,
         late: 0,
         absent: 0,
-        annual_leave: 0,
-        unpaid_leave: 0,
         over_time: 0,
+        work_minutes: 0,
         records: [],
       });
     });
 
     attendances.forEach((att) => {
-      if (summaryMap.has(att.employee_id)) {
-        const stats = summaryMap.get(att.employee_id);
-        stats.records.push(att);
-        if (att.status === 'approved') stats.actual_day += 1;
-        if (att.late > 0) stats.late += 1;
-        stats.over_time += att.overtime || 0;
-      }
+      const stats = summaryMap.get(att.employee_id);
+      if (!stats) return;
+      stats.records.push(att);
+      if (att.status === AttendanceStatus.approved) stats.actual_day += 1;
+      if (att.late > 0) stats.late += 1;
+      stats.over_time += att.overtime ?? 0;
+      stats.work_minutes += att.work_minutes ?? 0;
     });
 
-    return Array.from(summaryMap.values());
+    summaryMap.forEach((s) => {
+      s.absent = Math.max(0, s.plan_day - s.actual_day);
+    });
+
+    return ResponseHelper.success(Array.from(summaryMap.values()));
   }
 
   async findByEmployee(employeeId: string, month: number, year: number) {
@@ -85,11 +249,15 @@ export class AttendancesService {
     const [records, employee, leaveRequests] = await this.prisma.$transaction([
       this.prisma.attendances.findMany({
         where: { employee_id: employeeId, work_date: monthRange },
+        include: { logs: { orderBy: { timestamp: 'asc' } } },
         orderBy: { work_date: 'asc' },
       }),
       this.prisma.employees.findUnique({
         where: { id: employeeId },
-        include: { position: true },
+        include: {
+          position: { include: { department: true } },
+          work_schedules: true,
+        },
       }),
       this.prisma.leaveRequests.findMany({
         where: {
@@ -104,12 +272,9 @@ export class AttendancesService {
       throw new NotFoundException(`Employee ${employeeId} not found`);
 
     const planDay = getWorkingDaysInMonth(month, year);
-    const actualDay = records.filter((r) => r.status === 'approved').length;
-    const lateCount = records.filter((r) => r.late > 0).length;
-    const overtimeTotal = records.reduce(
-      (sum, r) => sum + (r.overtime || 0),
-      0,
-    );
+    const actualDay = records.filter(
+      (r) => r.status === AttendanceStatus.approved,
+    ).length;
 
     return ResponseHelper.success({
       employee,
@@ -118,11 +283,99 @@ export class AttendancesService {
       summary: {
         plan_day: planDay,
         actual_day: actualDay,
-        late: lateCount,
-        absent: planDay - actualDay,
-        over_time: overtimeTotal,
+        late: records.filter((r) => r.late > 0).length,
+        absent: Math.max(0, planDay - actualDay),
+        over_time: records.reduce((s, r) => s + (r.overtime ?? 0), 0),
+        work_minutes: records.reduce((s, r) => s + (r.work_minutes ?? 0), 0),
       },
     });
+  }
+
+  async create(dto: CreateAttendanceDto) {
+    const existing = await this.prisma.attendances.findUnique({
+      where: {
+        employee_id_work_date: {
+          employee_id: dto.employee_id,
+          work_date: new Date(dto.work_date),
+        },
+      },
+    });
+    if (existing)
+      throw new BadRequestException(
+        'Attendance record already exists for this date',
+      );
+
+    const created = await this.prisma.attendances.create({
+      data: {
+        employee_id: dto.employee_id,
+        work_date: new Date(dto.work_date),
+        scheduled_start: dto.scheduled_start,
+        scheduled_end: dto.scheduled_end,
+        break_start: dto.break_start ?? null,
+        break_end: dto.break_end ?? null,
+        flexible_start: dto.flexible_start ?? null,
+        flexible_end: dto.flexible_end ?? null,
+        check_in_time: dto.check_in_time ? new Date(dto.check_in_time) : null,
+        check_out_time: dto.check_out_time
+          ? new Date(dto.check_out_time)
+          : null,
+        status: dto.status ?? AttendanceStatus.pending,
+      },
+      include: { employee: true, logs: true },
+    });
+    return ResponseHelper.success(created, 'Attendance created');
+  }
+
+  async update(id: string, dto: UpdateAttendanceDto) {
+    const existing = await this.prisma.attendances.findUnique({
+      where: { id },
+    });
+    if (!existing) throw new NotFoundException(`Attendance ${id} not found`);
+
+    let workMinutes = dto.work_minutes;
+    if (dto.check_in_time && dto.check_out_time && workMinutes === undefined) {
+      const inMin = dateToMinutes(new Date(dto.check_in_time));
+      const outMin = dateToMinutes(new Date(dto.check_out_time));
+      const gross = Math.max(0, outMin - inMin);
+      let breakDed = 0;
+      if (existing.break_start != null && existing.break_end != null) {
+        breakDed = overlapMinutes(
+          inMin,
+          outMin,
+          existing.break_start,
+          existing.break_end,
+        );
+      }
+      workMinutes = Math.max(0, gross - breakDed);
+    }
+
+    const updated = await this.prisma.attendances.update({
+      where: { id },
+      data: {
+        check_in_time: dto.check_in_time
+          ? new Date(dto.check_in_time)
+          : undefined,
+        check_out_time: dto.check_out_time
+          ? new Date(dto.check_out_time)
+          : undefined,
+        late: dto.late,
+        early_leave: dto.early_leave,
+        overtime: dto.overtime,
+        work_minutes: workMinutes,
+        status: dto.status,
+      },
+      include: { employee: true, logs: true },
+    });
+    return ResponseHelper.success(updated, 'Attendance updated');
+  }
+
+  async remove(id: string) {
+    const existing = await this.prisma.attendances.findUnique({
+      where: { id },
+    });
+    if (!existing) throw new NotFoundException(`Attendance ${id} not found`);
+    await this.prisma.attendances.delete({ where: { id } });
+    return ResponseHelper.success(null, 'Attendance deleted');
   }
 
   async approveEmployeeTimesheet(
@@ -138,85 +391,9 @@ export class AttendancesService {
       },
       data: { status: AttendanceStatus.approved },
     });
-
     return ResponseHelper.success(
       { updated: updated.count },
       'Timesheet approved',
     );
-  }
-
-  async updateLeaveRequest(id: string, status: LeaveStatus) {
-    const existing = await this.prisma.leaveRequests.findUnique({
-      where: { id },
-    });
-    if (!existing) throw new NotFoundException(`Leave request ${id} not found`);
-
-    const updated = await this.prisma.leaveRequests.update({
-      where: { id },
-      data: { status },
-    });
-
-    return ResponseHelper.success(updated, `Leave request ${status}`);
-  }
-
-  async create(data: CreateAttendanceDto) {
-    return this.prisma.attendances.create({
-      data: {
-        employee_id: data.employee_id,
-        work_date: new Date(data.work_date),
-        check_in_time: data.check_in_time ? new Date(data.check_in_time) : null,
-        check_out_time: data.check_out_time
-          ? new Date(data.check_out_time)
-          : null,
-        check_in_lat: data.check_in_lat,
-        check_in_lng: data.check_in_lng,
-        check_out_lat: data.check_out_lat,
-        check_out_lng: data.check_out_lng,
-        late: data.late || 0,
-        early_leave: data.early_leave || 0,
-        overtime: data.overtime || 0,
-        status: data.status || AttendanceStatus.pending,
-      },
-      include: { employee: true },
-    });
-  }
-
-  async update(id: string, data: UpdateAttendanceDto) {
-    const existing = await this.prisma.attendances.findUnique({
-      where: { id },
-    });
-    if (!existing)
-      throw new NotFoundException(`Attendance with ID ${id} not found`);
-
-    return this.prisma.attendances.update({
-      where: { id },
-      data: {
-        check_in_time: data.check_in_time
-          ? new Date(data.check_in_time)
-          : undefined,
-        check_out_time: data.check_out_time
-          ? new Date(data.check_out_time)
-          : undefined,
-        check_in_lat: data.check_in_lat,
-        check_in_lng: data.check_in_lng,
-        check_out_lat: data.check_out_lat,
-        check_out_lng: data.check_out_lng,
-        late: data.late,
-        early_leave: data.early_leave,
-        overtime: data.overtime,
-        status: data.status,
-      },
-      include: { employee: true },
-    });
-  }
-
-  async remove(id: string) {
-    const existing = await this.prisma.attendances.findUnique({
-      where: { id },
-    });
-    if (!existing)
-      throw new NotFoundException(`Attendance with ID ${id} not found`);
-
-    return this.prisma.attendances.delete({ where: { id } });
   }
 }

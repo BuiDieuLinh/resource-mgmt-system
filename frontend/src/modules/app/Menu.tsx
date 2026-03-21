@@ -5,6 +5,7 @@ import {
   attendanceUrl,
   timesheetUrl,
   attendanceFlowUrl,
+  workPolicyUrl,
 } from '@/routes/url';
 import {
   IconGauge,
@@ -13,6 +14,7 @@ import {
   IconTimelineEvent,
   IconBuilding,
   IconBriefcase,
+  IconShieldCheck,
 } from '@tabler/icons-react';
 
 export type AppMenu = {
@@ -49,9 +51,6 @@ export const MENUS: AppMenu[] = [
   {
     label: 'Settings',
     icon: IconSettings,
-    children: [
-      { label: 'General', path: '/settings' },
-      { label: 'Security', path: '/settings/security' },
-    ],
+    children: [{ label: 'Work Policy', path: workPolicyUrl, icon: IconShieldCheck }],
   },
 ];

@@ -2,23 +2,35 @@ import {
   Controller,
   Get,
   Post,
-  Body,
   Patch,
-  Param,
   Delete,
+  Body,
+  Param,
   Query,
   ParseIntPipe,
   DefaultValuePipe,
 } from '@nestjs/common';
 import { AttendancesService } from './attendances.service';
-import { CreateAttendanceDto, UpdateAttendanceDto } from './dto/attendance.dto';
 import { QueryAttendanceDto } from './dto/query-attendance.dto';
 import { CURRENT_MONTH, CURRENT_YEAR } from 'src/common/constant';
-import type { LeaveStatus } from '@prisma/client';
+import { CheckInDto } from './dto/check-in.dto';
+import { CheckOutDto } from './dto/check-out.dto';
+import { CreateAttendanceDto } from './dto/create-attendance.dto';
+import { UpdateAttendanceDto } from './dto/update-attendance.dto';
 
 @Controller('attendances')
 export class AttendancesController {
   constructor(private readonly attendancesService: AttendancesService) {}
+
+  @Post('check-in')
+  checkIn(@Body() dto: CheckInDto) {
+    return this.attendancesService.checkIn(dto);
+  }
+
+  @Post('check-out')
+  checkOut(@Body() dto: CheckOutDto) {
+    return this.attendancesService.checkOut(dto);
+  }
 
   @Get('summary')
   getSummaries(
@@ -56,30 +68,19 @@ export class AttendancesController {
     );
   }
 
-  @Patch('leave-requests/:id')
-  updateLeaveRequest(
-    @Param('id') id: string,
-    @Body('status') status: LeaveStatus,
-  ) {
-    return this.attendancesService.updateLeaveRequest(id, status);
-  }
-
   @Get()
   findAll(@Query() query: QueryAttendanceDto) {
     return this.attendancesService.findAll(query);
   }
 
   @Post()
-  create(@Body() createAttendanceDto: CreateAttendanceDto) {
-    return this.attendancesService.create(createAttendanceDto);
+  create(@Body() dto: CreateAttendanceDto) {
+    return this.attendancesService.create(dto);
   }
 
   @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateAttendanceDto: UpdateAttendanceDto,
-  ) {
-    return this.attendancesService.update(id, updateAttendanceDto);
+  update(@Param('id') id: string, @Body() dto: UpdateAttendanceDto) {
+    return this.attendancesService.update(id, dto);
   }
 
   @Delete(':id')

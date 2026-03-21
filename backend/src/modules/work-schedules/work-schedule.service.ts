@@ -2,11 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { WorkScheduleDto } from './dto/work-schedule.dto';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
-
-const toTime = (hhmm: string): Date => {
-  const [h, m] = hhmm.split(':').map(Number);
-  return new Date(1970, 0, 1, h, m, 0);
-};
+import { timeToMinutes } from 'src/common/utils/date.util';
 
 @Injectable()
 export class WorkScheduleService {
@@ -20,8 +16,8 @@ export class WorkScheduleService {
       data: {
         employee_id: employeeId,
         day_of_week: dto.working_days,
-        start_time: toTime(dto.start_time),
-        end_time: toTime(dto.end_time),
+        start_time: timeToMinutes(dto.start_time),
+        end_time: timeToMinutes(dto.end_time),
       },
     });
     return ResponseHelper.success(created);

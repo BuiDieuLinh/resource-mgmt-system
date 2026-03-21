@@ -7,3 +7,5 @@ export const URL_API_GET_DEPARTMENTS = 'departments';
 export const URL_API_GET_POSITIONS = 'positions';
 
 export const URL_API_GET_ATTENDANCES = 'attendances';
+
+export const URL_API_WORK_POLICIES = 'work-policies';

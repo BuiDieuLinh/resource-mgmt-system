@@ -112,6 +112,7 @@ export class EmployeeService {
               department: true,
             },
           },
+          work_schedules: true,
         },
       }),
       this.prisma.employees.count({ where }),
