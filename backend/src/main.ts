@@ -24,5 +24,6 @@ async function bootstrap() {
 
   app.use(cookieParser());
   await app.listen(process.env.BACKEND_PORT ?? 3000);
+  console.log(`App running on port ${process.env.BACKEND_PORT ?? 3000}`);
 }
 bootstrap();
