@@ -16,12 +16,12 @@ import {
   buildPaginatedResult,
 } from '../../common/utils/pagination.util';
 import { ResponseHelper } from '../../common/helpers/response.helper';
-import { AttendanceAction, AttendanceStatus } from '@prisma/client';
 import { WorkPolicyService } from '../work-policies/work-policy.service';
 import { CheckInDto } from './dto/check-in.dto';
 import { CheckOutDto } from './dto/check-out.dto';
 import { CreateAttendanceDto } from './dto/create-attendance.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
+import { AttendanceAction, AttendanceStatus } from '@prisma/client';
 
 @Injectable()
 export class AttendancesService {

@@ -7,7 +7,7 @@ import {
   Min,
   Max,
 } from 'class-validator';
-import { LeaveType, LeaveStatus } from '@prisma/client';
+import { LeaveStatus, LeaveType } from '@prisma/client';
 
 export class CreateLeaveRequestDto {
   @IsString()

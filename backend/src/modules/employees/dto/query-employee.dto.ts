@@ -1,5 +1,5 @@
-import { EmployeeStatus } from '@prisma/client';
 import { IsOptional, IsString, IsIn } from 'class-validator';
+import { EmployeeStatus } from '@prisma/client';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 export class QueryEmployeeDto extends PaginationDto {

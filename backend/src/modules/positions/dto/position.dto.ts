@@ -1,5 +1,5 @@
-import { PositionLevel } from '.prisma/client';
 import { IsString, IsOptional, MaxLength, IsUUID } from 'class-validator';
+import { PositionLevel } from '@prisma/client';
 
 export class PositionDto {
   @IsString()

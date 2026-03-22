@@ -8,8 +8,8 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { EmployeeStatus } from '@prisma/client';
 import { WorkScheduleDto } from 'src/modules/work-schedules/dto/work-schedule.dto';
+import { EmployeeStatus } from '@prisma/client';
 
 export class EmployeeDto {
   @IsUUID()
