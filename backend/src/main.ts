@@ -23,7 +23,8 @@ async function bootstrap() {
   });
 
   app.use(cookieParser());
-  await app.listen(process.env.BACKEND_PORT ?? 3000);
-  console.log(`App running on port ${process.env.BACKEND_PORT ?? 3000}`);
+  const port = process.env.BACKEND_PORT || 3000;
+  await app.listen(port, '0.0.0.0');
+  console.log(`App running on port ${port}`);
 }
 bootstrap();
