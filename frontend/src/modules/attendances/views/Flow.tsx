@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Stack, Title, Button, Text, TextInput, Loader } from '@mantine/core';
+import { Stack, Title, Button, TextInput, Loader } from '@mantine/core';
 import { IconLogin, IconLogout } from '@tabler/icons-react';
 import { useGetAttendances } from '../api/get-attendances';
 import { useCreateAttendance } from '../api/create-attendance';

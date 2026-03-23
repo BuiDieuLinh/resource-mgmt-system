@@ -9,7 +9,6 @@ import {
   employeeOrgChartUrl,
   employeeProfileUrl,
   attendanceUrl,
-  attendanceFlowUrl,
   timesheetUrl,
   attendanceDetailUrl,
   workPolicyUrl,

@@ -4,7 +4,6 @@ import {
   employeePositionsUrl,
   attendanceUrl,
   timesheetUrl,
-  attendanceFlowUrl,
   workPolicyUrl,
 } from '@/routes/url';
 import {

@@ -1,16 +1,5 @@
 import { useState, useMemo } from 'react';
-import {
-  Stack,
-  TextInput,
-  Button,
-  Group,
-  Card,
-  Badge,
-  Select,
-  Anchor,
-  Avatar,
-  Text,
-} from '@mantine/core';
+import { Stack, TextInput, Button, Group, Card, Badge, Select, Anchor, Text } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { IconSearch, IconPlus } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
@@ -18,11 +7,9 @@ import { BaseTable, type TableColumn } from '../../../components/BaseTable/BaseT
 import { TablePagination } from '../../../components/Pagination';
 import type { IAttendance } from '../types';
 
-// hooks & components
 import { useGetAttendanceSummaries } from '../api/get-attendance-summaries';
 import { useCreateAttendance } from '../api/create-attendance';
 import { useUpdateAttendance } from '../api/update-attendance';
-import { useDeleteAttendance } from '../api/delete-attendance';
 import { AttendanceFormModal } from '../components/AttendanceFormModal';
 import MonthNavigator from '../components/MonthPickerInput';
 import { formatDays, formatHours, exportAttendanceCsv } from '../utils/format';
@@ -38,7 +25,6 @@ export default function AttendancesPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  // month selector state for navigation
   const [selectedMonth, setSelectedMonth] = useState<Date | null>(() => new Date());
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -51,7 +37,6 @@ export default function AttendancesPage() {
 
   const { mutateAsync: add } = useCreateAttendance();
   const { mutateAsync: update } = useUpdateAttendance();
-  const { mutateAsync: remove } = useDeleteAttendance();
 
   const filtered = useMemo(() => {
     return attendances

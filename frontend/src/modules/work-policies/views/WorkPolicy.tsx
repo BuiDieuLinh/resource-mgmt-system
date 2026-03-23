@@ -18,7 +18,6 @@ import {
   IconClock,
   IconCoffee,
   IconCalendar,
-  IconCheck,
   IconShieldCheck,
 } from '@tabler/icons-react';
 import { useState } from 'react';
@@ -32,7 +31,6 @@ import { Loading } from '@/components/Loading/Loading';
 import ErrorState from '@/components/ErrorState/ErrorState';
 import { minutesToTime } from '../utils/time';
 import type { IWorkPolicy, IWorkPolicyPayload } from '../types';
-import { PRIMARY_COLOR } from '@/theme';
 
 function isActive(policy: IWorkPolicy): boolean {
   const now = new Date();
@@ -119,9 +117,9 @@ function PolicyCard({
               Flexible
             </Text>
             {policy.is_flexible_enabled &&
-            (policy.flexible_start_minutes != null || policy.flexible_end_minutes != null) ? (
+            (policy.flexible_start != null || policy.flexible_end != null) ? (
               <Text size="sm" fw={500}>
-                In +{policy.flexible_start_minutes ?? 0}m / Out -{policy.flexible_end_minutes ?? 0}m
+                In +{policy.flexible_start ?? 0}m / Out -{policy.flexible_end ?? 0}m
               </Text>
             ) : (
               <Text size="sm" c="dimmed">

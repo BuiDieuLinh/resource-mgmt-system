@@ -48,10 +48,10 @@ export function BaseTable<T extends Record<string, any>>({
   columns,
   loading = false,
   emptyText = 'No data',
-  striped = true,
+  // striped = true,
   highlightOnHover = true,
-  withTableBorder = false,
-  withColumnBorders = false,
+  // withTableBorder = false,
+  // withColumnBorders = false,
   stickyHeader = true,
   height = 500,
   onRowClick,
@@ -59,7 +59,7 @@ export function BaseTable<T extends Record<string, any>>({
   selectedRows = new Set(),
   onSelectionChange,
 }: BaseTableProps<T>) {
-  const [scrolled, setScrolled] = useState(false);
+  const [scrolled] = useState(false);
 
   const [sort, setSort] = useState<SortState<T> | null>(null);
 
