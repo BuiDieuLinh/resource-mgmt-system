@@ -1,36 +1,58 @@
 .navbar {
-  height: 100vh;
-  /* background-color:ghostwhite; */
-  background-color: whitesmoke;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--mantine-color-body);
+  border-right: 1px solid var(--mantine-color-default-border);
+}
+
+.logo {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+  flex-shrink: 0;
 }
 
 .navMain {
-  padding-top: 20px;
   flex: 1;
   overflow-y: auto;
+  padding: 8px;
 }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--mantine-color-gray-3);
-  padding: 10px 0px;
+.section {
+  padding: 0 8px;
+  margin-top: 16px;
+  margin-bottom: 4px;
+}
+
+.sectionLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mantine-color-dimmed);
+  padding: 0 4px;
 }
 
 .root {
   border-radius: 8px;
-  font-weight: 600;
+  font-weight: 500;
+  font-size: 13.5px;
+  padding: 7px 10px;
+  color: var(--mantine-color-text);
 }
 
 .root:hover {
   background-color: var(--mantine-color-gray-0);
 }
 
+.label {
+  font-weight: 600;
+}
+
 .children {
   padding-left: 36px;
   position: relative;
-  margin-top: 4px;
-  font-weight: 600;
+  margin-top: 2px;
 }
 
 .children::before {
@@ -44,9 +66,10 @@
 }
 
 .children :global(.mantine-NavLink-root) {
-  border-radius: 8px;
-  margin: 2px 0;
-  padding-left: 12px;
+  border-radius: 6px;
+  margin: 1px 0;
+  padding: 6px 10px;
+  font-weight: 600;
 }
 
 .children :global(.mantine-NavLink-root:hover) {
@@ -62,17 +85,35 @@
 }
 
 .footer {
-  cursor: pointer;
-  transition: background 0.15s ease;
-  padding: 10px 0px;
-  border-top: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  flex-shrink: 0;
+  padding: 8px 8px 10px;
 }
 
-.userCard {
-  padding: 5px;
-}
-
-.userCard:hover {
-  background-color: var(--mantine-color-gray-1);
+.footerRow {
+  width: 100%;
+  padding: 7px 8px;
   border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.footerRow:hover {
+  background: var(--mantine-color-gray-0);
+}
+
+.collapsedItem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 6px 0;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.collapsedItem:hover {
+  background: var(--mantine-color-gray-0);
+}
+
+.collapsedItem[data-active] {
+  background: var(--mantine-color-deepPurple-0);
 }

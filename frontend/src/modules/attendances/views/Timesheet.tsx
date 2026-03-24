@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import {
   Stack,
-  Title,
   Text,
   Card,
   Group,
@@ -11,8 +10,10 @@ import {
   Flex,
   Center,
   Loader,
+  Title,
 } from '@mantine/core';
 import { IconDownload, IconMapPin, IconRoute } from '@tabler/icons-react';
+import { PageHeader } from '../../../components/PageHeader/PageHeader';
 
 import MonthNavigator from '../components/MonthPickerInput';
 import { BaseTable, type TableColumn } from '@/components/BaseTable/BaseTable';
@@ -203,17 +204,18 @@ export default function TimesheetPage() {
 
   return (
     <Stack gap="lg">
-      <Group justify="apart">
-        <Title order={2}>Timesheet</Title>
-
-        <Group>
-          <MonthNavigator value={selectedMonth} onChange={setSelectedMonth} />
-
-          <Button leftSection={<IconDownload size={16} />} variant="light" onClick={handleExport}>
-            Export
-          </Button>
-        </Group>
-      </Group>
+      <PageHeader
+        title="Timesheet"
+        description="Detailed check-in / check-out logs for all employees"
+        right={
+          <Group>
+            <MonthNavigator value={selectedMonth} onChange={setSelectedMonth} />
+            <Button leftSection={<IconDownload size={16} />} variant="light" onClick={handleExport}>
+              Export
+            </Button>
+          </Group>
+        }
+      />
 
       <Group grow>
         <Card shadow="sm" p="md">

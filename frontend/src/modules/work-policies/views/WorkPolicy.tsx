@@ -7,9 +7,9 @@ import {
   Card,
   ActionIcon,
   Tooltip,
-  ThemeIcon,
   Box,
   SimpleGrid,
+  Divider,
 } from '@mantine/core';
 import {
   IconPlus,
@@ -19,7 +19,9 @@ import {
   IconCoffee,
   IconCalendar,
   IconShieldCheck,
+  IconX,
 } from '@tabler/icons-react';
+import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { useState } from 'react';
 import { useGetWorkPolicies } from '../api/get-work-policies';
 import { useCreateWorkPolicy } from '../api/create-work-policy';
@@ -39,6 +41,32 @@ function isActive(policy: IWorkPolicy): boolean {
   return from <= now && (!to || to >= now);
 }
 
+function InfoRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <Group gap={10} wrap="nowrap">
+      <Box c="dimmed" style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+        {icon}
+      </Box>
+      <Box style={{ flex: 1 }}>
+        <Text size="xs" c="dimmed" lh={1.2}>
+          {label}
+        </Text>
+        <Text size="sm" fw={500} lh={1.4}>
+          {value}
+        </Text>
+      </Box>
+    </Group>
+  );
+}
+
 function PolicyCard({
   policy,
   onEdit,
@@ -51,84 +79,94 @@ function PolicyCard({
   const active = isActive(policy);
 
   return (
-    <Card withBorder shadow="sm" radius="md" p="md">
-      <Group justify="space-between" mb="xs">
-        <Group gap={8}>
-          <ThemeIcon size={32} radius="md" variant="light" color={active ? 'violet' : 'gray'}>
-            <IconShieldCheck size={18} />
-          </ThemeIcon>
-          <Box>
-            <Text size="sm" fw={600}>
-              {new Date(policy.effective_from).toLocaleDateString('vi-VN')}
-              {' → '}
-              {policy.effective_to
-                ? new Date(policy.effective_to).toLocaleDateString('vi-VN')
-                : '∞'}
-            </Text>
-            <Badge size="xs" color={active ? 'green' : 'gray'} variant="light">
+    <Card withBorder radius="md" p={0} style={{ overflow: 'hidden' }}>
+      <Box
+        px="md"
+        py="sm"
+        style={{
+          background: active ? 'linear-gradient(135deg, #7c3aed18 0%, #7c3aed08 100%)' : '#f8f9fa',
+          borderBottom: '1px solid #e9ecef',
+        }}
+      >
+        <Group justify="space-between" wrap="nowrap">
+          <Group gap={8} wrap="nowrap">
+            <Badge size="sm" variant="dot" color={active ? 'green' : 'gray'}>
               {active ? 'Active' : 'Inactive'}
             </Badge>
-          </Box>
-        </Group>
-        <Group gap={4}>
-          <Tooltip label="Edit">
-            <ActionIcon variant="subtle" color="gray" onClick={() => onEdit(policy)}>
-              <IconEdit size={16} />
-            </ActionIcon>
-          </Tooltip>
-          <Tooltip label="Delete">
-            <ActionIcon variant="subtle" color="red" onClick={() => onDelete(policy.id)}>
-              <IconTrash size={16} />
-            </ActionIcon>
-          </Tooltip>
-        </Group>
-      </Group>
-
-      <SimpleGrid cols={2} spacing="xs" mt="sm">
-        {/* Break time */}
-        <Group gap={6} align="flex-start">
-          <ThemeIcon size={24} radius="sm" variant="light" color="orange">
-            <IconCoffee size={14} />
-          </ThemeIcon>
-          <Box>
             <Text size="xs" c="dimmed">
-              Break
+              <IconCalendar size={11} style={{ verticalAlign: 'middle', marginRight: 3 }} />
+              {new Date(policy.effective_from).toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              })}
+              {' — '}
+              {policy.effective_to
+                ? new Date(policy.effective_to).toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                  })
+                : 'No end date'}
             </Text>
-            <Text size="sm" fw={500}>
-              {policy.break_start != null && policy.break_end != null
-                ? `${minutesToTime(policy.break_start)} – ${minutesToTime(policy.break_end)}`
-                : '—'}
-            </Text>
-          </Box>
+          </Group>
+          <Group gap={2}>
+            <Tooltip label="Edit" withArrow>
+              <ActionIcon size="sm" variant="subtle" color="gray" onClick={() => onEdit(policy)}>
+                <IconEdit size={14} />
+              </ActionIcon>
+            </Tooltip>
+            <Tooltip label="Delete" withArrow>
+              <ActionIcon
+                size="sm"
+                variant="subtle"
+                color="red"
+                onClick={() => onDelete(policy.id)}
+              >
+                <IconTrash size={14} />
+              </ActionIcon>
+            </Tooltip>
+          </Group>
         </Group>
+      </Box>
 
-        {/* Flexible */}
-        <Group gap={6} align="flex-start">
-          <ThemeIcon
-            size={24}
-            radius="sm"
-            variant="light"
-            color={policy.is_flexible_enabled ? 'violet' : 'gray'}
-          >
-            <IconClock size={14} />
-          </ThemeIcon>
-          <Box>
-            <Text size="xs" c="dimmed">
-              Flexible
-            </Text>
-            {policy.is_flexible_enabled &&
-            (policy.flexible_start != null || policy.flexible_end != null) ? (
-              <Text size="sm" fw={500}>
-                In +{policy.flexible_start ?? 0}m / Out -{policy.flexible_end ?? 0}m
-              </Text>
+      <Stack gap="xs" p="md">
+        <InfoRow
+          icon={<IconCoffee size={15} />}
+          label="Break time"
+          value={
+            policy.break_start != null && policy.break_end != null
+              ? `${minutesToTime(policy.break_start)} – ${minutesToTime(policy.break_end)}`
+              : '—'
+          }
+        />
+
+        <Divider />
+
+        <InfoRow
+          icon={<IconClock size={15} />}
+          label="Flexible check-in / check-out"
+          value={
+            policy.is_flexible_enabled ? (
+              <Group gap={6}>
+                <Badge size="xs" color="violet" variant="light">
+                  In +{policy.flexible_start ?? 0} min
+                </Badge>
+                <Badge size="xs" color="violet" variant="light">
+                  Out -{policy.flexible_end ?? 0} min
+                </Badge>
+              </Group>
             ) : (
-              <Text size="sm" c="dimmed">
-                Disabled
-              </Text>
-            )}
-          </Box>
-        </Group>
-      </SimpleGrid>
+              <Group gap={4}>
+                <IconX size={13} color="gray" />
+                <Text size="sm" c="dimmed">
+                  Disabled
+                </Text>
+              </Group>
+            )
+          }
+        />
+      </Stack>
     </Card>
   );
 }
@@ -165,7 +203,7 @@ export default function WorkPolicyPage() {
   };
 
   const handleSubmit = async (payload: IWorkPolicyPayload, id?: string) => {
-    const notiId = notify.loading(isEdit ? 'Updating policy...' : 'Creating policy...');
+    const notiId = notify.loading(isEdit ? 'Updating...' : 'Creating...');
     try {
       if (isEdit && id) {
         await updateMutation.mutateAsync({ id, payload });
@@ -185,34 +223,28 @@ export default function WorkPolicyPage() {
 
   return (
     <Stack gap="md">
-      <Group justify="space-between">
-        <Group gap={8}>
-          <ThemeIcon size={36} radius="md" variant="light" color="violet">
-            <IconShieldCheck size={20} />
-          </ThemeIcon>
-          <Box>
-            <Text size="lg" fw={700}>
-              Work Policies
-            </Text>
-            <Text size="xs" c="dimmed">
-              Configure break time, flexible check-in, and effective periods
-            </Text>
-          </Box>
-        </Group>
-        <Button leftSection={<IconPlus size={16} />} onClick={handleAdd}>
-          Add Policy
-        </Button>
-      </Group>
+      <PageHeader
+        title="Work Policies"
+        description="Configure break time, flexible grace windows, and effective periods"
+        right={
+          <Button leftSection={<IconPlus size={16} />} onClick={handleAdd}>
+            Add Policy
+          </Button>
+        }
+      />
 
       {isLoading ? (
         <Loading />
       ) : policies.length === 0 ? (
-        <Card withBorder p="xl" ta="center">
-          <ThemeIcon size={48} radius="xl" variant="light" color="gray" mx="auto" mb="sm">
-            <IconCalendar size={24} />
-          </ThemeIcon>
-          <Text c="dimmed">No work policies yet. Add one to get started.</Text>
-          <Button mt="md" variant="light" leftSection={<IconPlus size={16} />} onClick={handleAdd}>
+        <Card withBorder p="xl" ta="center" radius="md">
+          <IconShieldCheck size={40} color="#adb5bd" style={{ margin: '0 auto 12px' }} />
+          <Text fw={500} mb={4}>
+            No work policies yet
+          </Text>
+          <Text size="sm" c="dimmed" mb="md">
+            Add a policy to configure break time and flexible windows.
+          </Text>
+          <Button variant="light" leftSection={<IconPlus size={16} />} onClick={handleAdd}>
             Add Policy
           </Button>
         </Card>

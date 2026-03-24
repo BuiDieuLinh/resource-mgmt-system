@@ -1,5 +1,6 @@
 import { Stack, Button, Group, TextInput, ActionIcon, Badge, Select } from '@mantine/core';
-import { IconSearch, IconEdit } from '@tabler/icons-react';
+import { IconSearch, IconEdit, IconPlus } from '@tabler/icons-react';
+import { PageHeader } from '../../../components/PageHeader/PageHeader';
 import { useState, useMemo } from 'react';
 import { BaseTable, type TableColumn } from '../../../components/BaseTable/BaseTable';
 import { TablePagination } from '../../../components/Pagination';
@@ -159,27 +160,33 @@ export default function PositionsPage() {
 
   return (
     <Stack gap="md">
-      <Group>
-        <Button onClick={handleAdd}>Add Position</Button>
-
-        <TextInput
-          placeholder="Search positions..."
-          leftSection={<IconSearch size={16} />}
-          value={search}
-          onChange={(e) => handleSearch(e.currentTarget.value)}
-        />
-
-        <Select
-          placeholder="Filter by department"
-          clearable
-          data={departments.map((dept) => ({
-            value: dept.id,
-            label: dept.department_name,
-          }))}
-          value={departmentFilter}
-          onChange={handleDepartmentFilter}
-        />
-      </Group>
+      <PageHeader
+        title="Positions"
+        description="Define roles and levels across departments"
+        right={
+          <Group gap="md" justify="space-between">
+            <Button leftSection={<IconPlus size={16} />} onClick={handleAdd}>
+              Add Position
+            </Button>
+            <TextInput
+              placeholder="Search positions..."
+              leftSection={<IconSearch size={16} />}
+              value={search}
+              onChange={(e) => handleSearch(e.currentTarget.value)}
+            />
+            <Select
+              placeholder="Filter by department"
+              clearable
+              data={departments.map((dept) => ({
+                value: dept.id,
+                label: dept.department_name,
+              }))}
+              value={departmentFilter}
+              onChange={handleDepartmentFilter}
+            />
+          </Group>
+        }
+      />
 
       {isLoading ? (
         <Loading />
