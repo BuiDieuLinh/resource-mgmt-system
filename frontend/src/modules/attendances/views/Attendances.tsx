@@ -3,6 +3,7 @@ import { Stack, TextInput, Button, Group, Card, Badge, Select, Anchor, Text } fr
 import { DateInput } from '@mantine/dates';
 import { IconSearch, IconPlus } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
+import { PageHeader } from '../../../components/PageHeader/PageHeader';
 import { BaseTable, type TableColumn } from '../../../components/BaseTable/BaseTable';
 import { TablePagination } from '../../../components/Pagination';
 import type { IAttendance } from '../types';
@@ -192,22 +193,28 @@ export default function AttendancesPage() {
 
   return (
     <Stack gap="md">
+      <PageHeader
+        title="Attendance"
+        description="Track and manage employee attendance records"
+        right={
+          <Group gap="sm">
+            <Button variant="outline" onClick={() => exportAttendanceCsv(filtered)}>
+              Export CSV
+            </Button>
+            <Button
+              leftSection={<IconPlus size={16} />}
+              onClick={() => {
+                setEditing(null);
+                setModalOpen(true);
+              }}
+            >
+              New record
+            </Button>
+          </Group>
+        }
+      />
       <Group justify="space-between" align="center">
         <MonthNavigator value={selectedMonth} onChange={setSelectedMonth} />
-        <Group gap="sm">
-          <Button variant="outline" onClick={() => exportAttendanceCsv(filtered)}>
-            Export CSV
-          </Button>
-          <Button
-            leftSection={<IconPlus size={16} />}
-            onClick={() => {
-              setEditing(null);
-              setModalOpen(true);
-            }}
-          >
-            New record
-          </Button>
-        </Group>
       </Group>
 
       {isLoading ? (

@@ -30,15 +30,15 @@ export interface IEmployee {
     };
   };
 
-  work_schedules?: IWorkSchedule;
+  work_schedules?: IWorkSchedule[];
   created_at: string;
 }
 
 export interface IWorkSchedule {
   id?: string;
-  working_days: number;
-  start_time: string;
-  end_time: string;
+  day_of_week: number;
+  start_time: number;
+  end_time: number;
 }
 
 export interface IEmployeePayload {
@@ -55,7 +55,7 @@ export interface IEmployeePayload {
   position_id: string;
   status: string;
   avatar?: File | null;
-  work_schedules?: IWorkSchedule;
+  work_schedules?: IWorkSchedule[];
 }
 
 export type EmployeeFormValues = IEmployeePayload;

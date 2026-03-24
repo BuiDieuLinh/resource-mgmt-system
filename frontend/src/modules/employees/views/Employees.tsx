@@ -23,6 +23,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { BaseTable, type TableColumn } from '../../../components/BaseTable/BaseTable';
+import { PageHeader } from '../../../components/PageHeader/PageHeader';
 import { TablePagination } from '../../../components/Pagination';
 import ErrorState from '../../../components/ErrorState/ErrorState';
 
@@ -284,63 +285,64 @@ export default function EmployeesPage() {
 
   return (
     <Stack gap="md">
-      <Group justify="space-between">
-        <Group>
-          <Button onClick={handleAdd}>Add employee</Button>
+      <PageHeader
+        title="Employees"
+        description="Manage your workforce — add, edit, and organize employees"
+        right={
+          <Group>
+            <Button onClick={handleAdd}>Add employee</Button>
+            <Menu shadow="md" width={200} position="bottom-start">
+              <Menu.Target>
+                <Button variant="light" leftSection={<IconDotsVertical size={16} />}>
+                  Actions
+                </Button>
+              </Menu.Target>
 
-          <Menu shadow="md" width={200} position="bottom-start">
-            <Menu.Target>
-              <Button variant="light" leftSection={<IconDotsVertical size={16} />}>
-                Actions
-              </Button>
-            </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item
+                  variant="light"
+                  leftSection={<IconSitemap size={16} />}
+                  onClick={() => navigate('/employees/org-chart')}
+                >
+                  View Org Chart
+                </Menu.Item>
+                <Menu.Item leftSection={<IconFileExport size={16} />} onClick={handleExport}>
+                  Export to Excel
+                </Menu.Item>
+                <FileButton onChange={handleImportFile} accept=".xlsx,.xls">
+                  {(props) => (
+                    <Menu.Item
+                      {...props}
+                      leftSection={<IconFileImport size={16} />}
+                      closeMenuOnClick={false}
+                    >
+                      Import from Excel
+                    </Menu.Item>
+                  )}
+                </FileButton>
+              </Menu.Dropdown>
+            </Menu>
+            <TextInput
+              placeholder="Search by name, email or code"
+              leftSection={<IconSearch size={16} />}
+              value={search}
+              onChange={(e) => handleSearch(e.currentTarget.value)}
+            />
 
-            <Menu.Dropdown>
-              <Menu.Item
-                variant="light"
-                leftSection={<IconSitemap size={16} />}
-                onClick={() => navigate('/employees/org-chart')}
-              >
-                View Org Chart
-              </Menu.Item>
-              <Menu.Item leftSection={<IconFileExport size={16} />} onClick={handleExport}>
-                Export to Excel
-              </Menu.Item>
-              <FileButton onChange={handleImportFile} accept=".xlsx,.xls">
-                {(props) => (
-                  <Menu.Item
-                    {...props}
-                    leftSection={<IconFileImport size={16} />}
-                    closeMenuOnClick={false}
-                  >
-                    Import from Excel
-                  </Menu.Item>
-                )}
-              </FileButton>
-            </Menu.Dropdown>
-          </Menu>
-        </Group>
-
-        <Group>
-          <TextInput
-            placeholder="Search by name, email or code"
-            leftSection={<IconSearch size={16} />}
-            value={search}
-            onChange={(e) => handleSearch(e.currentTarget.value)}
-          />
-
-          <Select
-            placeholder="Filter by status"
-            clearable
-            data={[
-              { value: 'active', label: 'Active' },
-              { value: 'inactive', label: 'Inactive' },
-            ]}
-            value={filter}
-            onChange={handleFilterChange}
-          />
-        </Group>
-      </Group>
+            <Select
+              placeholder="Filter by status"
+              clearable
+              w={100}
+              data={[
+                { value: 'active', label: 'Active' },
+                { value: 'inactive', label: 'Inactive' },
+              ]}
+              value={filter}
+              onChange={handleFilterChange}
+            />
+          </Group>
+        }
+      />
 
       {isLoading ? (
         <Loading />

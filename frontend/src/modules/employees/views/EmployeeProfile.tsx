@@ -1,15 +1,4 @@
-import {
-  Stack,
-  Group,
-  Card,
-  Avatar,
-  Text,
-  Badge,
-  Grid,
-  Button,
-  ActionIcon,
-  Title,
-} from '@mantine/core';
+import { Stack, Group, Card, Avatar, Text, Badge, Grid, Divider, ThemeIcon } from '@mantine/core';
 import {
   IconMail,
   IconPhone,
@@ -18,214 +7,336 @@ import {
   IconBuilding,
   IconBriefcase,
   IconGenderMale,
-  IconGenderFemale,
-  IconArrowLeft,
-  IconEdit,
+  IconClock,
+  IconCoffee,
+  IconUser,
+  IconMapPin,
 } from '@tabler/icons-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGetEmployee } from '../api/get-employee';
+import { PageHeader } from '../../../components/PageHeader/PageHeader';
+import { useGetActivePolicy } from '../../work-policies/api/get-work-policies';
 import { Loading } from '../../../components/Loading/Loading';
 import ErrorState from '../../../components/ErrorState/ErrorState';
 import { employeeListUrl } from '../../../routes/url';
-import LabelValue from '../components/LabelValue';
+
+import type { IWorkSchedule } from '../types';
+import type { IWorkPolicy } from '../../work-policies/types';
+
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+const minutesToTime = (minutes: number): string => {
+  const h = Math.floor(minutes / 60);
+  const m = (minutes % 60).toString().padStart(2, '0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  return `${h.toString().padStart(2, '0')}:${m} ${ampm}`;
+};
+
+function InfoRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <Group gap="sm" wrap="nowrap">
+      <ThemeIcon variant="light" color="gray" size="sm" radius="sm" style={{ flexShrink: 0 }}>
+        {icon}
+      </ThemeIcon>
+      <div>
+        <Text size="xs" c="dimmed" lh={1.2}>
+          {label}
+        </Text>
+        <Text size="sm" fw={500} lh={1.4}>
+          {value}
+        </Text>
+      </div>
+    </Group>
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <Text size="xs" fw={700} c="dimmed" tt="uppercase" style={{ letterSpacing: '0.05em' }} mb="sm">
+      {children}
+    </Text>
+  );
+}
+
+function WorkScheduleSection({
+  schedules,
+  policy,
+}: {
+  schedules?: IWorkSchedule[];
+  policy?: IWorkPolicy | null;
+}) {
+  if (!schedules || schedules.length === 0) {
+    return (
+      <Text size="sm" c="dimmed">
+        No work schedule assigned.
+      </Text>
+    );
+  }
+
+  const shiftMap = new Map<string, { start: number; end: number; days: number[] }>();
+  for (const s of schedules) {
+    const key = `${s.start_time}-${s.end_time}`;
+    if (!shiftMap.has(key)) shiftMap.set(key, { start: s.start_time, end: s.end_time, days: [] });
+    shiftMap.get(key)!.days.push(s.day_of_week);
+  }
+
+  const breakMinutes =
+    policy?.break_start != null && policy?.break_end != null
+      ? policy.break_end - policy.break_start
+      : 0;
+
+  const shifts = Array.from(shiftMap.values()).map((shift) => ({
+    ...shift,
+    days: shift.days.sort((a, b) => a - b),
+    netHours: Math.max(0, (shift.end - shift.start - breakMinutes) / 60),
+  }));
+
+  const totalNetHours = shifts.reduce((sum, s) => sum + s.netHours * s.days.length, 0);
+
+  return (
+    <Stack gap="md">
+      <Group gap="xs">
+        <Badge variant="light" color="deepPurple" size="sm">
+          {schedules.length} days/week
+        </Badge>
+        <Badge variant="light" color="violet" size="sm">
+          {Math.round(totalNetHours * 10) / 10}h/week
+        </Badge>
+        {breakMinutes > 0 && (
+          <Badge variant="light" color="gray" size="sm" leftSection={<IconCoffee size={10} />}>
+            {breakMinutes}min break
+          </Badge>
+        )}
+      </Group>
+
+      {shifts.map((shift, i) => (
+        <Stack key={i} gap="xs">
+          {i > 0 && <Divider />}
+          <Group gap="xs" mb={6}>
+            <IconClock size={14} color="var(--mantine-color-dimmed)" />
+            <Text size="sm" fw={600}>
+              {minutesToTime(shift.start)} – {minutesToTime(shift.end)}
+            </Text>
+            <Text size="xs" c="dimmed">
+              · {Math.round(shift.netHours * 10) / 10}h net
+            </Text>
+          </Group>
+          <Group gap={6}>
+            {DAY_LABELS.map((label, dow) => {
+              const active = shift.days.includes(dow);
+              const isWeekend = dow === 0 || dow === 6;
+              return (
+                <Badge
+                  key={dow}
+                  size="sm"
+                  variant={active ? 'filled' : 'outline'}
+                  color={active ? (isWeekend ? 'grape' : 'deepPurple') : 'gray'}
+                  style={{ opacity: active ? 1 : 0.3, minWidth: 38 }}
+                >
+                  {label}
+                </Badge>
+              );
+            })}
+          </Group>
+        </Stack>
+      ))}
+    </Stack>
+  );
+}
 
 export default function EmployeeProfile() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
 
   const { data, isLoading, error, refetch } = useGetEmployee(id!);
+  const { data: policyData } = useGetActivePolicy();
 
-  if (isLoading) {
-    return <Loading />;
-  }
-
-  if (error) {
+  if (isLoading) return <Loading />;
+  if (error)
     return (
       <ErrorState message={`Error loading employee profile: ${error.message}`} onRetry={refetch} />
     );
-  }
-
-  if (!data?.data) {
+  if (!data?.data)
     return <ErrorState message="Employee not found" onRetry={() => navigate(employeeListUrl)} />;
-  }
 
   const employee = data.data;
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  const getGenderIcon = (gender: string) => {
-    return gender === 'Male' ? (
-      <IconGenderMale size={16} />
-    ) : gender === 'Female' ? (
-      <IconGenderFemale size={16} />
-    ) : null;
-  };
+  const formatDate = (d: string) =>
+    new Date(d).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' });
 
   return (
-    <Stack gap="md">
-      <Group justify="space-between" align="center">
-        <Group>
-          <ActionIcon variant="light" size="lg" onClick={() => navigate(employeeListUrl)}>
-            <IconArrowLeft size={20} />
-          </ActionIcon>
-          <Title order={2}>Employee Profile</Title>
-        </Group>
-        <Button
-          leftSection={<IconEdit size={16} />}
-          variant="light"
-          onClick={() => navigate(`/employees/${id}/edit`)}
-        >
-          Edit Profile
-        </Button>
-      </Group>
+    <Stack gap="lg">
+      <PageHeader
+        title="Employee Profile"
+        description={`Viewing profile for ${employee.full_name}`}
+      />
 
-      <Grid gutter="md">
-        <Grid.Col span={4}>
-          <Card withBorder padding="lg" radius="md">
+      <Grid gutter="lg" align="flex-start">
+        <Grid.Col span={3}>
+          <Card withBorder padding="xl" radius="md">
             <Stack align="center" gap="md">
               <Avatar
                 src={employee.avatar_url}
-                size={120}
+                size={96}
                 radius="50%"
-                alt={`${employee.full_name} avatar`}
-              />
-              <Stack align="center" gap="xs">
-                <Text size="xl" fw={700} ta="center">
+                alt={employee.full_name}
+                color="deepPurple"
+              >
+                <IconUser size={40} />
+              </Avatar>
+              <Stack align="center" gap={4}>
+                <Text size="md" fw={700} ta="center" lh={1.3}>
                   {employee.full_name}
                 </Text>
                 {employee.display_name && (
-                  <Text size="sm" c="dimmed">
+                  <Text size="xs" c="dimmed">
                     {employee.display_name}
                   </Text>
                 )}
-
-                <Badge
-                  variant="light"
-                  color={employee.status === 'active' ? 'green' : 'gray'}
-                  size="lg"
-                >
-                  {employee.status}
-                </Badge>
+                <Text size="xs" c="dimmed" mt={2}>
+                  {employee.employee_code}
+                </Text>
               </Stack>
+              <Badge
+                variant="light"
+                color={employee.status === 'active' ? 'green' : 'gray'}
+                size="md"
+                radius="sm"
+              >
+                {employee.status}
+              </Badge>
             </Stack>
-          </Card>
 
-          <Card withBorder padding="md" radius="md" mt="md">
+            <Divider my="md" />
+
             <Stack gap="sm">
-              <Text size="sm" fw={600} c="dimmed">
-                CONTACT INFORMATION
-              </Text>
-              <Group gap="xs">
-                <IconMail size={16} />
-                <Text size="sm">{employee.email}</Text>
-              </Group>
+              <InfoRow icon={<IconMail size={12} />} label="Email" value={employee.email} />
               {employee.phone && (
-                <Group gap="xs">
-                  <IconPhone size={16} />
-                  <Text size="sm">{employee.phone}</Text>
-                </Group>
+                <InfoRow icon={<IconPhone size={12} />} label="Phone" value={employee.phone} />
               )}
-              <Group gap="xs">
-                <IconId size={16} />
-                <Text size="sm">{employee.identify_card}</Text>
-              </Group>
+              <InfoRow icon={<IconId size={12} />} label="ID Card" value={employee.identify_card} />
             </Stack>
           </Card>
         </Grid.Col>
 
-        <Grid.Col span={8}>
-          <Card withBorder padding="lg" radius="md">
-            <Text size="lg" fw={600} mb="md">
-              Personal Information
-            </Text>
-            <Grid gutter="md">
-              <Grid.Col span={6}>
-                <LabelValue label="Employee Code" value={employee.employee_code} />
-              </Grid.Col>
-              <Grid.Col span={6}>
-                <LabelValue
-                  label="Gender"
-                  value={employee.gender || 'Not specified'}
-                  icon={getGenderIcon(employee.gender!)}
-                />
-              </Grid.Col>
-              {employee.date_of_birth && (
-                <Grid.Col span={6}>
-                  <LabelValue
-                    label="Date of Birth"
-                    value={formatDate(employee.date_of_birth)}
-                    icon={<IconCalendar size={16} />}
-                  />
-                </Grid.Col>
-              )}
-              <Grid.Col span={6}>
-                <LabelValue
-                  label="Hire Date"
-                  value={formatDate(employee.hire_date)}
-                  icon={<IconCalendar size={16} />}
-                />
-              </Grid.Col>
-            </Grid>
-          </Card>
+        <Grid.Col span={9}>
+          <Card withBorder padding="xl" radius="md">
+            <Stack gap="xl">
+              <div>
+                <SectionTitle>Personal Information</SectionTitle>
+                <Grid gutter="lg">
+                  <Grid.Col span={6}>
+                    <InfoRow
+                      icon={<IconGenderMale size={12} />}
+                      label="Gender"
+                      value={employee.gender || '—'}
+                    />
+                  </Grid.Col>
+                  {employee.date_of_birth && (
+                    <Grid.Col span={6}>
+                      <InfoRow
+                        icon={<IconCalendar size={12} />}
+                        label="Date of Birth"
+                        value={formatDate(employee.date_of_birth)}
+                      />
+                    </Grid.Col>
+                  )}
+                  <Grid.Col span={6}>
+                    <InfoRow
+                      icon={<IconCalendar size={12} />}
+                      label="Hire Date"
+                      value={formatDate(employee.hire_date)}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={6}>
+                    <InfoRow
+                      icon={<IconMapPin size={12} />}
+                      label="Address"
+                      value={employee.address}
+                    />
+                  </Grid.Col>
+                </Grid>
+              </div>
 
-          <Card withBorder padding="lg" radius="md" mt="md">
-            <Text size="lg" fw={600} mb="md">
-              Work Information
-            </Text>
-            <Grid gutter="md">
-              <Grid.Col span={6}>
-                <LabelValue
-                  label="Department"
-                  value={employee.position.department?.department_name || 'Not assigned'}
-                  icon={<IconBuilding size={16} />}
-                />
-              </Grid.Col>
-              <Grid.Col span={6}>
-                <LabelValue
-                  label="Position"
-                  value={employee.position?.position_name || 'Not assigned'}
-                  icon={<IconBriefcase size={16} />}
-                />
-              </Grid.Col>
-              {employee.position?.level && (
-                <Grid.Col span={6}>
-                  <LabelValue
-                    label="Level"
-                    value={
-                      <Badge variant="light" color="blue">
-                        {employee.position.level}
-                      </Badge>
-                    }
-                  />
-                </Grid.Col>
-              )}
-            </Grid>
-          </Card>
+              <Divider />
 
-          {(employee.position?.description || employee.position?.department?.description) && (
-            <Card withBorder padding="lg" radius="md" mt="md">
-              <Text size="lg" fw={600} mb="md">
-                Additional Information
-              </Text>
-              <Stack gap="md">
-                {employee.position?.description && (
-                  <LabelValue label="Position Description" value={employee.position.description} />
-                )}
-                {employee.position.department?.description && (
-                  <LabelValue
-                    label="Department Description"
-                    value={employee.position.department.description}
-                  />
-                )}
-              </Stack>
-            </Card>
-          )}
+              <div>
+                <SectionTitle>Work Information</SectionTitle>
+                <Grid gutter="lg">
+                  <Grid.Col span={6}>
+                    <InfoRow
+                      icon={<IconBuilding size={12} />}
+                      label="Department"
+                      value={employee.position.department?.department_name || '—'}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={6}>
+                    <InfoRow
+                      icon={<IconBriefcase size={12} />}
+                      label="Position"
+                      value={employee.position?.position_name || '—'}
+                    />
+                  </Grid.Col>
+                  {employee.position?.level && (
+                    <Grid.Col span={6}>
+                      <InfoRow
+                        icon={<IconBriefcase size={12} />}
+                        label="Level"
+                        value={
+                          <Badge variant="light" color="blue" size="sm" radius="sm">
+                            {employee.position.level}
+                          </Badge>
+                        }
+                      />
+                    </Grid.Col>
+                  )}
+                </Grid>
+              </div>
+
+              <Divider />
+
+              <div>
+                <SectionTitle>Work Schedule</SectionTitle>
+                <WorkScheduleSection
+                  schedules={employee.work_schedules}
+                  policy={policyData?.data}
+                />
+              </div>
+
+              {(employee.position?.description || employee.position?.department?.description) && (
+                <>
+                  <Divider />
+                  <div>
+                    <SectionTitle>Additional Information</SectionTitle>
+                    <Stack gap="md">
+                      {employee.position?.description && (
+                        <InfoRow
+                          icon={<IconBriefcase size={12} />}
+                          label="Position Description"
+                          value={employee.position.description}
+                        />
+                      )}
+                      {employee.position.department?.description && (
+                        <InfoRow
+                          icon={<IconBuilding size={12} />}
+                          label="Department Description"
+                          value={employee.position.department.description}
+                        />
+                      )}
+                    </Stack>
+                  </div>
+                </>
+              )}
+            </Stack>
+          </Card>
         </Grid.Col>
       </Grid>
     </Stack>

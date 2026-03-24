@@ -127,7 +127,12 @@ export class EmployeeService {
     const position = await this.prisma.employees.findUnique({
       where: { id },
       include: {
-        position: true,
+        position: {
+          include: {
+            department: true,
+          },
+        },
+        work_schedules: true,
       },
     });
     if (!position) throw new NotFoundException('Position not found');
@@ -227,6 +232,7 @@ export class EmployeeService {
             department: true,
           },
         },
+        work_schedules: true,
       },
       orderBy: { created_at: 'desc' },
     });

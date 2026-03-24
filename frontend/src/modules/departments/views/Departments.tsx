@@ -1,5 +1,6 @@
 import { Stack, Button, Group, TextInput, ActionIcon } from '@mantine/core';
-import { IconSearch, IconEdit } from '@tabler/icons-react';
+import { IconSearch, IconEdit, IconPlus } from '@tabler/icons-react';
+import { PageHeader } from '../../../components/PageHeader/PageHeader';
 import { useState } from 'react';
 import { BaseTable, type TableColumn } from '../../../components/BaseTable/BaseTable';
 import { TablePagination } from '../../../components/Pagination';
@@ -124,16 +125,23 @@ export default function DepartmentsPage() {
 
   return (
     <Stack gap="md">
-      <Group>
-        <Button onClick={handleAdd}>Add Department</Button>
-
-        <TextInput
-          placeholder="Search departments..."
-          leftSection={<IconSearch size={16} />}
-          value={search}
-          onChange={(e) => handleSearch(e.currentTarget.value)}
-        />
-      </Group>
+      <PageHeader
+        title="Departments"
+        description="Manage your organization's departments"
+        right={
+          <Group>
+            <Button leftSection={<IconPlus size={16} />} onClick={handleAdd}>
+              Add Department
+            </Button>
+            <TextInput
+              placeholder="Search departments..."
+              leftSection={<IconSearch size={16} />}
+              value={search}
+              onChange={(e) => handleSearch(e.currentTarget.value)}
+            />
+          </Group>
+        }
+      />
 
       {isLoading ? (
         <Loading />
