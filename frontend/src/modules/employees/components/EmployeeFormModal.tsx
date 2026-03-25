@@ -1,6 +1,5 @@
 import {
   Modal,
-  Button,
   Group,
   TextInput,
   Select,
@@ -9,16 +8,21 @@ import {
   Stack,
   Textarea,
   Divider,
+  Button,
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { useForm } from '@mantine/form';
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { IconCalendar, IconClockHour5, IconClockHour8, IconUser } from '@tabler/icons-react';
 import { employeeValidationRules, EXISTS_MSG } from '../rule-form/employee-validation';
-import type { EmployeeFormValues, IWorkSchedule } from '../types';
+import type { EmployeeFormValues } from '../types';
 import { useGetAllPositions } from '../../positions/api/get-positions';
 import { checkEmployeeExists, type CheckExistsField } from '../api/check-employee-exists';
 import { PRIMARY_COLOR } from '../../../theme';
+import { DEFAULT_WORK_DAYS, DEFAULT_START_TIME, DEFAULT_END_TIME } from '../../../constant';
+import { WorkDayBadges } from './WorkDayBadges';
+import { buildSchedules } from '../utils/time-option';
+import { TIME_OPTIONS } from '../utils/time-option';
 
 interface EmployeeFormModalProps {
   opened: boolean;
@@ -30,30 +34,7 @@ interface EmployeeFormModalProps {
   loading?: boolean;
 }
 
-const DAYS = [
-  { value: 1, label: 'Monday' },
-  { value: 2, label: 'Tuesday' },
-  { value: 3, label: 'Wednesday' },
-  { value: 4, label: 'Thursday' },
-  { value: 5, label: 'Friday' },
-  { value: 6, label: 'Saturday' },
-  { value: 0, label: 'Sunday' },
-] as const;
-
-const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
-  const h = String(Math.floor(i / 2)).padStart(2, '0');
-  const m = i % 2 === 0 ? '00' : '30';
-  return { value: `${h}:${m}`, label: `${h}:${m}` };
-});
 const UNIQUE_FIELDS: CheckExistsField[] = ['employee_code', 'email', 'identify_card'];
-
-const DEFAULT_SCHEDULE: IWorkSchedule = {
-  working_days: 5,
-  start_time: '08:00',
-  end_time: '17:00',
-};
-
-const DEFAULT_SELECTED_DAYS = [1, 2, 3, 4, 5];
 
 const EMPTY_VALUES: EmployeeFormValues = {
   employee_code: '',
@@ -69,7 +50,7 @@ const EMPTY_VALUES: EmployeeFormValues = {
   position_id: '',
   status: 'active',
   avatar: null,
-  work_schedules: DEFAULT_SCHEDULE,
+  work_schedules: buildSchedules(DEFAULT_WORK_DAYS, DEFAULT_START_TIME, DEFAULT_END_TIME),
 };
 
 export function EmployeeFormModal({
@@ -90,7 +71,9 @@ export function EmployeeFormModal({
   const debounceTimers = useRef<Partial<Record<CheckExistsField, ReturnType<typeof setTimeout>>>>(
     {},
   );
-  const [selectedDays, setSelectedDays] = useState<number[]>(DEFAULT_SELECTED_DAYS);
+  const [selectedDays, setSelectedDays] = useState<number[]>(DEFAULT_WORK_DAYS);
+  const [startTime, setStartTime] = useState<number>(DEFAULT_START_TIME);
+  const [endTime, setEndTime] = useState<number>(DEFAULT_END_TIME);
 
   const form = useForm<EmployeeFormValues>({
     initialValues: EMPTY_VALUES,
@@ -114,13 +97,16 @@ export function EmployeeFormModal({
     if (opened) {
       setExistsErrors({});
       setCheckingFields({});
-      const initSchedule = initialValues?.work_schedules ?? DEFAULT_SCHEDULE;
-      // Restore selectedDays from working_days count (default to first N weekdays)
-      const count = typeof initSchedule.working_days === 'number' ? initSchedule.working_days : 5;
-      setSelectedDays(DAYS.slice(0, count).map((d) => d.value));
+      const schedules = initialValues?.work_schedules ?? [];
+      const days = schedules.length > 0 ? schedules.map((s) => s.day_of_week) : DEFAULT_WORK_DAYS;
+      const start = schedules[0]?.start_time ?? DEFAULT_START_TIME;
+      const end = schedules[0]?.end_time ?? DEFAULT_END_TIME;
+      setSelectedDays(days);
+      setStartTime(start);
+      setEndTime(end);
       form.setValues(
         initialValues
-          ? { ...EMPTY_VALUES, ...initialValues, work_schedules: initSchedule }
+          ? { ...EMPTY_VALUES, ...initialValues, work_schedules: buildSchedules(days, start, end) }
           : EMPTY_VALUES,
       );
     }
@@ -159,7 +145,9 @@ export function EmployeeFormModal({
   const handleClose = () => {
     form.reset();
     setExistsErrors({});
-    setSelectedDays(DEFAULT_SELECTED_DAYS);
+    setSelectedDays(DEFAULT_WORK_DAYS);
+    setStartTime(DEFAULT_START_TIME);
+    setEndTime(DEFAULT_END_TIME);
     onClose();
   };
 
@@ -189,13 +177,8 @@ export function EmployeeFormModal({
     };
   };
 
-  // Work schedule helpers
-  const schedule: IWorkSchedule = form.values.work_schedules ?? DEFAULT_SCHEDULE;
-  const sharedStartTime = schedule.start_time;
-  const sharedEndTime = schedule.end_time;
-
-  const updateSchedule = (key: keyof IWorkSchedule, value: string | number) => {
-    form.setFieldValue('work_schedules', { ...schedule, [key]: value });
+  const syncSchedule = (days: number[], start: number, end: number) => {
+    form.setFieldValue('work_schedules', buildSchedules(days, start, end));
   };
 
   const toggleDay = (day: number) => {
@@ -203,7 +186,19 @@ export function EmployeeFormModal({
       ? selectedDays.filter((d) => d !== day)
       : [...selectedDays, day];
     setSelectedDays(next);
-    form.setFieldValue('work_schedules', { ...schedule, working_days: next.length });
+    syncSchedule(next, startTime, endTime);
+  };
+
+  const handleStartChange = (v: string | null) => {
+    const val = Number(v);
+    setStartTime(val);
+    syncSchedule(selectedDays, val, endTime);
+  };
+
+  const handleEndChange = (v: string | null) => {
+    const val = Number(v);
+    setEndTime(val);
+    syncSchedule(selectedDays, startTime, val);
   };
 
   return (
@@ -235,7 +230,6 @@ export function EmployeeFormModal({
             }
             labelPosition="left"
           />
-          {/* Basic Info */}
           <Grid gutter="sm">
             <Grid.Col span={4}>
               <TextInput
@@ -265,7 +259,6 @@ export function EmployeeFormModal({
             </Grid.Col>
           </Grid>
 
-          {/* Contact */}
           <Grid gutter="sm">
             <Grid.Col span={4}>
               <TextInput
@@ -294,7 +287,6 @@ export function EmployeeFormModal({
             </Grid.Col>
           </Grid>
 
-          {/* Personal */}
           <Grid gutter="sm">
             <Grid.Col span={4}>
               <Select
@@ -342,7 +334,6 @@ export function EmployeeFormModal({
             {...form.getInputProps('address')}
           />
 
-          {/* Employment */}
           <Grid gutter="sm">
             <Grid.Col span={4}>
               <DateInput
@@ -368,7 +359,6 @@ export function EmployeeFormModal({
             </Grid.Col>
           </Grid>
 
-          {/* Work Schedule */}
           <Divider
             mt="xs"
             label={
@@ -388,23 +378,7 @@ export function EmployeeFormModal({
           <Stack gap="sm">
             <Stack gap={4}>
               <Group gap={6}>
-                {DAYS.map((day) => {
-                  const active = selectedDays.includes(day.value);
-                  return (
-                    <Button
-                      key={day.value}
-                      size="xs"
-                      variant={active ? PRIMARY_COLOR : 'outline'}
-                      color={active ? 'violet' : 'gray'}
-                      onClick={() => toggleDay(day.value)}
-                      styles={{
-                        root: { minWidth: 44, fontWeight: active ? 700 : 400, borderRadius: 16 },
-                      }}
-                    >
-                      {day.label}
-                    </Button>
-                  );
-                })}
+                <WorkDayBadges days={selectedDays} onToggle={toggleDay} />
                 <Text size="xs" c="dimmed" ml={4}>
                   {selectedDays.length} day{selectedDays.length !== 1 ? 's' : ''} / week
                 </Text>
@@ -430,12 +404,12 @@ export function EmployeeFormModal({
                 </Group>
                 <Select
                   data={TIME_OPTIONS}
-                  value={sharedStartTime}
+                  value={String(startTime)}
                   searchable
                   variant="unstyled"
-                  w={80}
+                  w={100}
                   styles={{ input: { fontWeight: 600, padding: 0 } }}
-                  onChange={(v) => v && updateSchedule('start_time', v)}
+                  onChange={handleStartChange}
                 />
               </Group>
               <Group
@@ -456,12 +430,12 @@ export function EmployeeFormModal({
                 </Group>
                 <Select
                   data={TIME_OPTIONS}
-                  value={sharedEndTime}
+                  value={String(endTime)}
                   searchable
                   variant="unstyled"
-                  w={80}
+                  w={100}
                   styles={{ input: { fontWeight: 600, padding: 0 } }}
-                  onChange={(v) => v && updateSchedule('end_time', v)}
+                  onChange={handleEndChange}
                 />
               </Group>
             </Group>

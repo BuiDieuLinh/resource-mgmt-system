@@ -22,15 +22,8 @@ import { employeeListUrl } from '../../../routes/url';
 
 import type { IWorkSchedule } from '../types';
 import type { IWorkPolicy } from '../../work-policies/types';
-
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-const minutesToTime = (minutes: number): string => {
-  const h = Math.floor(minutes / 60);
-  const m = (minutes % 60).toString().padStart(2, '0');
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  return `${h.toString().padStart(2, '0')}:${m} ${ampm}`;
-};
+import { WorkDayBadges } from '../components/WorkDayBadges';
+import { minutesToTime } from '../utils/time-option';
 
 function InfoRow({
   icon,
@@ -130,21 +123,7 @@ function WorkScheduleSection({
             </Text>
           </Group>
           <Group gap={6}>
-            {DAY_LABELS.map((label, dow) => {
-              const active = shift.days.includes(dow);
-              const isWeekend = dow === 0 || dow === 6;
-              return (
-                <Badge
-                  key={dow}
-                  size="sm"
-                  variant={active ? 'filled' : 'outline'}
-                  color={active ? (isWeekend ? 'grape' : 'deepPurple') : 'gray'}
-                  style={{ opacity: active ? 1 : 0.3, minWidth: 38 }}
-                >
-                  {label}
-                </Badge>
-              );
-            })}
+            <WorkDayBadges size="md" days={shift.days} />
           </Group>
         </Stack>
       ))}
@@ -175,8 +154,8 @@ export default function EmployeeProfile() {
   return (
     <Stack gap="lg">
       <PageHeader
-        title="Employee Profile"
-        description={`Viewing profile for ${employee.full_name}`}
+        breadcrumbOnly
+        breadcrumbs={[{ label: 'Employees', path: '/employees' }, { label: employee.full_name }]}
       />
 
       <Grid gutter="lg" align="flex-start">

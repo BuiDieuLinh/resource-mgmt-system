@@ -19,6 +19,7 @@ import {
   validateHeaders,
 } from 'src/modules/employees/utils/excel.util';
 import { WorkScheduleService } from 'src/modules/work-schedules/work-schedule.service';
+import { WorkScheduleDto } from 'src/modules/work-schedules/dto/work-schedule.dto';
 
 @Injectable()
 export class EmployeeService {
@@ -65,6 +66,9 @@ export class EmployeeService {
       );
 
     const { date_of_birth, hire_date, gender, work_schedules, ...rest } = dto;
+    const schedules: WorkScheduleDto[] = Array.isArray(work_schedules)
+      ? work_schedules
+      : [];
 
     const data = {
       ...rest,
@@ -75,8 +79,8 @@ export class EmployeeService {
 
     const created = await this.prisma.employees.create({ data });
 
-    if (work_schedules) {
-      await this.workScheduleService.setSchedule(created.id, work_schedules);
+    if (schedules.length) {
+      await this.workScheduleService.setSchedule(created.id, schedules);
     }
 
     return ResponseHelper.success(created, 'Employee created successfully');
@@ -201,6 +205,9 @@ export class EmployeeService {
     }
 
     const { date_of_birth, hire_date, gender, work_schedules, ...rest } = dto;
+    const schedules: WorkScheduleDto[] = Array.isArray(work_schedules)
+      ? work_schedules
+      : [];
 
     const data = {
       ...rest,
@@ -211,8 +218,8 @@ export class EmployeeService {
 
     const updated = await this.prisma.employees.update({ where: { id }, data });
 
-    if (work_schedules) {
-      await this.workScheduleService.setSchedule(id, work_schedules);
+    if (schedules.length) {
+      await this.workScheduleService.setSchedule(id, schedules);
     }
 
     return ResponseHelper.success(updated, 'Employee updated successfully');

@@ -94,7 +94,7 @@ export class EmployeeController {
   }
 
   @Put(':id/work-schedule')
-  setWorkSchedule(@Param('id') id: string, @Body() dto: WorkScheduleDto) {
+  setWorkSchedule(@Param('id') id: string, @Body() dto: WorkScheduleDto[]) {
     return this.workScheduleService.setSchedule(id, dto);
   }
 

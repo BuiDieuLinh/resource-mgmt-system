@@ -23,19 +23,27 @@ function findPath(menus: any[], pathname: string): BreadcrumbItem[] {
 }
 
 interface PageHeaderProps {
-  title: string;
+  title?: string;
   description?: string;
   right?: React.ReactNode;
+  breadcrumbs?: BreadcrumbItem[];
+  breadcrumbOnly?: boolean;
 }
 
-export function PageHeader({ title, description, right }: PageHeaderProps) {
+export function PageHeader({
+  title,
+  description,
+  right,
+  breadcrumbs,
+  breadcrumbOnly,
+}: PageHeaderProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const items = findPath(MENUS, location.pathname);
+  const items = breadcrumbs ?? findPath(MENUS, location.pathname);
   const all: BreadcrumbItem[] = [{ label: 'Home', path: '/' }, ...items];
 
   return (
-    <Stack gap={4} mb="lg">
+    <Stack gap={4}>
       <Group gap={4} align="center">
         {all.map((item, i) => {
           const isLast = i === all.length - 1;
@@ -69,19 +77,21 @@ export function PageHeader({ title, description, right }: PageHeaderProps) {
         })}
       </Group>
 
-      <Group justify="space-between" align="flex-end">
-        <Stack gap={2}>
-          <Text size="xl" fw={700} lh={1.2}>
-            {title}
-          </Text>
-          {description && (
-            <Text size="sm" c="dimmed">
-              {description}
+      {!breadcrumbOnly && (
+        <Group justify="space-between" align="flex-end">
+          <Stack gap={2}>
+            <Text size="xl" fw={700} lh={1.2}>
+              {title}
             </Text>
-          )}
-        </Stack>
-        {right && <div>{right}</div>}
-      </Group>
+            {description && (
+              <Text size="sm" c="dimmed">
+                {description}
+              </Text>
+            )}
+          </Stack>
+          {right && <div>{right}</div>}
+        </Group>
+      )}
     </Stack>
   );
 }

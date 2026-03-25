@@ -1,16 +1,18 @@
-import { IsInt, IsString, Min, Max, Matches } from 'class-validator';
+import { IsInt, Min, Max } from 'class-validator';
 
 export class WorkScheduleDto {
   @IsInt()
-  @Min(1)
-  @Max(7)
-  working_days: number;
+  @Min(0)
+  @Max(6)
+  day_of_week: number;
 
-  @IsString()
-  @Matches(/^\d{2}:\d{2}$/, { message: 'start_time must be HH:mm' })
-  start_time: string;
+  @IsInt()
+  @Min(0)
+  @Max(1439)
+  start_time: number;
 
-  @IsString()
-  @Matches(/^\d{2}:\d{2}$/, { message: 'end_time must be HH:mm' })
-  end_time: string;
+  @IsInt()
+  @Min(0)
+  @Max(1439)
+  end_time: number;
 }
