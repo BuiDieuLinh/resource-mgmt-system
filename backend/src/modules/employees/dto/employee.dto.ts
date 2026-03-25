@@ -6,6 +6,7 @@ import {
   IsDateString,
   IsEnum,
   ValidateNested,
+  IsArray,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { WorkScheduleDto } from 'src/modules/work-schedules/dto/work-schedule.dto';
@@ -54,7 +55,8 @@ export class EmployeeDto {
   status?: EmployeeStatus;
 
   @IsOptional()
-  @ValidateNested()
+  @IsArray()
+  @ValidateNested({ each: true })
   @Type(() => WorkScheduleDto)
-  work_schedules?: WorkScheduleDto;
+  work_schedules?: WorkScheduleDto[];
 }

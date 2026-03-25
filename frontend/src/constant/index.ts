@@ -49,3 +49,17 @@ export const ATTENDANCE_STATUS = {
 } as const;
 
 export type AttendanceStatus = (typeof ATTENDANCE_STATUS)[keyof typeof ATTENDANCE_STATUS];
+
+export const DAY_LIST = [
+  { dow: 0, label: 'Monday', isWeekend: false },
+  { dow: 1, label: 'Tuesday', isWeekend: false },
+  { dow: 2, label: 'Wednesday', isWeekend: false },
+  { dow: 3, label: 'Thursday', isWeekend: false },
+  { dow: 4, label: 'Friday', isWeekend: false },
+  { dow: 5, label: 'Saturday', isWeekend: true },
+  { dow: 6, label: 'Sunday', isWeekend: true },
+] as const;
+
+export const DEFAULT_WORK_DAYS = [0, 1, 2, 3, 4]; // Mon–Fri
+export const DEFAULT_START_TIME = 480; // 08:00
+export const DEFAULT_END_TIME = 1020; // 17:00

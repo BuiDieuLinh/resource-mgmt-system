@@ -130,7 +130,7 @@ export function BaseTable<T extends Record<string, any>>({
   }, [data, sort, columns]);
 
   return (
-    <Table.ScrollContainer minWidth={height} maxHeight={height}>
+    <Table.ScrollContainer minWidth={600} mah={height} type="native">
       <Table
         highlightOnHover={highlightOnHover}
         // withTableBorder={withTableBorder}
