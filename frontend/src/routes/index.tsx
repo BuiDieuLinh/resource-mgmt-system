@@ -11,9 +11,8 @@ import {
   attendanceUrl,
   timesheetUrl,
   attendanceDetailUrl,
-  workPolicyUrl,
   leaveRequestUrl,
-  holidayUrl,
+  settingsUrl,
 } from './url';
 import Error404 from '../components/ErrorPage/Error404';
 import OrgChart from '@/modules/employees/views/OrgChart';
@@ -23,9 +22,8 @@ import EmployeeProfile from '@/modules/employees/views/EmployeeProfile';
 import Attendance from '@/modules/attendances/views/Attendances';
 import Timesheet from '@/modules/attendances/views/Timesheet';
 import AttendanceDetail from '@/modules/attendances/views/AttendanceDetail';
-import WorkPolicy from '@/modules/work-policies/views/WorkPolicy';
 import LeaveRequests from '@/modules/leave-requests/views/LeaveRequests';
-import Holidays from '@/modules/holidays/views/Holidays';
+import Settings from '@/modules/settings/views/Settings';
 
 export const router = createBrowserRouter([
   {
@@ -68,18 +66,8 @@ export const router = createBrowserRouter([
         path: attendanceDetailUrl,
         element: <AttendanceDetail />,
       },
-      {
-        path: workPolicyUrl,
-        element: <WorkPolicy />,
-      },
-      {
-        path: leaveRequestUrl,
-        element: <LeaveRequests />,
-      },
-      {
-        path: holidayUrl,
-        element: <Holidays />,
-      },
+      { path: leaveRequestUrl, element: <LeaveRequests /> },
+      { path: settingsUrl, element: <Settings /> },
     ],
   },
   {
