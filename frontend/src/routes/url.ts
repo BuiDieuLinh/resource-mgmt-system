@@ -11,6 +11,5 @@ export const attendanceDetailUrl = '/attendance/employee/:employeeId';
 export const buildAttendanceDetailUrl = (employeeId: string, month: number, year: number) =>
   `/attendance/employee/${employeeId}?month=${month}&year=${year}`;
 
-export const workPolicyUrl = '/settings/work-policy';
 export const leaveRequestUrl = '/leave-requests';
-export const holidayUrl = '/settings/holidays';
+export const settingsUrl = '/settings';

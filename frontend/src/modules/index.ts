@@ -34,8 +34,3 @@ export const LeaveRequests = lazyLoad(
   () => import('./leave-requests/views/LeaveRequests'),
   (m) => m.default,
 );
-
-export const Holidays = lazyLoad(
-  () => import('./holidays/views/Holidays'),
-  (m) => m.default,
-);

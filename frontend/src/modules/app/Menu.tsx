@@ -4,9 +4,8 @@ import {
   employeePositionsUrl,
   attendanceUrl,
   timesheetUrl,
-  workPolicyUrl,
   leaveRequestUrl,
-  holidayUrl,
+  settingsUrl,
 } from '@/routes/url';
 import {
   IconGauge,
@@ -15,9 +14,7 @@ import {
   IconTimelineEvent,
   IconBuilding,
   IconBriefcase,
-  IconShieldCheck,
   IconCalendarOff,
-  IconCalendarEvent,
 } from '@tabler/icons-react';
 
 export type AppMenu = {
@@ -28,11 +25,7 @@ export type AppMenu = {
 };
 
 export const MENUS: AppMenu[] = [
-  {
-    label: 'Dashboard',
-    icon: IconGauge,
-    path: '/',
-  },
+  { label: 'Dashboard', icon: IconGauge, path: '/' },
   {
     label: 'Employees',
     icon: IconUsers,
@@ -55,12 +48,5 @@ export const MENUS: AppMenu[] = [
     icon: IconCalendarOff,
     children: [{ label: 'Leave Requests', path: leaveRequestUrl, icon: IconCalendarOff }],
   },
-  {
-    label: 'Settings',
-    icon: IconSettings,
-    children: [
-      { label: 'Work Policy', path: workPolicyUrl, icon: IconShieldCheck },
-      { label: 'Public Holidays', path: holidayUrl, icon: IconCalendarEvent },
-    ],
-  },
+  { label: 'Settings', icon: IconSettings, path: settingsUrl },
 ];

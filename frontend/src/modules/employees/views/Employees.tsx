@@ -37,10 +37,11 @@ import { useUpdateEmployee } from '../api/update-employee';
 import { useImportEmployees } from '../api/import-employees';
 import { usePreviewImport, type PreviewEmployee } from '../api/preview-import';
 import { exportEmployees } from '../api/export-employees';
-import { Loading } from '../../../components/Loading/Loading';
 import { notify } from '../../../components/Notification';
 import { mapEmployeeToFormValues } from '../utils/employee-mapper';
 import { formatDate } from '../../../constant';
+import { TableSkeleton } from '../../../components/Skeleton/TableSkeleton';
+import { useDelayedLoading } from '../../../hooks/useDelayedLoading';
 
 export default function EmployeesPage() {
   const navigate = useNavigate();
@@ -59,12 +60,18 @@ export default function EmployeesPage() {
 
   const isEdit = Boolean(editEmployee);
 
-  const { data, isLoading, error, refetch } = useGetEmployees({
+  const {
+    data,
+    isLoading: _loading,
+    error,
+    refetch,
+  } = useGetEmployees({
     pageIndex: page,
     pageSize,
     search: search || undefined,
     filter: filter || undefined,
   });
+  const isLoading = useDelayedLoading(_loading);
 
   const employees = data?.data || [];
   const totalCount = data?.count || 0;
@@ -349,7 +356,7 @@ export default function EmployeesPage() {
       />
 
       {isLoading ? (
-        <Loading />
+        <TableSkeleton colWidths={[120, 160, 200, 100, 130, 100, 80, 80]} />
       ) : (
         <>
           <BaseTable
