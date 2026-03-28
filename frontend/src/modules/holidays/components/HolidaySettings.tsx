@@ -8,9 +8,10 @@ import {
   IconCalendar,
 } from '@tabler/icons-react';
 import { notify } from '@/components/Notification';
-import { Loading } from '@/components/Loading/Loading';
 import { formatDate } from '@/constant';
 import { SettingRow, SettingsCard, SectionLabel } from '@/components/SettingsUI';
+import { SettingRowSkeleton } from '@/components/Skeleton/SettingRowSkeleton';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useGetHolidays } from '../api/get-holidays';
 import { useCreateHoliday } from '../api/create-holiday';
 import { useUpdateHoliday } from '../api/update-holiday';
@@ -22,7 +23,8 @@ export function HolidaySettings() {
   const [year, setYear] = useState(String(new Date().getFullYear()));
   const [opened, setOpened] = useState(false);
   const [editHoliday, setEditHoliday] = useState<IHoliday | null>(null);
-  const { data, isLoading } = useGetHolidays({ year });
+  const { data, isLoading: _loading } = useGetHolidays({ year });
+  const isLoading = useDelayedLoading(_loading);
   const holidays = data?.data ?? [];
   const createMutation = useCreateHoliday();
   const updateMutation = useUpdateHoliday();
@@ -57,7 +59,13 @@ export function HolidaySettings() {
     }
   };
 
-  if (isLoading) return <Loading />;
+  if (isLoading)
+    return (
+      <Stack gap="md">
+        <SectionLabel>Public Holidays</SectionLabel>
+        <SettingRowSkeleton rows={5} />
+      </Stack>
+    );
 
   return (
     <Stack gap="md">

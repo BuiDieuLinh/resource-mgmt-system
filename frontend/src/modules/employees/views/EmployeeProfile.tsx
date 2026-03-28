@@ -16,9 +16,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useGetEmployee } from '../api/get-employee';
 import { PageHeader } from '../../../components/PageHeader/PageHeader';
 import { useGetActivePolicy } from '../../work-policies/api/get-work-policies';
-import { Loading } from '../../../components/Loading/Loading';
 import ErrorState from '../../../components/ErrorState/ErrorState';
 import { employeeListUrl } from '../../../routes/url';
+import { Skeleton } from '@mantine/core';
+import { useDelayedLoading } from '../../../hooks/useDelayedLoading';
 
 import type { IWorkSchedule } from '../types';
 import type { IWorkPolicy } from '../../work-policies/types';
@@ -135,10 +136,53 @@ export default function EmployeeProfile() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
 
-  const { data, isLoading, error, refetch } = useGetEmployee(id!);
+  const { data, isLoading: _loading, error, refetch } = useGetEmployee(id!);
+  const isLoading = useDelayedLoading(_loading);
   const { data: policyData } = useGetActivePolicy();
 
-  if (isLoading) return <Loading />;
+  if (isLoading)
+    return (
+      <Stack gap="lg">
+        <Skeleton h={16} w={240} radius="sm" />
+        <Grid gutter="lg">
+          <Grid.Col span={3}>
+            <Card withBorder padding="xl" radius="md">
+              <Stack align="center" gap="md">
+                <Skeleton circle h={96} />
+                <Skeleton h={14} w={140} radius="sm" />
+                <Skeleton h={10} w={80} radius="sm" />
+                <Skeleton h={22} w={60} radius="xl" />
+              </Stack>
+              <Divider my="md" />
+              <Stack gap="sm">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} h={12} radius="sm" />
+                ))}
+              </Stack>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={9}>
+            <Card withBorder padding="xl" radius="md">
+              <Stack gap="xl">
+                {Array.from({ length: 3 }).map((_, s) => (
+                  <Stack key={s} gap="sm">
+                    <Skeleton h={10} w={120} radius="sm" />
+                    <Grid gutter="lg">
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <Grid.Col key={i} span={6}>
+                          <Skeleton h={36} radius="sm" />
+                        </Grid.Col>
+                      ))}
+                    </Grid>
+                    {s < 2 && <Divider />}
+                  </Stack>
+                ))}
+              </Stack>
+            </Card>
+          </Grid.Col>
+        </Grid>
+      </Stack>
+    );
   if (error)
     return (
       <ErrorState message={`Error loading employee profile: ${error.message}`} onRetry={refetch} />

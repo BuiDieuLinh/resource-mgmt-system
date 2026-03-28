@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Stack, Group, Button, Badge, ActionIcon, Tooltip, Box, Text } from '@mantine/core';
 import { IconPlus, IconEdit, IconTrash, IconShieldCheck } from '@tabler/icons-react';
 import { notify } from '@/components/Notification';
-import { Loading } from '@/components/Loading/Loading';
 import { formatDate } from '@/constant';
 import { SettingRow, SettingsCard, SectionLabel } from '@/components/SettingsUI';
+import { SettingRowSkeleton } from '@/components/Skeleton/SettingRowSkeleton';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useGetWorkPolicies } from '../api/get-work-policies';
 import { useCreateWorkPolicy } from '../api/create-work-policy';
 import { useUpdateWorkPolicy } from '../api/update-work-policy';
@@ -23,7 +24,8 @@ function isActive(p: IWorkPolicy) {
 export function WorkPolicySettings() {
   const [opened, setOpened] = useState(false);
   const [editPolicy, setEditPolicy] = useState<IWorkPolicy | null>(null);
-  const { data, isLoading } = useGetWorkPolicies();
+  const { data, isLoading: _loading } = useGetWorkPolicies();
+  const isLoading = useDelayedLoading(_loading);
   const createMutation = useCreateWorkPolicy();
   const updateMutation = useUpdateWorkPolicy();
   const deleteMutation = useDeleteWorkPolicy();
@@ -53,7 +55,13 @@ export function WorkPolicySettings() {
     }
   };
 
-  if (isLoading) return <Loading />;
+  if (isLoading)
+    return (
+      <Stack gap="md">
+        <SectionLabel>Work Policies</SectionLabel>
+        <SettingRowSkeleton rows={3} />
+      </Stack>
+    );
 
   return (
     <Stack gap="md">

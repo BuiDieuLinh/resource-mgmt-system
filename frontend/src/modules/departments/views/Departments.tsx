@@ -4,9 +4,10 @@ import { PageHeader } from '../../../components/PageHeader/PageHeader';
 import { useState } from 'react';
 import { BaseTable, type TableColumn } from '../../../components/BaseTable/BaseTable';
 import { TablePagination } from '../../../components/Pagination';
-import { Loading } from '../../../components/Loading/Loading';
 import ErrorState from '../../../components/ErrorState/ErrorState';
 import { useGetDepartments } from '../../departments/api/get-departments';
+import { TableSkeleton } from '../../../components/Skeleton/TableSkeleton';
+import { useDelayedLoading } from '../../../hooks/useDelayedLoading';
 import { useCreateDepartment } from '../api/create-department';
 import { useUpdateDepartment } from '../api/update-department';
 import { DepartmentFormModal } from '../components/DepartmentFormModal';
@@ -23,11 +24,17 @@ export default function DepartmentsPage() {
 
   const isEdit = Boolean(editDepartment);
 
-  const { data, isLoading, error, refetch } = useGetDepartments({
+  const {
+    data,
+    isLoading: _loading,
+    error,
+    refetch,
+  } = useGetDepartments({
     pageIndex: page,
     pageSize,
     search: search || undefined,
   });
+  const isLoading = useDelayedLoading(_loading);
 
   const departments = data?.data || [];
   const totalCount = data?.count || 0;
@@ -144,7 +151,7 @@ export default function DepartmentsPage() {
       />
 
       {isLoading ? (
-        <Loading />
+        <TableSkeleton colWidths={[100, 200, 300, 80]} />
       ) : (
         <>
           <BaseTable

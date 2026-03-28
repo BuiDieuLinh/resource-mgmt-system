@@ -4,9 +4,10 @@ import { IconPlus, IconEdit, IconTrash, IconCheck, IconX } from '@tabler/icons-r
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { BaseTable, type TableColumn } from '@/components/BaseTable/BaseTable';
 import { notify } from '@/components/Notification';
-import { Loading } from '@/components/Loading/Loading';
 import ErrorState from '@/components/ErrorState/ErrorState';
 import { formatDate, LEAVE_TYPE_LABEL, LEAVE_STATUS_LABEL } from '@/constant';
+import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useGetLeaveRequests } from '../api/get-leave-requests';
 import { useCreateLeaveRequest } from '../api/create-leave-request';
 import { useUpdateLeaveStatus } from '../api/update-leave-status';
@@ -29,13 +30,14 @@ export default function LeaveRequestsPage() {
 
   const {
     data: leaveData,
-    isLoading,
+    isLoading: _loading,
     error,
     refetch,
   } = useGetLeaveRequests({
     status: filterStatus ?? undefined,
     employee_id: filterEmployee ?? undefined,
   });
+  const isLoading = useDelayedLoading(_loading);
   const requests = leaveData?.data ?? [];
 
   const { data: empData } = useGetEmployees({ pageIndex: 1, pageSize: 999 });
@@ -229,7 +231,11 @@ export default function LeaveRequestsPage() {
         }
       />
 
-      {isLoading ? <Loading /> : <BaseTable data={requests} columns={columns} height={520} />}
+      {isLoading ? (
+        <TableSkeleton colWidths={[160, 100, 110, 110, 200, 90, 100]} />
+      ) : (
+        <BaseTable data={requests} columns={columns} height={520} />
+      )}
 
       <LeaveRequestFormModal
         opened={opened}

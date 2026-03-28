@@ -4,9 +4,10 @@ import { PageHeader } from '../../../components/PageHeader/PageHeader';
 import { useState, useMemo } from 'react';
 import { BaseTable, type TableColumn } from '../../../components/BaseTable/BaseTable';
 import { TablePagination } from '../../../components/Pagination';
-import { Loading } from '../../../components/Loading/Loading';
 import ErrorState from '../../../components/ErrorState/ErrorState';
 import { useGetPositions } from '../../positions/api/get-positions';
+import { TableSkeleton } from '../../../components/Skeleton/TableSkeleton';
+import { useDelayedLoading } from '../../../hooks/useDelayedLoading';
 import { useGetAllDepartments } from '../../departments/api/get-departments';
 import { useCreatePosition } from '../api/create-position';
 import { useUpdatePosition } from '../api/update-position';
@@ -26,12 +27,18 @@ export default function PositionsPage() {
 
   const isEdit = Boolean(editPosition);
 
-  const { data, isLoading, error, refetch } = useGetPositions({
+  const {
+    data,
+    isLoading: _loading,
+    error,
+    refetch,
+  } = useGetPositions({
     pageIndex: page,
     pageSize,
     search: search || undefined,
     department_id: departmentFilter || undefined,
   });
+  const isLoading = useDelayedLoading(_loading);
 
   const { data: departmentsData } = useGetAllDepartments();
   const departments = departmentsData?.data || [];
@@ -189,7 +196,7 @@ export default function PositionsPage() {
       />
 
       {isLoading ? (
-        <Loading />
+        <TableSkeleton colWidths={[200, 100, 160, 260, 80]} />
       ) : (
         <>
           <BaseTable
