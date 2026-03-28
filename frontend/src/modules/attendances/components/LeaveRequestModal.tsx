@@ -2,7 +2,7 @@ import { Modal, Stack, Group, Text, Badge, Button, Divider } from '@mantine/core
 import { IconCalendar, IconUser, IconFileText } from '@tabler/icons-react';
 import type { ILeaveRequest } from '../types';
 import { useUpdateLeaveRequest } from '../api/update-leave-request';
-import { LEAVE_TYPE_LABEL } from '@/constant';
+import { LEAVE_TYPE_LABEL, formatDate } from '@/constant';
 import { LEAVE_STATUS_COLOR } from '../utils/color';
 
 interface Props {
@@ -20,9 +20,6 @@ export function LeaveRequestModal({ opened, onClose, leaveRequest, employeeName 
   const handleAction = (status: 'approved' | 'rejected') => {
     updateStatus({ id: leaveRequest.id, status }, { onSuccess: onClose });
   };
-
-  const formatDate = (d: string) =>
-    new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
   return (
     <Modal opened={opened} onClose={onClose} title="Leave Request Detail" centered size="md">

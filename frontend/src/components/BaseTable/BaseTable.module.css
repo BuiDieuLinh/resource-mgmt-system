@@ -1,7 +1,7 @@
 .header {
   position: sticky;
   transition: box-shadow 150ms ease;
-  background-color: var(--header-bg-color, #f8f9fa) !important;
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6)) !important;
 
   &::after {
     content: '';
@@ -14,7 +14,7 @@
 }
 
 .header th {
-  background-color: var(--header-bg-color, #f8f9fa) !important;
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6)) !important;
 }
 
 .scrolled {

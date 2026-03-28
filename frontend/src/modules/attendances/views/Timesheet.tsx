@@ -44,11 +44,11 @@ export default function TimesheetPage() {
   console.log('Raw attendance data:', rawData);
 
   const timesheetData: TimesheetRow[] = useMemo(() => {
+    if (!Array.isArray(rawData)) return [];
     return rawData.map((r) => ({
       id: r.id,
       employee_name: r.employee?.full_name || r.employee_id,
       date: (r as any).work_date || r.date,
-      // Provide empty string fallback if time is not available yet
       check_in:
         (r as any).check_in_time || r.check_in
           ? new Date((r as any).check_in_time || r.check_in).toLocaleTimeString('vn-VN', {
@@ -65,7 +65,7 @@ export default function TimesheetPage() {
               timeZone: 'UTC',
             })
           : '',
-      hours: r.over_time || 0, // Fallback for demonstration, a real logic would calc diff between in and out
+      hours: r.over_time || 0,
       late: r.late || 0,
       location: (r as any).check_in_place || 'Office',
       distance: 0,

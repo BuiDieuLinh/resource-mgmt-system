@@ -9,3 +9,7 @@ export const URL_API_GET_POSITIONS = 'positions';
 export const URL_API_GET_ATTENDANCES = 'attendances';
 
 export const URL_API_WORK_POLICIES = 'work-policies';
+
+export const URL_API_LEAVE_REQUESTS = 'leave-requests';
+
+export const URL_API_HOLIDAYS = 'holidays';

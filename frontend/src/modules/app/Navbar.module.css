@@ -3,7 +3,6 @@
   display: flex;
   flex-direction: column;
   background: var(--mantine-color-body);
-  border-right: 1px solid var(--mantine-color-default-border);
 }
 
 .logo {

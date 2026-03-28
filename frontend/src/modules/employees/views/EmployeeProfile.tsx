@@ -23,7 +23,7 @@ import { employeeListUrl } from '../../../routes/url';
 import type { IWorkSchedule } from '../types';
 import type { IWorkPolicy } from '../../work-policies/types';
 import { WorkDayBadges } from '../components/WorkDayBadges';
-import { minutesToTime } from '../utils/time-option';
+import { minutesToTime, formatDate } from '../../../constant';
 
 function InfoRow({
   icon,
@@ -147,9 +147,6 @@ export default function EmployeeProfile() {
     return <ErrorState message="Employee not found" onRetry={() => navigate(employeeListUrl)} />;
 
   const employee = data.data;
-
-  const formatDate = (d: string) =>
-    new Date(d).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' });
 
   return (
     <Stack gap="lg">

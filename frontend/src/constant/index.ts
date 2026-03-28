@@ -63,3 +63,23 @@ export const DAY_LIST = [
 export const DEFAULT_WORK_DAYS = [0, 1, 2, 3, 4]; // Mon–Fri
 export const DEFAULT_START_TIME = 480; // 08:00
 export const DEFAULT_END_TIME = 1020; // 17:00
+
+// Date formatting — dd, MMM yyyy e.g. 25, Mar 2026
+export function formatDate(value: string | Date | null | undefined): string {
+  if (!value) return '—';
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return '—';
+  const day = d.toLocaleDateString('en-GB', { day: '2-digit' });
+  const mon = d.toLocaleDateString('en-GB', { month: 'short' });
+  const year = d.toLocaleDateString('en-GB', { year: 'numeric' });
+  return `${day}, ${mon} ${year}`;
+}
+
+export const DATE_FORMAT = 'dd, MMM yyyy';
+
+export function minutesToTime(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = (minutes % 60).toString().padStart(2, '0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  return `${String(h).padStart(2, '0')}:${m} ${ampm}`;
+}

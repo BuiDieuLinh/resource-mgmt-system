@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { LeaveRequestController } from './leave-request.controller';
 import { LeaveRequestService } from './leave-request.service';
+import { HolidayModule } from 'src/modules/holidays/holiday.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, HolidayModule],
   controllers: [LeaveRequestController],
   providers: [LeaveRequestService],
   exports: [LeaveRequestService],
