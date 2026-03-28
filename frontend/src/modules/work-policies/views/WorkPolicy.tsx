@@ -32,6 +32,7 @@ import { notify } from '@/components/Notification';
 import { Loading } from '@/components/Loading/Loading';
 import ErrorState from '@/components/ErrorState/ErrorState';
 import { minutesToTime } from '../utils/time';
+import { formatDate } from '@/constant';
 import type { IWorkPolicy, IWorkPolicyPayload } from '../types';
 
 function isActive(policy: IWorkPolicy): boolean {
@@ -95,19 +96,9 @@ function PolicyCard({
             </Badge>
             <Text size="xs" c="dimmed">
               <IconCalendar size={11} style={{ verticalAlign: 'middle', marginRight: 3 }} />
-              {new Date(policy.effective_from).toLocaleDateString('en-GB', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-              })}
+              {formatDate(policy.effective_from)}
               {' — '}
-              {policy.effective_to
-                ? new Date(policy.effective_to).toLocaleDateString('en-GB', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
-                  })
-                : 'No end date'}
+              {policy.effective_to ? formatDate(policy.effective_to) : 'No end date'}
             </Text>
           </Group>
           <Group gap={2}>

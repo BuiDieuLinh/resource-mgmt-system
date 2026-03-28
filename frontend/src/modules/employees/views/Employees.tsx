@@ -18,6 +18,7 @@ import {
   IconFileExport,
   IconFileImport,
   IconDotsVertical,
+  IconPlus,
 } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -39,6 +40,7 @@ import { exportEmployees } from '../api/export-employees';
 import { Loading } from '../../../components/Loading/Loading';
 import { notify } from '../../../components/Notification';
 import { mapEmployeeToFormValues } from '../utils/employee-mapper';
+import { formatDate } from '../../../constant';
 
 export default function EmployeesPage() {
   const navigate = useNavigate();
@@ -245,7 +247,7 @@ export default function EmployeesPage() {
       key: 'hire_date',
       title: 'Hire Date',
       sortable: true,
-      render: (row) => new Date(row.hire_date).toLocaleDateString('vi-VN'),
+      render: (row) => formatDate(row.hire_date),
     },
     {
       key: 'status',
@@ -290,7 +292,9 @@ export default function EmployeesPage() {
         description="Manage your workforce — add, edit, and organize employees"
         right={
           <Group>
-            <Button onClick={handleAdd}>Add employee</Button>
+            <Button leftSection={<IconPlus size={16} />} onClick={handleAdd}>
+              Add employee
+            </Button>
             <Menu shadow="md" width={200} position="bottom-start">
               <Menu.Target>
                 <Button variant="light" leftSection={<IconDotsVertical size={16} />}>

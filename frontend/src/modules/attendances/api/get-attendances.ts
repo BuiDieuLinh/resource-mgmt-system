@@ -18,10 +18,16 @@ interface GetAttendancesParams {
 }
 
 const getAttendances = async (params: GetAttendancesParams): Promise<IAttendance[]> => {
-  const res = await apiClient.get<IAttendance[] | AttendancesResponse>(URL_API_GET_ATTENDANCES, {
-    params,
-  });
-  return Array.isArray(res.data) ? res.data : (res.data as AttendancesResponse).data;
+  const res = await apiClient.get<any>(URL_API_GET_ATTENDANCES, { params });
+  const body = res.data;
+
+  const inner = body?.data ?? body;
+
+  if (inner && !Array.isArray(inner) && Array.isArray(inner.data)) {
+    return inner.data;
+  }
+
+  return Array.isArray(inner) ? inner : [];
 };
 
 export const useGetAttendances = (

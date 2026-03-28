@@ -10,6 +10,7 @@ import { WorkScheduleModule } from './modules/work-schedules/work-schedule.modul
 import { WorkPolicyModule } from './modules/work-policies/work-policy.module';
 import { AttendancesModule } from './modules/attendances/attendances.module';
 import { LeaveRequestModule } from './modules/leave-requests/leave-request.module';
+import { HolidayModule } from './modules/holidays/holiday.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { LeaveRequestModule } from './modules/leave-requests/leave-request.modul
     WorkPolicyModule,
     AttendancesModule,
     LeaveRequestModule,
+    HolidayModule,
   ],
   controllers: [AppController],
   providers: [AppService],

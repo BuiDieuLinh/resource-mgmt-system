@@ -79,7 +79,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
     right?: React.ReactNode,
     onClick?: () => void,
   ) => (
-    <UnstyledButton
+    <Box
       className={classes.footerRow}
       onClick={onClick}
       style={{ cursor: onClick ? 'pointer' : 'default' }}
@@ -101,7 +101,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
           </>
         )}
       </Group>
-    </UnstyledButton>
+    </Box>
   );
 
   return (
