@@ -77,18 +77,15 @@ export function LeaveRequestFormModal({
   const selectedEmployeeId = form.values.employee_id;
   const { data: employeeData } = useGetEmployee(selectedEmployeeId);
 
-  // Default start/end from employee's first work schedule
   const defaultSchedule = useMemo(() => {
     const schedules = employeeData?.data?.work_schedules;
     if (!schedules?.length) return { start: null, end: null };
-    // Use the first schedule's times (all days share same shift typically)
     return {
       start: String(schedules[0].start_time),
       end: String(schedules[0].end_time),
     };
   }, [employeeData]);
 
-  // When employee changes, update leave time defaults
   useEffect(() => {
     if (selectedEmployeeId && defaultSchedule.start) {
       form.setFieldValue('leave_start_minutes', defaultSchedule.start);
