@@ -73,6 +73,7 @@ export function HolidaySettings() {
         action={
           <Group gap="xs">
             <Select
+              checkIconPosition="right"
               size="xs"
               w={84}
               data={yearOptions}

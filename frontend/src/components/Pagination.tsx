@@ -1,4 +1,4 @@
-import { Group, Pagination, Select } from "@mantine/core";
+import { Group, Pagination, Select } from '@mantine/core';
 
 type TablePaginationProps = {
   page: number;
@@ -19,14 +19,10 @@ export function TablePagination({
 
   return (
     <Group justify="flex-end" mt="md">
-      <Pagination
-        value={page}
-        total={totalPage}
-        onChange={onPageChange}
-        withEdges
-      />
+      <Pagination value={page} total={totalPage} onChange={onPageChange} withEdges />
 
       <Select
+        checkIconPosition="right"
         value={String(pageSize)}
         data={['10', '20', '50']}
         onChange={(v) => onPageSizeChange(Number(v))}

@@ -136,6 +136,7 @@ export default function AttendanceDetailPage() {
 
         <Group gap="sm">
           <Select
+            checkIconPosition="right"
             size="sm"
             value={`${year}-${month}`}
             data={monthOptions}
@@ -149,6 +150,7 @@ export default function AttendanceDetailPage() {
           {viewTab === 'week' && (
             <Select
               size="sm"
+              checkIconPosition="right"
               value={String(weekIdx)}
               data={weekOptions}
               onChange={(v) => set({ week: v })}

@@ -121,6 +121,7 @@ export function AttendanceFormModal({ opened, onClose, initial, onSave, loading 
             </Text>
           )}{' '}
           <Select
+            checkIconPosition="right"
             label="Status"
             data={[
               { value: 'approved', label: 'Approved' },

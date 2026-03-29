@@ -17,6 +17,8 @@ import { IconClock, IconCalendar, IconCoffee } from '@tabler/icons-react';
 import { PRIMARY_COLOR } from '@/theme';
 import { TIME_OPTIONS, minutesToTime, timeToMinutes } from '../utils/time';
 import type { IWorkPolicy, IWorkPolicyPayload } from '../types';
+import { DATE_FORMAT } from '@/constant';
+import { toISO } from '@/utils/date';
 
 interface Props {
   opened: boolean;
@@ -83,8 +85,8 @@ export function WorkPolicyFormModal({
       break_end: timeToMinutes(values.break_end),
       flexible_start: values.is_flexible_enabled ? values.flexible_start : null,
       flexible_end: values.is_flexible_enabled ? values.flexible_end : null,
-      effective_from: values.effective_from!.toISOString(),
-      effective_to: values.effective_to ? values.effective_to.toISOString() : null,
+      effective_from: toISO(values.effective_from)!,
+      effective_to: toISO(values.effective_to),
     };
     await onSubmit(payload, initialValues?.id);
   };
@@ -122,6 +124,7 @@ export function WorkPolicyFormModal({
           <Grid gutter="sm">
             <Grid.Col span={6}>
               <Select
+                checkIconPosition="right"
                 label="Break Start"
                 data={TIME_OPTIONS}
                 searchable
@@ -131,6 +134,7 @@ export function WorkPolicyFormModal({
             </Grid.Col>
             <Grid.Col span={6}>
               <Select
+                checkIconPosition="right"
                 label="Break End"
                 data={TIME_OPTIONS}
                 searchable
@@ -200,8 +204,8 @@ export function WorkPolicyFormModal({
             <Grid.Col span={6}>
               <DateInput
                 label="Effective From"
-                placeholder="DD/MM/YYYY"
-                valueFormat="DD/MM/YYYY"
+                placeholder={DATE_FORMAT}
+                valueFormat={DATE_FORMAT}
                 required
                 {...form.getInputProps('effective_from')}
               />
@@ -210,7 +214,7 @@ export function WorkPolicyFormModal({
               <DateInput
                 label="Effective To"
                 placeholder="Leave blank = no end"
-                valueFormat="DD/MM/YYYY"
+                valueFormat={DATE_FORMAT}
                 clearable
                 minDate={form.values.effective_from ?? undefined}
                 {...form.getInputProps('effective_to')}

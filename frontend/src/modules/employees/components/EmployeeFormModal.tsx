@@ -19,7 +19,14 @@ import type { EmployeeFormValues } from '../types';
 import { useGetAllPositions } from '../../positions/api/get-positions';
 import { checkEmployeeExists, type CheckExistsField } from '../api/check-employee-exists';
 import { PRIMARY_COLOR } from '../../../theme';
-import { DEFAULT_WORK_DAYS, DEFAULT_START_TIME, DEFAULT_END_TIME } from '../../../constant';
+import {
+  DEFAULT_WORK_DAYS,
+  DEFAULT_START_TIME,
+  DEFAULT_END_TIME,
+  DATE_FORMAT,
+  LEVEL_LABEL,
+  type LevelPosition,
+} from '../../../constant';
 import { WorkDayBadges } from './WorkDayBadges';
 import { buildSchedules } from '../utils/time-option';
 import { TIME_OPTIONS } from '../utils/time-option';
@@ -155,7 +162,7 @@ export function EmployeeFormModal({
     () =>
       positionsData?.data?.map((pos) => ({
         value: pos.id,
-        label: `${pos.position_name}${pos.level ? ` (${pos.level})` : ''}`,
+        label: `${pos.position_name}${LEVEL_LABEL[pos.level as LevelPosition] ? ` (${LEVEL_LABEL[pos.level as LevelPosition]})` : ''}`,
       })) ?? [],
     [positionsData],
   );
@@ -165,11 +172,7 @@ export function EmployeeFormModal({
     return {
       ...base,
       error: base.error || existsErrors[field],
-      rightSection: checkingFields[field] ? (
-        <Text size="xs" c="dimmed">
-          checking…
-        </Text>
-      ) : undefined,
+      rightSection: checkingFields[field],
       onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
         base.onChange(e);
         scheduleCheck(field, e.currentTarget.value);
@@ -290,6 +293,7 @@ export function EmployeeFormModal({
           <Grid gutter="sm">
             <Grid.Col span={4}>
               <Select
+                checkIconPosition="right"
                 label="Gender"
                 placeholder="Select gender"
                 required
@@ -304,8 +308,8 @@ export function EmployeeFormModal({
             <Grid.Col span={4}>
               <DateInput
                 label="Date of Birth"
-                placeholder="DD/MM/YYYY"
-                valueFormat="DD/MM/YYYY"
+                placeholder={DATE_FORMAT}
+                valueFormat={DATE_FORMAT}
                 clearable
                 required
                 maxDate={new Date()}
@@ -314,6 +318,7 @@ export function EmployeeFormModal({
             </Grid.Col>
             <Grid.Col span={4}>
               <Select
+                checkIconPosition="right"
                 label="Position"
                 placeholder="Select position"
                 required
@@ -338,8 +343,8 @@ export function EmployeeFormModal({
             <Grid.Col span={4}>
               <DateInput
                 label="Hire Date"
-                placeholder="DD/MM/YYYY"
-                valueFormat="DD/MM/YYYY"
+                placeholder={DATE_FORMAT}
+                valueFormat={DATE_FORMAT}
                 required
                 maxDate={new Date()}
                 {...form.getInputProps('hire_date')}
@@ -347,6 +352,7 @@ export function EmployeeFormModal({
             </Grid.Col>
             <Grid.Col span={4}>
               <Select
+                checkIconPosition="right"
                 label="Status"
                 placeholder="Select status"
                 required
@@ -406,8 +412,9 @@ export function EmployeeFormModal({
                   data={TIME_OPTIONS}
                   value={String(startTime)}
                   searchable
+                  checkIconPosition="right"
                   variant="unstyled"
-                  w={100}
+                  w={120}
                   styles={{ input: { fontWeight: 600, padding: 0 } }}
                   onChange={handleStartChange}
                 />
@@ -429,11 +436,12 @@ export function EmployeeFormModal({
                   </Text>
                 </Group>
                 <Select
+                  checkIconPosition="right"
                   data={TIME_OPTIONS}
                   value={String(endTime)}
                   searchable
                   variant="unstyled"
-                  w={100}
+                  w={120}
                   styles={{ input: { fontWeight: 600, padding: 0 } }}
                   onChange={handleEndChange}
                 />

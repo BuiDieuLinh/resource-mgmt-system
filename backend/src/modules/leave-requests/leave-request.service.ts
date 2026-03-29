@@ -58,6 +58,14 @@ export class LeaveRequestService {
       throw new BadRequestException('end_date must be on or after start_date');
     }
 
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    if (startDate < currentMonthStart) {
+      throw new BadRequestException(
+        `Cannot create leave request in the past. Start date must be within the current month (${currentMonthStart.toISOString().slice(0, 7)}) or later`,
+      );
+    }
+
     const employee = await this.prisma.employees.findUnique({
       where: { id: dto.employee_id },
       include: { work_schedules: true },
