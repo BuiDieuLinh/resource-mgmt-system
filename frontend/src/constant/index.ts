@@ -75,7 +75,7 @@ export function formatDate(value: string | Date | null | undefined): string {
   return `${day}, ${mon} ${year}`;
 }
 
-export const DATE_FORMAT = 'dd, MMM yyyy';
+export const DATE_FORMAT = 'DD, MMM YYYY';
 
 export function minutesToTime(minutes: number): string {
   const h = Math.floor(minutes / 60);
@@ -83,3 +83,37 @@ export function minutesToTime(minutes: number): string {
   const ampm = h >= 12 ? 'PM' : 'AM';
   return `${String(h).padStart(2, '0')}:${m} ${ampm}`;
 }
+
+export const LEVEL_OPTIONS = [
+  { value: 'junior', label: 'Junior' },
+  { value: 'mid', label: 'Middle' },
+  { value: 'senior', label: 'Senior' },
+  { value: 'lead', label: 'Lead' },
+  { value: 'manager', label: 'Manager' },
+];
+
+export const LEVEL_POSITIONS = {
+  JUNIOR: 'junior',
+  MIDDLE: 'mid',
+  SENIOR: 'senior',
+  LEAD: 'lead',
+  MANAGER: 'manager',
+} as const;
+
+export type LevelPosition = (typeof LEVEL_POSITIONS)[keyof typeof LEVEL_POSITIONS];
+
+export const LEVEL_LABEL: Record<LevelPosition, string> = {
+  junior: 'Junior',
+  mid: 'Middle',
+  senior: 'Senior',
+  lead: 'Lead',
+  manager: 'Manager',
+};
+
+export const LEVEL_COLOR: Record<LevelPosition, string> = {
+  junior: 'teal',
+  mid: 'blue',
+  senior: 'violet',
+  lead: 'orange',
+  manager: 'red',
+};

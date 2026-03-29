@@ -58,7 +58,7 @@ export function PageHeader({
                     color: 'var(--mantine-color-dimmed)',
                   }}
                 >
-                  <IconHome size={13} />
+                  <IconHome size={12} />
                 </UnstyledButton>
               ) : isLast ? (
                 <Text size="xs" fw={600} c="dark.4">

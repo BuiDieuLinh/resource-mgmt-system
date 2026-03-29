@@ -5,6 +5,7 @@ import { positionValidationRules } from '../rule-form/position-validation';
 import type { PositionFormValues } from '../types';
 import { useGetAllDepartments } from '../../departments/api/get-departments';
 import { PRIMARY_COLOR } from '@/theme';
+import { LEVEL_OPTIONS } from '@/constant';
 
 interface PositionFormModalProps {
   opened: boolean;
@@ -84,7 +85,6 @@ export function PositionFormModal({
       centered
       styles={{
         header: {
-          borderBottom: '2px solid #e9ecef',
           padding: '5px 15px',
         },
         body: {
@@ -101,14 +101,17 @@ export function PositionFormModal({
             {...form.getInputProps('position_name')}
           />
 
-          <TextInput
+          <Select
+            checkIconPosition="right"
             label="Level"
-            placeholder="e.g., Senior, Mid, Junior"
+            placeholder="Select level"
+            data={LEVEL_OPTIONS}
             required
             {...form.getInputProps('level')}
           />
 
           <Select
+            checkIconPosition="right"
             label="Department"
             placeholder="Select department"
             required

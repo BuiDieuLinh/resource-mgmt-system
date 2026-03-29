@@ -341,6 +341,7 @@ export default function EmployeesPage() {
             />
 
             <Select
+              checkIconPosition="right"
               placeholder="Filter by status"
               clearable
               w={100}

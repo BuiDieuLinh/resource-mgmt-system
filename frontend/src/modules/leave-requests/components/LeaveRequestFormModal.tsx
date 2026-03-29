@@ -116,6 +116,7 @@ export function LeaveRequestFormModal({
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack gap="sm">
           <Select
+            checkIconPosition="right"
             label="Employee"
             placeholder="Select employee"
             required
@@ -125,6 +126,7 @@ export function LeaveRequestFormModal({
             {...form.getInputProps('employee_id')}
           />
           <Select
+            checkIconPosition="right"
             label="Leave Type"
             placeholder="Select type"
             required

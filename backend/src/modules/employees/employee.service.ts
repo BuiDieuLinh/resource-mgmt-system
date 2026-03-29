@@ -323,7 +323,7 @@ export class EmployeeService {
       const employees: any[] = [];
 
       worksheet.eachRow((row, rowNumber) => {
-        if (rowNumber === 1) return; // Skip header
+        if (rowNumber === 1) return;
 
         const employeeData = {
           employee_code: getCellValue(row.getCell(1)),
@@ -339,7 +339,6 @@ export class EmployeeService {
           position_name: getCellValue(row.getCell(11)),
         };
 
-        // Only add if has required data
         if (
           employeeData.employee_code &&
           employeeData.full_name &&

@@ -15,7 +15,7 @@ import { PositionFormModal } from '../components/PositionFormModal';
 import { mapPositionToFormValues } from '../utils/position-mapper';
 import { notify } from '../../../components/Notification';
 import type { IPosition, PositionFormValues } from '../../positions/types';
-import { PRIMARY_COLOR } from '@/theme';
+import { LEVEL_LABEL, LEVEL_COLOR, type LevelPosition } from '@/constant';
 
 export default function PositionsPage() {
   const [search, setSearch] = useState('');
@@ -128,8 +128,8 @@ export default function PositionsPage() {
       sortable: true,
       width: 150,
       render: (row) => (
-        <Badge variant="light" color={PRIMARY_COLOR} tt="capitalize" fw={400}>
-          {row.level}
+        <Badge variant="light" color={LEVEL_COLOR[row.level as LevelPosition] ?? 'gray'} fw={400}>
+          {LEVEL_LABEL[row.level as LevelPosition] ?? row.level}
         </Badge>
       ),
     },
@@ -182,6 +182,7 @@ export default function PositionsPage() {
               onChange={(e) => handleSearch(e.currentTarget.value)}
             />
             <Select
+              checkIconPosition="right"
               placeholder="Filter by department"
               clearable
               data={departments.map((dept) => ({

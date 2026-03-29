@@ -70,7 +70,6 @@ export function DepartmentFormModal({
       centered
       styles={{
         header: {
-          borderBottom: '2px solid #e9ecef',
           padding: '5px 15px',
         },
         body: {

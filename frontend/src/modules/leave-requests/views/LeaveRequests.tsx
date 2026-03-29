@@ -204,6 +204,7 @@ export default function LeaveRequestsPage() {
         right={
           <Group>
             <Select
+              checkIconPosition="right"
               placeholder="Filter employee"
               clearable
               searchable
@@ -213,6 +214,7 @@ export default function LeaveRequestsPage() {
               onChange={setFilterEmployee}
             />
             <Select
+              checkIconPosition="right"
               placeholder="Filter status"
               clearable
               w={130}

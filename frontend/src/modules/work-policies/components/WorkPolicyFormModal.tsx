@@ -122,6 +122,7 @@ export function WorkPolicyFormModal({
           <Grid gutter="sm">
             <Grid.Col span={6}>
               <Select
+                checkIconPosition="right"
                 label="Break Start"
                 data={TIME_OPTIONS}
                 searchable
@@ -131,6 +132,7 @@ export function WorkPolicyFormModal({
             </Grid.Col>
             <Grid.Col span={6}>
               <Select
+                checkIconPosition="right"
                 label="Break End"
                 data={TIME_OPTIONS}
                 searchable

@@ -20,7 +20,6 @@ export default function OrgChartPage() {
 
   const employees = employeesData?.data || [];
 
-  // Build department tree from employee -> position -> department
   const buildDepartmentTree = (): DepartmentNode[] => {
     const deptMap = new Map<string, DepartmentNode>();
 

@@ -244,6 +244,7 @@ export default function AttendancesPage() {
                 clearable
               />
               <Select
+                checkIconPosition="right"
                 placeholder="Status"
                 data={[
                   { value: 'Approved', label: 'Approved' },
