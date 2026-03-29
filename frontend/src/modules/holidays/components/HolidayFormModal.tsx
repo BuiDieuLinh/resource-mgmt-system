@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { PRIMARY_COLOR } from '@/theme';
 import type { IHoliday, IHolidayPayload } from '../types';
 import { DATE_FORMAT } from '@/constant';
+import { toDateOnly } from '@/utils/date';
 
 interface HolidayFormModalProps {
   opened: boolean;
@@ -17,25 +18,17 @@ interface HolidayFormModalProps {
 
 interface FormValues {
   name: string;
-  date_obj: Date | string | null;
+  holiday_date: Date | string | null;
   description: string;
   is_paid: boolean;
 }
 
 const EMPTY: FormValues = {
   name: '',
-  date_obj: null,
+  holiday_date: null,
   description: '',
   is_paid: true,
 };
-
-function toDateOnly(d: Date | string): string {
-  const date = d instanceof Date ? d : new Date(d);
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
 
 export function HolidayFormModal({
   opened,
@@ -49,7 +42,7 @@ export function HolidayFormModal({
     initialValues: EMPTY,
     validate: {
       name: (v) => (!v?.trim() ? 'Name is required' : null),
-      date_obj: (v) => (!v ? 'Date is required' : null),
+      holiday_date: (v) => (!v ? 'Date is required' : null),
     },
   });
 
@@ -60,7 +53,7 @@ export function HolidayFormModal({
         const [y, m, d] = datePart.split('-').map(Number);
         form.setValues({
           name: initialValues.name,
-          date_obj: new Date(y, m - 1, d),
+          holiday_date: new Date(y, m - 1, d),
           description: initialValues.description ?? '',
           is_paid: initialValues.is_paid,
         });
@@ -73,7 +66,7 @@ export function HolidayFormModal({
   const handleSubmit = async (values: FormValues) => {
     const payload: IHolidayPayload = {
       name: values.name.trim(),
-      holiday_date: toDateOnly(values.date_obj!),
+      holiday_date: toDateOnly(values.holiday_date!)!,
       description: values.description?.trim() || undefined,
       is_paid: values.is_paid,
     };
@@ -106,7 +99,7 @@ export function HolidayFormModal({
             placeholder={DATE_FORMAT}
             valueFormat={DATE_FORMAT}
             required
-            {...form.getInputProps('date_obj')}
+            {...form.getInputProps('holiday_date')}
           />
           <Textarea
             label="Description"

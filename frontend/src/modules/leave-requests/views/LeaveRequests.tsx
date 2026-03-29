@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { BaseTable, type TableColumn } from '@/components/BaseTable/BaseTable';
 import { notify } from '@/components/Notification';
 import ErrorState from '@/components/ErrorState/ErrorState';
-import { formatDate, LEAVE_TYPE_LABEL, LEAVE_STATUS_LABEL } from '@/constant';
+import { formatDate, LEAVE_TYPE_LABEL, LEAVE_STATUS_LABEL, minutesToTime } from '@/constant';
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useGetLeaveRequests } from '../api/get-leave-requests';
@@ -131,6 +131,26 @@ export default function LeaveRequestsPage() {
       render: (r) => formatDate(r.end_date),
     },
     {
+      key: 'leave_time',
+      title: 'Time',
+      render: (r) => {
+        if (r.leave_start_minutes == null && r.leave_end_minutes == null) {
+          return (
+            <Text size="sm" c="dimmed">
+              Full day
+            </Text>
+          );
+        }
+        const start = r.leave_start_minutes != null ? minutesToTime(r.leave_start_minutes) : '—';
+        const end = r.leave_end_minutes != null ? minutesToTime(r.leave_end_minutes) : '—';
+        return (
+          <Text size="sm">
+            {start} – {end}
+          </Text>
+        );
+      },
+    },
+    {
       key: 'reason',
       title: 'Reason',
       render: (r) => (
@@ -182,13 +202,18 @@ export default function LeaveRequestsPage() {
                   <IconEdit size={14} />
                 </ActionIcon>
               </Tooltip>
+              <Tooltip label="Delete" withArrow>
+                <ActionIcon
+                  size="sm"
+                  variant="subtle"
+                  color="red"
+                  onClick={() => handleDelete(r.id)}
+                >
+                  <IconTrash size={14} />
+                </ActionIcon>
+              </Tooltip>
             </>
           )}
-          <Tooltip label="Delete" withArrow>
-            <ActionIcon size="sm" variant="subtle" color="red" onClick={() => handleDelete(r.id)}>
-              <IconTrash size={14} />
-            </ActionIcon>
-          </Tooltip>
         </Group>
       ),
     },
