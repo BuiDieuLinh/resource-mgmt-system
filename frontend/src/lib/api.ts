@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { API_BASE_URL } from '@/constant/config';
 
+export const AUTH_LOGIN_URL = import.meta.env.VITE_AUTH_LOGIN_URL ?? 'http://localhost:5173/login';
+
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -9,22 +11,19 @@ export const apiClient = axios.create({
   withCredentials: true,
 });
 
-// Request interceptor
-apiClient.interceptors.request.use(
-  (config) => {
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
 
-// Response interceptor
 apiClient.interceptors.response.use(
-  (response) => {
-    return response;
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      localStorage.removeItem('access_token');
+      window.location.href = AUTH_LOGIN_URL;
+    }
+    return Promise.reject(err);
   },
-  (error) => {
-    return Promise.reject(error);
-  }
 );

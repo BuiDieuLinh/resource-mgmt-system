@@ -65,14 +65,6 @@ export default function AttendancesPage() {
       });
   }, [attendances, search, dateFilter, statusFilter]);
 
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    attendances.forEach((r) => {
-      counts[r.status || 'Unknown'] = (counts[r.status || 'Unknown'] || 0) + 1;
-    });
-    return counts;
-  }, [attendances]);
-
   const columns: TableColumn<IAttendance>[] = [
     {
       key: 'employee_id',
@@ -213,9 +205,6 @@ export default function AttendancesPage() {
           </Group>
         }
       />
-      <Group justify="space-between" align="center">
-        <MonthNavigator value={selectedMonth} onChange={setSelectedMonth} />
-      </Group>
 
       {isLoading ? (
         <Center style={{ height: 200 }}>
@@ -223,37 +212,36 @@ export default function AttendancesPage() {
         </Center>
       ) : (
         <>
-          <Group gap="md">
-            {Object.entries(statusCounts).map(([status, cnt]) => (
-              <Badge key={status}>{`${status}: ${cnt}`}</Badge>
-            ))}
-          </Group>
-
           <Card shadow="sm">
-            <Group gap="md" align="flex-end">
-              <TextInput
-                placeholder="Search employee..."
-                leftSection={<IconSearch size={14} />}
-                value={search}
-                onChange={(e) => setSearch(e.currentTarget.value)}
-              />
-              <DateInput
-                placeholder="Filter by date"
-                value={dateFilter}
-                onChange={setDateFilter}
-                clearable
-              />
-              <Select
-                checkIconPosition="right"
-                placeholder="Status"
-                data={[
-                  { value: 'Approved', label: 'Approved' },
-                  { value: 'Pending', label: 'Pending' },
-                ]}
-                value={statusFilter}
-                onChange={setStatusFilter}
-                clearable
-              />
+            <Group gap="md" align="center" justify="space-between">
+              <Group gap="md" align="flex-end">
+                <TextInput
+                  placeholder="Search employee..."
+                  leftSection={<IconSearch size={14} />}
+                  value={search}
+                  onChange={(e) => setSearch(e.currentTarget.value)}
+                />
+                <DateInput
+                  placeholder="Filter by date"
+                  value={dateFilter}
+                  onChange={setDateFilter}
+                  clearable
+                />
+                <Select
+                  checkIconPosition="right"
+                  placeholder="Status"
+                  data={[
+                    { value: 'Approved', label: 'Approved' },
+                    { value: 'Pending', label: 'Pending' },
+                  ]}
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  clearable
+                />
+              </Group>
+              <Group justify="space-between" align="center">
+                <MonthNavigator value={selectedMonth} onChange={setSelectedMonth} />
+              </Group>
             </Group>
           </Card>
 
