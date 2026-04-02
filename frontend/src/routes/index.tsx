@@ -24,50 +24,57 @@ import Timesheet from '@/modules/attendances/views/Timesheet';
 import AttendanceDetail from '@/modules/attendances/views/AttendanceDetail';
 import LeaveRequests from '@/modules/leave-requests/views/LeaveRequests';
 import Settings from '@/modules/settings/views/Settings';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <Layout />,
+    element: <ProtectedRoute />,
     children: [
       {
-        path: '',
-        element: <Home />,
+        path: '/',
+        element: <Layout />,
+        children: [
+          {
+            path: '',
+            element: <Home />,
+          },
+          {
+            path: employeeListUrl,
+            element: <Employee />,
+          },
+          {
+            path: employeeDepartmentsUrl,
+            element: <Departments />,
+          },
+          {
+            path: employeePositionsUrl,
+            element: <Positions />,
+          },
+          {
+            path: employeeOrgChartUrl,
+            element: <OrgChart />,
+          },
+          {
+            path: employeeProfileUrl,
+            element: <EmployeeProfile />,
+          },
+          {
+            path: attendanceUrl,
+            element: <Attendance />,
+          },
+          {
+            path: timesheetUrl,
+            element: <Timesheet />,
+          },
+          {
+            path: attendanceDetailUrl,
+            element: <AttendanceDetail />,
+          },
+          { path: leaveRequestUrl, element: <LeaveRequests /> },
+          { path: settingsUrl, element: <Settings /> },
+        ],
       },
-      {
-        path: employeeListUrl,
-        element: <Employee />,
-      },
-      {
-        path: employeeDepartmentsUrl,
-        element: <Departments />,
-      },
-      {
-        path: employeePositionsUrl,
-        element: <Positions />,
-      },
-      {
-        path: employeeOrgChartUrl,
-        element: <OrgChart />,
-      },
-      {
-        path: employeeProfileUrl,
-        element: <EmployeeProfile />,
-      },
-      {
-        path: attendanceUrl,
-        element: <Attendance />,
-      },
-      {
-        path: timesheetUrl,
-        element: <Timesheet />,
-      },
-      {
-        path: attendanceDetailUrl,
-        element: <AttendanceDetail />,
-      },
-      { path: leaveRequestUrl, element: <LeaveRequests /> },
-      { path: settingsUrl, element: <Settings /> },
     ],
   },
   {
