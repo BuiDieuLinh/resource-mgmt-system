@@ -13,11 +13,14 @@ import { AttendancesModule } from './modules/attendances/attendances.module';
 import { LeaveRequestModule } from './modules/leave-requests/leave-request.module';
 import { HolidayModule } from './modules/holidays/holiday.module';
 
+import { MailModule } from './modules/mail/mail.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     AuthModule,
+    MailModule,
     EmployeeModule,
     DepartmentModule,
     PositionModule,

@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { ConfigService } from '@nestjs/config';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
@@ -21,6 +22,7 @@ import {
 import { WorkScheduleService } from 'src/modules/work-schedules/work-schedule.service';
 import { WorkScheduleDto } from 'src/modules/work-schedules/dto/work-schedule.dto';
 import { AuthCoreService } from 'src/modules/auth-core/auth-core.service';
+import { MailService } from 'src/modules/mail/mail.service';
 
 @Injectable()
 export class EmployeeService {
@@ -28,6 +30,8 @@ export class EmployeeService {
     private readonly prisma: PrismaService,
     private readonly workScheduleService: WorkScheduleService,
     private readonly authCoreService: AuthCoreService,
+    private readonly mailService: MailService,
+    private readonly config: ConfigService,
   ) {}
 
   async checkExists(
@@ -100,6 +104,23 @@ export class EmployeeService {
         throw err;
       }
     }
+
+    const positionData = await this.prisma.positions.findUnique({
+      where: { id: created.position_id },
+      include: { department: true },
+    });
+
+    this.mailService.sendWelcomeEmail({
+      fullName: created.full_name,
+      // In real application, do not send password via email. This is just for demo purposes.
+      email: 'buithidieulinh.1004@gmail.com',
+      employeeCode: created.employee_code,
+      position: positionData?.position_name ?? '',
+      department: positionData?.department?.department_name ?? '',
+      loginUrl:
+        this.config.get<string>('AUTH_LOGIN_URL') ??
+        'http://localhost:5173/login',
+    });
 
     return ResponseHelper.success(
       { ...created, auth_user_id: authUser.id },

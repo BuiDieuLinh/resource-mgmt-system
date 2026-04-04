@@ -4,9 +4,10 @@ import { EmployeeService } from './employee.service';
 import { CommonModule } from 'src/common/common.module';
 import { WorkScheduleModule } from 'src/modules/work-schedules/work-schedule.module';
 import { AuthCoreModule } from 'src/modules/auth-core/auth-core.module';
+import { MailModule } from 'src/modules/mail/mail.module';
 
 @Module({
-  imports: [CommonModule, WorkScheduleModule, AuthCoreModule],
+  imports: [CommonModule, WorkScheduleModule, AuthCoreModule, MailModule],
   controllers: [EmployeeController],
   providers: [EmployeeService],
 })
