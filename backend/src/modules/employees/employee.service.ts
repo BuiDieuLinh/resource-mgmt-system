@@ -243,7 +243,6 @@ export class EmployeeService {
       await this.workScheduleService.setSchedule(id, schedules);
     }
 
-    // Sync status sang auth-core nếu có thay đổi
     if (dto.status && dto.status !== existing.status && existing.auth_user_id) {
       await this.authCoreService.updateUserStatus(
         existing.auth_user_id,
