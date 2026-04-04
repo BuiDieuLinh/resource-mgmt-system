@@ -20,12 +20,14 @@ import {
 } from 'src/modules/employees/utils/excel.util';
 import { WorkScheduleService } from 'src/modules/work-schedules/work-schedule.service';
 import { WorkScheduleDto } from 'src/modules/work-schedules/dto/work-schedule.dto';
+import { AuthCoreService } from 'src/modules/auth-core/auth-core.service';
 
 @Injectable()
 export class EmployeeService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly workScheduleService: WorkScheduleService,
+    private readonly authCoreService: AuthCoreService,
   ) {}
 
   async checkExists(
@@ -77,13 +79,32 @@ export class EmployeeService {
       gender: gender?.trim(),
     };
 
-    const created = await this.prisma.employees.create({ data });
+    const authUser = await this.authCoreService.createUser(dto.email);
 
-    if (schedules.length) {
-      await this.workScheduleService.setSchedule(created.id, schedules);
+    let created: any;
+    try {
+      created = await this.prisma.employees.create({
+        data: { ...data, auth_user_id: authUser.id },
+      });
+    } catch (err) {
+      await this.authCoreService.deleteUser(authUser.id);
+      throw err;
     }
 
-    return ResponseHelper.success(created, 'Employee created successfully');
+    if (schedules.length) {
+      try {
+        await this.workScheduleService.setSchedule(created.id, schedules);
+      } catch (err) {
+        await this.prisma.employees.delete({ where: { id: created.id } });
+        await this.authCoreService.deleteUser(authUser.id);
+        throw err;
+      }
+    }
+
+    return ResponseHelper.success(
+      { ...created, auth_user_id: authUser.id },
+      'Employee created successfully',
+    );
   }
 
   async findAll(query: QueryEmployeeDto) {
@@ -220,6 +241,14 @@ export class EmployeeService {
 
     if (schedules.length) {
       await this.workScheduleService.setSchedule(id, schedules);
+    }
+
+    // Sync status sang auth-core nếu có thay đổi
+    if (dto.status && dto.status !== existing.status && existing.auth_user_id) {
+      await this.authCoreService.updateUserStatus(
+        existing.auth_user_id,
+        dto.status,
+      );
     }
 
     return ResponseHelper.success(updated, 'Employee updated successfully');

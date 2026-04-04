@@ -146,7 +146,6 @@ export function EmployeeFormModal({
   const handleSubmit = async (values: EmployeeFormValues) => {
     if (hasExistsError) return;
     await onSubmit(values, employeeId);
-    form.reset();
   };
 
   const handleClose = () => {
