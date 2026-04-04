@@ -20,6 +20,7 @@ enum EmployeeStatus {
 
 model Employees {
   id            String         @id @default(uuid()) @db.Uuid
+  auth_user_id  String?        @unique @db.Uuid 
   employee_code String         @db.VarChar(20)
   full_name     String         @db.VarChar(100)
   display_name  String?        @db.VarChar(100)
@@ -37,32 +38,11 @@ model Employees {
   created_at  DateTime  @default(now())
   position    Positions @relation(fields: [position_id], references: [id])
 
-  roles          EmployeeRoles[]
   work_schedules EmployeeWorkSchedules[]
   attendances    Attendances[]
   leave_requests LeaveRequests[]
 
   @@map("employees")
-}
-
-model Roles {
-  id        String @id @default(uuid()) @db.Uuid
-  role_name String @db.VarChar(50)
-
-  employees EmployeeRoles[]
-
-  @@map("roles")
-}
-
-model EmployeeRoles {
-  id      String @id @default(uuid()) @db.Uuid
-  user_id String @db.Uuid
-  role_id String @db.Uuid
-
-  employee Employees @relation(fields: [user_id], references: [id])
-  role     Roles     @relation(fields: [role_id], references: [id])
-
-  @@map("employee_roles")
 }
 
 model Departments {
