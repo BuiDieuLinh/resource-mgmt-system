@@ -4,8 +4,9 @@ import { useForm } from '@mantine/form';
 import { useEffect, useMemo } from 'react';
 import { PRIMARY_COLOR } from '@/theme';
 import { DATE_FORMAT, LEAVE_TYPE_OPTIONS } from '@/constant';
-import { useGetEmployees } from '@/modules/employees/api/get-employees';
 import { useGetEmployee } from '@/modules/employees/api/get-employee';
+import { useGetEmployeeByUserId } from '@/modules/employees/api/get-employee-by-user';
+import { useAuthStore } from '@/stores/useAuthStore';
 import type { ILeaveRequest, ILeaveRequestPayload } from '../types';
 import { toDateOnly } from '@/utils/date';
 import { TIME_OPTIONS } from '@/modules/employees/utils/time-option';
@@ -54,15 +55,9 @@ export function LeaveRequestFormModal({
   onSubmit,
   loading = false,
 }: LeaveRequestFormModalProps) {
-  const { data: empData } = useGetEmployees({ pageIndex: 1, pageSize: 999 });
-  const employeeOptions = useMemo(
-    () =>
-      (empData?.data ?? []).map((e) => ({
-        value: e.id,
-        label: `${e.full_name} (${e.employee_code})`,
-      })),
-    [empData],
-  );
+  const { user } = useAuthStore();
+  const { data: currentEmployeeData } = useGetEmployeeByUserId(user?.id);
+  const currentEmployee = currentEmployeeData?.data;
 
   const form = useForm<FormValues>({
     initialValues: EMPTY,
@@ -74,24 +69,29 @@ export function LeaveRequestFormModal({
     },
   });
 
-  const selectedEmployeeId = form.values.employee_id;
-  const { data: employeeData } = useGetEmployee(selectedEmployeeId);
+  const { data: employeeData } = useGetEmployee(form.values.employee_id);
 
   const defaultSchedule = useMemo(() => {
-    const schedules = employeeData?.data?.work_schedules;
+    const schedules = (currentEmployee ?? employeeData?.data)?.work_schedules;
     if (!schedules?.length) return { start: null, end: null };
     return {
       start: String(schedules[0].start_time),
       end: String(schedules[0].end_time),
     };
-  }, [employeeData]);
+  }, [currentEmployee, employeeData]);
 
   useEffect(() => {
-    if (selectedEmployeeId && defaultSchedule.start) {
+    if (currentEmployee && !form.values.employee_id) {
+      form.setFieldValue('employee_id', currentEmployee.id);
+    }
+  }, [currentEmployee]);
+
+  useEffect(() => {
+    if (form.values.employee_id && defaultSchedule.start) {
       form.setFieldValue('leave_start_minutes', defaultSchedule.start);
       form.setFieldValue('leave_end_minutes', defaultSchedule.end);
     }
-  }, [selectedEmployeeId, defaultSchedule.start]);
+  }, [form.values.employee_id, defaultSchedule.start]);
 
   useEffect(() => {
     if (opened) {
@@ -112,7 +112,10 @@ export function LeaveRequestFormModal({
           reason: initialValues.reason ?? '',
         });
       } else {
-        form.setValues(EMPTY);
+        form.reset();
+        if (currentEmployee) {
+          form.setFieldValue('employee_id', currentEmployee.id);
+        }
       }
     }
   }, [opened]);
@@ -147,15 +150,6 @@ export function LeaveRequestFormModal({
     >
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack gap="sm">
-          <Select
-            label="Employee"
-            placeholder="Select employee"
-            required
-            searchable
-            data={employeeOptions}
-            disabled={mode === 'edit'}
-            {...form.getInputProps('employee_id')}
-          />
           <Select
             checkIconPosition="right"
             label="Leave Type"
