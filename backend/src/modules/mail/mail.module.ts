@@ -2,9 +2,12 @@ import { Module } from '@nestjs/common';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailService } from './mail.service';
+import { MailScheduler } from './mail.scheduler';
+import { PrismaModule } from 'src/prisma/prisma.module';
 
 @Module({
   imports: [
+    PrismaModule,
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -24,7 +27,7 @@ import { MailService } from './mail.service';
       }),
     }),
   ],
-  providers: [MailService],
+  providers: [MailService, MailScheduler],
   exports: [MailService],
 })
 export class MailModule {}

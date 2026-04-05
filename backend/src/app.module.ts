@@ -14,10 +14,12 @@ import { LeaveRequestModule } from './modules/leave-requests/leave-request.modul
 import { HolidayModule } from './modules/holidays/holiday.module';
 
 import { MailModule } from './modules/mail/mail.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     MailModule,

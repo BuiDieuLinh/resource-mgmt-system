@@ -23,6 +23,10 @@ import { WorkScheduleService } from 'src/modules/work-schedules/work-schedule.se
 import { WorkScheduleDto } from 'src/modules/work-schedules/dto/work-schedule.dto';
 import { AuthCoreService } from 'src/modules/auth-core/auth-core.service';
 import { MailService } from 'src/modules/mail/mail.service';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+
+dayjs.extend(utc);
 
 @Injectable()
 export class EmployeeService {
@@ -105,22 +109,27 @@ export class EmployeeService {
       }
     }
 
-    const positionData = await this.prisma.positions.findUnique({
-      where: { id: created.position_id },
-      include: { department: true },
-    });
+    const todayStr = dayjs.utc().format('YYYY-MM-DD');
+    const hireDateStr = dayjs.utc(created.hire_date).format('YYYY-MM-DD');
 
-    this.mailService.sendWelcomeEmail({
-      fullName: created.full_name,
-      // In real application, do not send password via email. This is just for demo purposes.
-      email: 'buithidieulinh.1004@gmail.com',
-      employeeCode: created.employee_code,
-      position: positionData?.position_name ?? '',
-      department: positionData?.department?.department_name ?? '',
-      loginUrl:
-        this.config.get<string>('AUTH_LOGIN_URL') ??
-        'http://localhost:5173/login',
-    });
+    if (hireDateStr <= todayStr) {
+      const positionData = await this.prisma.positions.findUnique({
+        where: { id: created.position_id },
+        include: { department: true },
+      });
+
+      this.mailService.sendWelcomeEmail({
+        fullName: created.full_name,
+        // email: created.email,
+        email: 'buithidieulinh.1004@gmail.com',
+        employeeCode: created.employee_code,
+        position: positionData?.position_name ?? '',
+        department: positionData?.department?.department_name ?? '',
+        loginUrl:
+          this.config.get<string>('AUTH_LOGIN_URL') ??
+          'http://localhost:5173/login',
+      });
+    }
 
     return ResponseHelper.success(
       { ...created, auth_user_id: authUser.id },
