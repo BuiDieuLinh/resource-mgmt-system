@@ -164,6 +164,19 @@ export class EmployeeService {
     return ResponseHelper.success(position);
   }
 
+  async findByUserId(userId: string) {
+    const employee = await this.prisma.employees.findFirst({
+      where: { auth_user_id: userId },
+      include: {
+        position: { include: { department: true } },
+        work_schedules: true,
+      },
+    });
+    if (!employee)
+      throw new NotFoundException(`No employee linked to user ${userId}`);
+    return ResponseHelper.success(employee);
+  }
+
   async update(id: string, dto: UpdateEmployeeDto) {
     const existing = await this.prisma.employees.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Employee not found');

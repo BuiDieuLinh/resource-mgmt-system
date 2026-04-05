@@ -88,6 +88,11 @@ export class EmployeeController {
     return this.service.importFromExcel(body.employees);
   }
 
+  @Get('by-user/:userId')
+  findByUserId(@Param('userId') userId: string) {
+    return this.service.findByUserId(userId);
+  }
+
   @Get(':id/work-schedule')
   getWorkSchedule(@Param('id') id: string) {
     return this.workScheduleService.findByEmployee(id);
