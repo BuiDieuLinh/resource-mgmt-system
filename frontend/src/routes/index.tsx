@@ -15,6 +15,9 @@ import {
   settingsUrl,
 } from './url';
 import Error404 from '../components/ErrorPage/Error404';
+import Error401 from '../components/ErrorPage/Error401';
+import Error403 from '../components/ErrorPage/Error403';
+import ErrorTokenExpired from '../components/ErrorPage/ErrorTokenExpired';
 import OrgChart from '@/modules/employees/views/OrgChart';
 import Departments from '@/modules/departments/views/Departments';
 import Positions from '@/modules/positions/views/Positions';
@@ -81,4 +84,7 @@ export const router = createBrowserRouter([
     path: '*',
     element: <Error404 />,
   },
+  { path: '/401', element: <Error401 /> },
+  { path: '/403', element: <Error403 /> },
+  { path: '/session-expired', element: <ErrorTokenExpired /> },
 ]);

@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { authApi, type AuthUser } from '../api/auth.api';
-import { AUTH_LOGIN_URL } from '@/lib/api';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { AUTH_URL } from '@/constant/config';
+import { AUTH_ERROR_EVENT } from '@/lib/api';
+import { queryClient } from '@/lib/react-query';
 
 interface AuthState {
   user: AuthUser | null;
@@ -24,6 +25,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const setStoreUser = useAuthStore((s) => s.setUser);
+
+  const AUTH_LOGIN_URL = `${AUTH_URL}login`;
 
   const syncUser = (u: AuthUser | null) => {
     setUser(u);
@@ -47,6 +50,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     window.addEventListener('message', handleMessage);
 
+    // Handle 401/403 errors from API interceptor
+    const handleAuthError = (e: Event) => {
+      const { type } = (e as CustomEvent).detail;
+      // Clear all cached queries so stale error state doesn't persist on back navigation
+      queryClient.clear();
+      if (type === '403') {
+        window.location.replace('/403');
+      } else if (type === 'expired') {
+        window.location.replace('/session-expired');
+      } else {
+        window.location.replace('/401');
+      }
+    };
+    window.addEventListener(AUTH_ERROR_EVENT, handleAuthError);
+
     if (window.opener) {
       window.opener.postMessage('auth:ready', authOrigin);
 
@@ -58,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return () => {
         window.removeEventListener('message', handleMessage);
+        window.removeEventListener(AUTH_ERROR_EVENT, handleAuthError);
         clearTimeout(timeout);
       };
     }
@@ -76,7 +95,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.location.href = AUTH_LOGIN_URL;
     }
 
-    return () => window.removeEventListener('message', handleMessage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      window.removeEventListener(AUTH_ERROR_EVENT, handleAuthError);
+    };
   }, []);
 
   const logout = () => {

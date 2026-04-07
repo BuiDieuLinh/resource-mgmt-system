@@ -1,41 +1,23 @@
-import { Container, Title, Text, Button, Stack, Transition } from '@mantine/core';
-import { IconLock } from '@tabler/icons-react';
+import { Stack, Title, Text, Button, ThemeIcon } from '@mantine/core';
+import { IconShieldOff } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Error403() {
   const navigate = useNavigate();
 
   return (
-    <Transition mounted transition="slide-up" duration={400} timingFunction="ease">
-      {(styles) => (
-        <Container
-          size="sm"
-          h="100vh"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            ...styles,
-          }}
-        >
-          <Stack align="center" gap="md">
-            <IconLock size={64} stroke={1.5} />
-
-            <Title order={1} size={120} c="yellow">
-              403
-            </Title>
-
-            <Title order={2}>Truy cập bị từ chối</Title>
-
-            <Text c="dimmed" ta="center">
-              Bạn không có quyền truy cập vào trang này.
-            </Text>
-
-            <Button variant="outline" onClick={() => navigate(-1)}>
-              Quay lại
-            </Button>
-          </Stack>
-        </Container>
-      )}
-    </Transition>
+    <Stack align="center" justify="center" h="100vh" gap="md">
+      <ThemeIcon size={64} radius="xl" color="red" variant="light">
+        <IconShieldOff size={32} />
+      </ThemeIcon>
+      <Title order={2}>403 — Forbidden</Title>
+      <Text c="dimmed" ta="center" maw={400}>
+        You don't have permission to access this resource. Contact your administrator if you think
+        this is a mistake.
+      </Text>
+      <Button variant="light" onClick={() => navigate(-1)}>
+        Go Back
+      </Button>
+    </Stack>
   );
 }
