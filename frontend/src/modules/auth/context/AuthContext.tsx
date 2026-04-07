@@ -50,10 +50,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     window.addEventListener('message', handleMessage);
 
-    // Handle 401/403 errors from API interceptor
     const handleAuthError = (e: Event) => {
       const { type } = (e as CustomEvent).detail;
-      // Clear all cached queries so stale error state doesn't persist on back navigation
       queryClient.clear();
       if (type === '403') {
         window.location.replace('/403');

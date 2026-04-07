@@ -2,6 +2,7 @@ import { Stack, Title, Text, Button, ThemeIcon } from '@mantine/core';
 import { IconClockOff } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { AUTH_URL } from '@/constant/config';
 
 export default function ErrorTokenExpired() {
   const navigate = useNavigate();
@@ -10,7 +11,7 @@ export default function ErrorTokenExpired() {
   const handleLogin = () => {
     logout();
     localStorage.removeItem('access_token');
-    navigate('/auth/login', { replace: true });
+    navigate(`${AUTH_URL}login`, { replace: true });
   };
 
   return (
