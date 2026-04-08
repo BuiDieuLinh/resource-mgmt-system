@@ -13,6 +13,7 @@ import {
   attendanceDetailUrl,
   leaveRequestUrl,
   settingsUrl,
+  checkInOutUrl,
 } from './url';
 import Error404 from '../components/ErrorPage/Error404';
 import OrgChart from '@/modules/employees/views/OrgChart';
@@ -22,6 +23,7 @@ import EmployeeProfile from '@/modules/employees/views/EmployeeProfile';
 import Attendance from '@/modules/attendances/views/Attendances';
 import Timesheet from '@/modules/attendances/views/Timesheet';
 import AttendanceDetail from '@/modules/attendances/views/AttendanceDetail';
+import CheckInOut from '@/modules/attendances/views/CheckInOut';
 import LeaveRequests from '@/modules/leave-requests/views/LeaveRequests';
 import Settings from '@/modules/settings/views/Settings';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -72,6 +74,7 @@ export const router = createBrowserRouter([
             element: <AttendanceDetail />,
           },
           { path: leaveRequestUrl, element: <LeaveRequests /> },
+          { path: checkInOutUrl, element: <CheckInOut /> },
           { path: settingsUrl, element: <Settings /> },
         ],
       },

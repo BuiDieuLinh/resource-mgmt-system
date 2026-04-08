@@ -23,6 +23,23 @@ import { CreateAttendanceDto } from './dto/create-attendance.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
 import { AttendanceAction, AttendanceStatus } from '@prisma/client';
 
+/** Haversine formula — returns distance in meters between two GPS coords */
+function haversineMeters(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 @Injectable()
 export class AttendancesService {
   constructor(
@@ -41,9 +58,34 @@ export class AttendancesService {
     if (!schedule)
       throw new BadRequestException('No work schedule found for employee');
 
-    // Snapshot active policy at check-in time
     const policyRes = await this.workPolicyService.getActive(timestamp);
     const policy = policyRes.data;
+
+    // GPS validation
+    if (
+      policy?.office_latitude != null &&
+      policy?.office_longitude != null &&
+      dto.latitude != null &&
+      dto.longitude != null
+    ) {
+      const dist = haversineMeters(
+        Number(dto.latitude),
+        Number(dto.longitude),
+        Number(policy.office_latitude),
+        Number(policy.office_longitude),
+      );
+      const maxDist = policy.max_distance_meters ?? 100;
+      if (dist > maxDist) {
+        throw new BadRequestException(
+          `You are too far from the office (${Math.round(dist)}m away, max ${maxDist}m allowed)`,
+        );
+      }
+    } else if (
+      policy?.office_latitude != null &&
+      (dto.latitude == null || dto.longitude == null)
+    ) {
+      throw new BadRequestException('GPS location is required for check-in');
+    }
 
     const attendance = await this.prisma.attendances.upsert({
       where: {

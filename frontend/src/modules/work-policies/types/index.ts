@@ -5,6 +5,9 @@ export interface IWorkPolicy {
   flexible_end: number | null;
   break_start: number | null;
   break_end: number | null;
+  office_latitude: number | null;
+  office_longitude: number | null;
+  max_distance_meters: number | null;
   effective_from: string;
   effective_to: string | null;
   created_at: string;
@@ -16,6 +19,9 @@ export interface IWorkPolicyPayload {
   flexible_end?: number | null;
   break_start?: number | null;
   break_end?: number | null;
+  office_latitude?: number | null;
+  office_longitude?: number | null;
+  max_distance_meters?: number | null;
   effective_from: string;
   effective_to?: string | null;
 }
