@@ -13,7 +13,6 @@ import { useCreateLeaveRequest } from '../api/create-leave-request';
 import { useDeleteLeaveRequest } from '../api/delete-leave-request';
 import { LeaveRequestFormModal } from '../components/LeaveRequestFormModal';
 import type { ILeaveRequest, ILeaveRequestPayload } from '../types';
-import { useAuth } from '@/modules/auth/context/AuthContext';
 
 const STATUS_COLOR: Record<string, string> = {
   pending: 'yellow',
@@ -22,7 +21,6 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function MyLeaveRequestsPage() {
-  const { user } = useAuth();
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [opened, setOpened] = useState(false);
   const [editRequest, setEditRequest] = useState<ILeaveRequest | null>(null);
