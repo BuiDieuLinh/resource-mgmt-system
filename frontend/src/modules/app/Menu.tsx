@@ -71,5 +71,5 @@ export const MENUS: AppMenu[] = [
       },
     ],
   },
-  { label: 'Settings', icon: IconSettings, path: settingsUrl, roles: [EMPLOYEE_ROLE.ADMIN] },
+  { label: 'Settings', icon: IconSettings, path: settingsUrl },
 ];

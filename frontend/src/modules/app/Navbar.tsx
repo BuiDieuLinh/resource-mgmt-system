@@ -38,7 +38,7 @@ import { MENUS } from './Menu';
 import classes from './Navbar.module.css';
 import { useAuth } from '@/modules/auth/context/AuthContext';
 import { AUTH_URL } from '@/constant/config';
-import { employeeProfileUrl, settingsUrl } from '@/routes/url';
+import { myProfileUrl, settingsUrl } from '@/routes/url';
 const MOCK_NOTIS = [
   {
     id: '1',
@@ -403,7 +403,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
             <Menu.Label>{user?.email ?? ''}</Menu.Label>
             <Menu.Item
               leftSection={<IconUser style={{ width: rem(14) }} />}
-              onClick={() => navigate(employeeProfileUrl.replace(':id', user?.id ?? ''))}
+              onClick={() => navigate(myProfileUrl)}
             >
               My Profile
             </Menu.Item>

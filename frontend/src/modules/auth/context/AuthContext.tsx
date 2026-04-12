@@ -64,11 +64,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener(AUTH_ERROR_EVENT, handleAuthError);
 
     if (window.opener) {
+      const existingToken = localStorage.getItem('access_token');
+      if (existingToken) {
+        authApi
+          .getMe()
+          .then((res) => syncUser(res.data.data))
+          .catch(() => {
+            localStorage.removeItem('access_token');
+            window.location.href = AUTH_LOGIN_URL;
+          })
+          .finally(() => setIsLoading(false));
+        return () => {
+          window.removeEventListener('message', handleMessage);
+          window.removeEventListener(AUTH_ERROR_EVENT, handleAuthError);
+        };
+      }
+
       window.opener.postMessage('auth:ready', authOrigin);
 
       const timeout = setTimeout(() => {
         if (!localStorage.getItem('access_token')) {
           window.location.href = AUTH_LOGIN_URL;
+        } else {
+          setIsLoading(false);
         }
       }, 5000);
 

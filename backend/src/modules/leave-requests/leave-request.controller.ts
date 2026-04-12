@@ -38,7 +38,16 @@ export class LeaveRequestController {
 
   @Get()
   @Roles(Role.ADMIN, Role.MANAGER)
-  findAll(@Query() query: QueryLeaveRequestDto) {
+  async findAll(
+    @Query() query: QueryLeaveRequestDto,
+    @CurrentUser() user: { userId: string; roles: string[] },
+  ) {
+    if (user.roles.includes(Role.MANAGER) && !user.roles.includes(Role.ADMIN)) {
+      const deptId = await this.leaveRequestService.getManagerDepartmentId(
+        user.userId,
+      );
+      if (deptId) query.department_id = deptId;
+    }
     return this.leaveRequestService.findAll(query);
   }
 

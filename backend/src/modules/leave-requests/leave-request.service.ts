@@ -21,6 +21,14 @@ export class LeaveRequestService {
     private readonly holidayService: HolidayService,
   ) {}
 
+  async getManagerDepartmentId(authUserId: string): Promise<string | null> {
+    const employee = await this.prisma.employees.findFirst({
+      where: { auth_user_id: authUserId },
+      include: { position: true },
+    });
+    return employee?.position?.department_id ?? null;
+  }
+
   async findByAuthUser(authUserId: string, status?: string) {
     const employee = await this.prisma.employees.findUnique({
       where: { auth_user_id: authUserId },
@@ -46,6 +54,11 @@ export class LeaveRequestService {
     const where: any = {};
     if (query.employee_id) where.employee_id = query.employee_id;
     if (query.status) where.status = query.status;
+    if (query.department_id) {
+      where.employee = {
+        position: { department_id: query.department_id },
+      };
+    }
 
     const requests = await this.prisma.leaveRequests.findMany({
       where,

@@ -82,4 +82,8 @@ export class QueryLeaveRequestDto {
   @IsOptional()
   @IsEnum(LeaveStatus)
   status?: LeaveStatus;
+
+  @IsOptional()
+  @IsString()
+  department_id?: string;
 }
