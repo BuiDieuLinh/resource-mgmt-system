@@ -38,6 +38,7 @@ import { MENUS } from './Menu';
 import classes from './Navbar.module.css';
 import { useAuth } from '@/modules/auth/context/AuthContext';
 import { AUTH_URL } from '@/constant/config';
+import { employeeProfileUrl, settingsUrl } from '@/routes/url';
 const MOCK_NOTIS = [
   {
     id: '1',
@@ -76,6 +77,15 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
   const unread = notis.filter((n) => !n.read).length;
   const { user, logout } = useAuth();
   const AUTH_APP_URL = `${AUTH_URL}apps` || new URL(AUTH_URL).origin;
+
+  const userRoles = user?.roles ?? [];
+  const canSee = (roles?: string[]) => !roles?.length || roles.some((r) => userRoles.includes(r));
+  const visibleMenus = MENUS.filter((m) => canSee(m.roles))
+    .map((m) => ({
+      ...m,
+      children: m.children?.filter((c) => canSee(c.roles)),
+    }))
+    .filter((m) => m.path || (m.children && m.children.length > 0));
 
   const footerRow = (
     icon: React.ReactNode,
@@ -140,7 +150,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
       </div>
 
       <div className={classes.navMain}>
-        {MENUS.map((menu) => {
+        {visibleMenus.map((menu) => {
           const hasChildren = !!menu.children?.length;
           const childActive = menu.children?.some((c) => c.path === location.pathname);
           const isActive = location.pathname === menu.path || childActive;
@@ -391,8 +401,16 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
           </Menu.Target>
           <Menu.Dropdown>
             <Menu.Label>{user?.email ?? ''}</Menu.Label>
-            <Menu.Item leftSection={<IconUser style={{ width: rem(14) }} />}>My Profile</Menu.Item>
-            <Menu.Item leftSection={<IconSettings style={{ width: rem(14) }} />}>
+            <Menu.Item
+              leftSection={<IconUser style={{ width: rem(14) }} />}
+              onClick={() => navigate(employeeProfileUrl.replace(':id', user?.id ?? ''))}
+            >
+              My Profile
+            </Menu.Item>
+            <Menu.Item
+              leftSection={<IconSettings style={{ width: rem(14) }} />}
+              onClick={() => navigate(settingsUrl)}
+            >
               Settings
             </Menu.Item>
             <Menu.Divider />

@@ -22,6 +22,7 @@ import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from 'src/common/constant/roles';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 
 @Controller('attendances')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -38,6 +39,18 @@ export class AttendancesController {
   @Roles(Role.EMPLOYEE, Role.MANAGER)
   checkOut(@Body() dto: CheckOutDto) {
     return this.attendancesService.checkOut(dto);
+  }
+
+  @Get('my')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
+  findMy(
+    @CurrentUser() user: { userId: string },
+    @Query('month', new DefaultValuePipe(CURRENT_MONTH), ParseIntPipe)
+    month: number,
+    @Query('year', new DefaultValuePipe(CURRENT_YEAR), ParseIntPipe)
+    year: number,
+  ) {
+    return this.attendancesService.findByAuthUser(user.userId, month, year);
   }
 
   @Get('summary')

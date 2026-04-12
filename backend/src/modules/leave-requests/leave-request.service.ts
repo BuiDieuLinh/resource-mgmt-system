@@ -8,6 +8,7 @@ import { ResponseHelper } from 'src/common/helpers/response.helper';
 import {
   CreateLeaveRequestDto,
   UpdateLeaveStatusDto,
+  UpdateLeaveRequestDto,
   QueryLeaveRequestDto,
 } from './dto/leave-request.dto';
 import { HolidayService } from 'src/modules/holidays/holiday.service';
@@ -19,6 +20,27 @@ export class LeaveRequestService {
     private readonly prisma: PrismaService,
     private readonly holidayService: HolidayService,
   ) {}
+
+  async findByAuthUser(authUserId: string, status?: string) {
+    const employee = await this.prisma.employees.findUnique({
+      where: { auth_user_id: authUserId },
+    });
+    if (!employee) throw new NotFoundException('Employee profile not found');
+
+    const where: any = { employee_id: employee.id };
+    if (status) where.status = status;
+
+    const requests = await this.prisma.leaveRequests.findMany({
+      where,
+      include: {
+        employee: {
+          select: { id: true, full_name: true, employee_code: true },
+        },
+      },
+      orderBy: { created_at: 'desc' },
+    });
+    return ResponseHelper.success(requests);
+  }
 
   async findAll(query: QueryLeaveRequestDto) {
     const where: any = {};
@@ -147,6 +169,34 @@ export class LeaveRequestService {
       },
     });
     return ResponseHelper.success(created, 'Leave request submitted');
+  }
+
+  async update(id: string, dto: UpdateLeaveRequestDto) {
+    const existing = await this.prisma.leaveRequests.findUnique({
+      where: { id },
+    });
+    if (!existing) throw new NotFoundException(`Leave request ${id} not found`);
+    if (existing.status !== LeaveStatus.pending) {
+      throw new BadRequestException(
+        'Only pending leave requests can be updated',
+      );
+    }
+    const updated = await this.prisma.leaveRequests.update({
+      where: { id },
+      data: {
+        ...(dto.leave_type && { leave_type: dto.leave_type }),
+        ...(dto.start_date && { start_date: new Date(dto.start_date) }),
+        ...(dto.end_date && { end_date: new Date(dto.end_date) }),
+        ...(dto.leave_start_minutes !== undefined && {
+          leave_start_minutes: dto.leave_start_minutes,
+        }),
+        ...(dto.leave_end_minutes !== undefined && {
+          leave_end_minutes: dto.leave_end_minutes,
+        }),
+        ...(dto.reason !== undefined && { reason: dto.reason }),
+      },
+    });
+    return ResponseHelper.success(updated, 'Leave request updated');
   }
 
   async updateStatus(id: string, dto: UpdateLeaveStatusDto) {
