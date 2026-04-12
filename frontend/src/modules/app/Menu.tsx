@@ -1,3 +1,4 @@
+import { EMPLOYEE_ROLE } from '@/constant';
 import {
   employeeListUrl,
   employeeDepartmentsUrl,
@@ -6,6 +7,8 @@ import {
   timesheetUrl,
   leaveRequestUrl,
   settingsUrl,
+  myLeaveRequestUrl,
+  myTimesheetUrl,
 } from '@/routes/url';
 import {
   IconGauge,
@@ -15,6 +18,7 @@ import {
   IconBuilding,
   IconBriefcase,
   IconCalendarOff,
+  IconClock,
 } from '@tabler/icons-react';
 
 export type AppMenu = {
@@ -22,6 +26,7 @@ export type AppMenu = {
   icon?: any;
   path?: string;
   children?: AppMenu[];
+  roles?: string[];
 };
 
 export const MENUS: AppMenu[] = [
@@ -29,6 +34,7 @@ export const MENUS: AppMenu[] = [
   {
     label: 'Employees',
     icon: IconUsers,
+    roles: [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.MANAGER],
     children: [
       { label: 'Employee List', path: employeeListUrl, icon: IconUsers },
       { label: 'Departments', path: employeeDepartmentsUrl, icon: IconBuilding },
@@ -39,14 +45,31 @@ export const MENUS: AppMenu[] = [
     label: 'Attendance',
     icon: IconTimelineEvent,
     children: [
-      { label: 'Overview', path: attendanceUrl },
-      { label: 'Timesheet', path: timesheetUrl },
+      { label: 'Overview', path: attendanceUrl, roles: [EMPLOYEE_ROLE.ADMIN] },
+      {
+        label: 'Timesheet',
+        path: timesheetUrl,
+        roles: [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.MANAGER],
+      },
+      { label: 'My Timesheet', path: myTimesheetUrl, icon: IconClock },
     ],
   },
   {
     label: 'Leave',
     icon: IconCalendarOff,
-    children: [{ label: 'Leave Requests', path: leaveRequestUrl, icon: IconCalendarOff }],
+    children: [
+      {
+        label: 'Leave Requests',
+        path: leaveRequestUrl,
+        icon: IconCalendarOff,
+        roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.MANAGER],
+      },
+      {
+        label: 'My Leave Request',
+        path: myLeaveRequestUrl,
+        icon: IconCalendarOff,
+      },
+    ],
   },
   { label: 'Settings', icon: IconSettings, path: settingsUrl },
 ];

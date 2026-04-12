@@ -243,6 +243,14 @@ export class AttendancesService {
     return ResponseHelper.success(Array.from(summaryMap.values()));
   }
 
+  async findByAuthUser(authUserId: string, month: number, year: number) {
+    const employee = await this.prisma.employees.findUnique({
+      where: { auth_user_id: authUserId },
+    });
+    if (!employee) throw new NotFoundException('Employee profile not found');
+    return this.findByEmployee(employee.id, month, year);
+  }
+
   async findByEmployee(employeeId: string, month: number, year: number) {
     const monthRange = getMonthRange(month, year);
 

@@ -37,6 +37,8 @@ export interface ILeaveRequest {
   leave_type: LeaveType;
   start_date: string;
   end_date: string;
+  leave_start_minutes?: number | null;
+  leave_end_minutes?: number | null;
   reason?: string;
   status: LeaveStatus;
   approved_by?: string;

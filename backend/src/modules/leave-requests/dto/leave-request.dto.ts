@@ -44,6 +44,36 @@ export class UpdateLeaveStatusDto {
   status: LeaveStatus;
 }
 
+export class UpdateLeaveRequestDto {
+  @IsOptional()
+  @IsEnum(LeaveType)
+  leave_type?: LeaveType;
+
+  @IsOptional()
+  @IsDateString()
+  start_date?: string;
+
+  @IsOptional()
+  @IsDateString()
+  end_date?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1439)
+  leave_start_minutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1439)
+  leave_end_minutes?: number;
+
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
+
 export class QueryLeaveRequestDto {
   @IsOptional()
   @IsString()
@@ -52,4 +82,8 @@ export class QueryLeaveRequestDto {
   @IsOptional()
   @IsEnum(LeaveStatus)
   status?: LeaveStatus;
+
+  @IsOptional()
+  @IsString()
+  department_id?: string;
 }

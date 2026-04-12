@@ -13,6 +13,8 @@ import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { SettingRow, SettingsCard, SectionLabel } from '@/components/SettingsUI';
 import { WorkPolicySettings } from '@/modules/work-policies/components/WorkPolicySettings';
 import { HolidaySettings } from '@/modules/holidays/components/HolidaySettings';
+import { useAuth } from '@/modules/auth/context/AuthContext';
+import { EMPLOYEE_ROLE } from '@/constant';
 
 function PreferencesSection() {
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
@@ -67,6 +69,11 @@ function PreferencesSection() {
 }
 
 export default function SettingsPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.roles?.some((r) =>
+    [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.SUPER_ADMIN].includes(r as any),
+  );
+
   return (
     <Stack gap="md">
       <PageHeader title="Settings" description="System configuration and preferences" />
@@ -76,23 +83,31 @@ export default function SettingsPage() {
           <Tabs.Tab value="preferences" leftSection={<IconSettings2 size={14} />}>
             Preferences
           </Tabs.Tab>
-          <Tabs.Tab value="work-policy" leftSection={<IconShieldCheck size={14} />}>
-            Work Policies
-          </Tabs.Tab>
-          <Tabs.Tab value="holidays" leftSection={<IconCalendarEvent size={14} />}>
-            Public Holidays
-          </Tabs.Tab>
+          {isAdmin && (
+            <Tabs.Tab value="work-policy" leftSection={<IconShieldCheck size={14} />}>
+              Work Policies
+            </Tabs.Tab>
+          )}
+          {isAdmin && (
+            <Tabs.Tab value="holidays" leftSection={<IconCalendarEvent size={14} />}>
+              Public Holidays
+            </Tabs.Tab>
+          )}
         </Tabs.List>
 
         <Tabs.Panel value="preferences">
           <PreferencesSection />
         </Tabs.Panel>
-        <Tabs.Panel value="work-policy">
-          <WorkPolicySettings />
-        </Tabs.Panel>
-        <Tabs.Panel value="holidays">
-          <HolidaySettings />
-        </Tabs.Panel>
+        {isAdmin && (
+          <Tabs.Panel value="work-policy">
+            <WorkPolicySettings />
+          </Tabs.Panel>
+        )}
+        {isAdmin && (
+          <Tabs.Panel value="holidays">
+            <HolidaySettings />
+          </Tabs.Panel>
+        )}
       </Tabs>
     </Stack>
   );

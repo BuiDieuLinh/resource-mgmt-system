@@ -13,6 +13,9 @@ import {
   attendanceDetailUrl,
   leaveRequestUrl,
   settingsUrl,
+  myLeaveRequestUrl,
+  myTimesheetUrl,
+  myProfileUrl,
 } from './url';
 import Error404 from '../components/ErrorPage/Error404';
 import Error401 from '../components/ErrorPage/Error401';
@@ -26,6 +29,9 @@ import Attendance from '@/modules/attendances/views/Attendances';
 import Timesheet from '@/modules/attendances/views/Timesheet';
 import AttendanceDetail from '@/modules/attendances/views/AttendanceDetail';
 import LeaveRequests from '@/modules/leave-requests/views/LeaveRequests';
+import MyLeaveRequests from '@/modules/leave-requests/views/MyLeaveRequests';
+import MyTimesheet from '@/modules/attendances/views/MyTimesheet';
+import MyProfile from '@/modules/employees/views/MyProfile';
 import Settings from '@/modules/settings/views/Settings';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
@@ -75,6 +81,9 @@ export const router = createBrowserRouter([
             element: <AttendanceDetail />,
           },
           { path: leaveRequestUrl, element: <LeaveRequests /> },
+          { path: myLeaveRequestUrl, element: <MyLeaveRequests /> },
+          { path: myTimesheetUrl, element: <MyTimesheet /> },
+          { path: myProfileUrl, element: <MyProfile /> },
           { path: settingsUrl, element: <Settings /> },
         ],
       },
