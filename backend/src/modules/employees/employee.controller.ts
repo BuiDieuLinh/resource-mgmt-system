@@ -25,6 +25,7 @@ import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from 'src/common/constant/roles';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 
 @Controller('employees')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -42,7 +43,14 @@ export class EmployeeController {
 
   @Get()
   @Roles(Role.ADMIN, Role.MANAGER)
-  findAll(@Query() query: QueryEmployeeDto) {
+  async findAll(
+    @Query() query: QueryEmployeeDto,
+    @CurrentUser() user: { userId: string; roles: string[] },
+  ) {
+    if (user.roles.includes(Role.MANAGER) && !user.roles.includes(Role.ADMIN)) {
+      const deptId = await this.service.getManagerDepartmentId(user.userId);
+      if (deptId) query.department_id = deptId;
+    }
     return this.service.findAll(query);
   }
 

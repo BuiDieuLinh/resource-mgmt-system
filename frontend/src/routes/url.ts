@@ -14,3 +14,7 @@ export const buildAttendanceDetailUrl = (employeeId: string, month: number, year
 
 export const leaveRequestUrl = '/leave-requests';
 export const settingsUrl = '/settings';
+
+export const myProfileUrl = '/my/profile';
+export const myTimesheetUrl = '/my/timesheet';
+export const myLeaveRequestUrl = '/my/leave-requests';
