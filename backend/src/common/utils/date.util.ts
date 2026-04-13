@@ -1,4 +1,16 @@
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const APP_TZ = 'Asia/Ho_Chi_Minh';
+
+export function toLocalWorkDate(ts: Date): Date {
+  const local = dayjs(ts).tz(APP_TZ);
+  return new Date(Date.UTC(local.year(), local.month(), local.date()));
+}
 
 export function getMonthRange(month: number, year: number) {
   return {

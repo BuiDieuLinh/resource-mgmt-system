@@ -13,6 +13,7 @@ import {
   attendanceDetailUrl,
   leaveRequestUrl,
   settingsUrl,
+  checkInOutUrl,
   myLeaveRequestUrl,
   myTimesheetUrl,
   myProfileUrl,
@@ -28,6 +29,7 @@ import EmployeeProfile from '@/modules/employees/views/EmployeeProfile';
 import Attendance from '@/modules/attendances/views/Attendances';
 import Timesheet from '@/modules/attendances/views/Timesheet';
 import AttendanceDetail from '@/modules/attendances/views/AttendanceDetail';
+import CheckInOut from '@/modules/attendances/views/CheckInOut';
 import LeaveRequests from '@/modules/leave-requests/views/LeaveRequests';
 import MyLeaveRequests from '@/modules/leave-requests/views/MyLeaveRequests';
 import MyTimesheet from '@/modules/attendances/views/MyTimesheet';
@@ -81,6 +83,7 @@ export const router = createBrowserRouter([
             element: <AttendanceDetail />,
           },
           { path: leaveRequestUrl, element: <LeaveRequests /> },
+          { path: checkInOutUrl, element: <CheckInOut /> },
           { path: myLeaveRequestUrl, element: <MyLeaveRequests /> },
           { path: myTimesheetUrl, element: <MyTimesheet /> },
           { path: myProfileUrl, element: <MyProfile /> },

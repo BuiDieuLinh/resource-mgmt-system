@@ -7,6 +7,7 @@ import { TimelineHeader } from '../components/AttendanceTimeline/TimelineHeader'
 import { DayRow } from '../components/AttendanceTimeline/DayRow';
 import { LeaveRequestModal } from '../components/LeaveRequestModal';
 import MonthNavigator from '../components/MonthPickerInput';
+import { CheckInOutButton } from '../components/CheckInOutButton';
 import { getDaysInMonth, getWeeksInMonth } from '../utils/format';
 import { useGetMyAttendance } from '../api/get-my-attendance';
 import type { IAttendance, ILeaveRequest } from '../types';
@@ -65,7 +66,11 @@ export default function MyTimesheetPage() {
 
   return (
     <Stack gap="md">
-      <PageHeader title="My Timesheet" description="Your personal attendance records" />
+      <PageHeader
+        title="My Timesheet"
+        description="Your personal attendance records"
+        right={<CheckInOutButton />}
+      />
 
       {data?.summary && <AttendanceSummaryCards summary={data.summary} />}
 

@@ -3,6 +3,7 @@ import {
   IsInt,
   IsOptional,
   IsDateString,
+  IsNumber,
   Min,
   Max,
 } from 'class-validator';
@@ -34,6 +35,19 @@ export class CreateWorkPolicyDto {
   @Min(0)
   @Max(1439)
   break_end?: number;
+
+  @IsOptional()
+  @IsNumber()
+  office_latitude?: number;
+
+  @IsOptional()
+  @IsNumber()
+  office_longitude?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(10)
+  max_distance_meters?: number;
 
   @IsDateString()
   effective_from: string;

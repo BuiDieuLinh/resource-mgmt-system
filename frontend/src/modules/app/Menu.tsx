@@ -7,6 +7,7 @@ import {
   timesheetUrl,
   leaveRequestUrl,
   settingsUrl,
+  checkInOutUrl,
   myLeaveRequestUrl,
   myTimesheetUrl,
 } from '@/routes/url';
@@ -18,6 +19,7 @@ import {
   IconBuilding,
   IconBriefcase,
   IconCalendarOff,
+  IconLogin,
   IconClock,
 } from '@tabler/icons-react';
 
@@ -45,6 +47,7 @@ export const MENUS: AppMenu[] = [
     label: 'Attendance',
     icon: IconTimelineEvent,
     children: [
+      { label: 'Check In / Out', path: checkInOutUrl, icon: IconLogin },
       { label: 'Overview', path: attendanceUrl, roles: [EMPLOYEE_ROLE.ADMIN] },
       {
         label: 'Timesheet',
