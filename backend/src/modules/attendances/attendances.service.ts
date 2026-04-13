@@ -10,6 +10,7 @@ import {
   getWorkingDaysInMonth,
   dateToMinutes,
   overlapMinutes,
+  toLocalWorkDate,
 } from '../../common/utils/date.util';
 import {
   resolvePagination,
@@ -49,8 +50,7 @@ export class AttendancesService {
 
   async checkIn(dto: CheckInDto) {
     const timestamp = dto.timestamp ? new Date(dto.timestamp) : new Date();
-    const workDate = new Date(timestamp);
-    workDate.setHours(0, 0, 0, 0);
+    const workDate = toLocalWorkDate(timestamp);
 
     const schedule = await this.prisma.employeeWorkSchedules.findFirst({
       where: { employee_id: dto.employee_id },
@@ -85,6 +85,18 @@ export class AttendancesService {
       (dto.latitude == null || dto.longitude == null)
     ) {
       throw new BadRequestException('GPS location is required for check-in');
+    }
+
+    const existing = await this.prisma.attendances.findUnique({
+      where: {
+        employee_id_work_date: {
+          employee_id: dto.employee_id,
+          work_date: workDate,
+        },
+      },
+    });
+    if (existing?.check_in_time) {
+      throw new BadRequestException('Already checked in today');
     }
 
     const attendance = await this.prisma.attendances.upsert({
@@ -148,8 +160,7 @@ export class AttendancesService {
 
   async checkOut(dto: CheckOutDto) {
     const timestamp = dto.timestamp ? new Date(dto.timestamp) : new Date();
-    const workDate = new Date(timestamp);
-    workDate.setHours(0, 0, 0, 0);
+    const workDate = toLocalWorkDate(timestamp);
 
     const attendance = await this.prisma.attendances.findUnique({
       where: {

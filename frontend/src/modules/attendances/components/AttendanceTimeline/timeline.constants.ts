@@ -25,9 +25,17 @@ export function toPct(min: number): number {
   return Math.max(0, Math.min(100, ((min - TIMELINE_START) / TIMELINE_SPAN) * 100));
 }
 
-/** Parse UTC ISO timestamp → minutes since midnight (UTC) */
+/** Parse ISO timestamp → minutes since midnight in VN timezone */
 export function toMinutesUTC(iso?: string | null): number | null {
   if (!iso) return null;
   const d = new Date(iso);
-  return d.getUTCHours() * 60 + d.getUTCMinutes();
+  const parts = new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false,
+    timeZone: 'Asia/Ho_Chi_Minh',
+  }).formatToParts(d);
+  const h = Number(parts.find((p) => p.type === 'hour')?.value ?? 0);
+  const m = Number(parts.find((p) => p.type === 'minute')?.value ?? 0);
+  return h * 60 + m;
 }

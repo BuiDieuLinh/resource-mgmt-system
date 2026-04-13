@@ -1,4 +1,5 @@
 import type { IAttendance, ILeaveRequest } from '../types';
+import { DEFAULT_LOCALE, DEFAULT_TIMEZONE } from '@/constant/index';
 
 export const formatDays = (val: number | string | undefined | null): string => {
   if (val === 0 || val === '0') return '-';
@@ -32,10 +33,10 @@ export const formatHours = (val: number | string | undefined | null): string => 
 
 export function fmtTime(iso?: string | null): string {
   if (!iso) return '--:--';
-  return new Date(iso).toLocaleTimeString('vi-VN', {
+  return new Date(iso).toLocaleTimeString(DEFAULT_LOCALE, {
     hour: '2-digit',
     minute: '2-digit',
-    timeZone: 'UTC',
+    timeZone: DEFAULT_TIMEZONE,
   });
 }
 

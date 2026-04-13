@@ -37,7 +37,11 @@ apiClient.interceptors.response.use(
     }
 
     if (status === 403) {
-      window.dispatchEvent(new CustomEvent(AUTH_ERROR_EVENT, { detail: { type: '403' } }));
+      const url: string = err.config?.url ?? '';
+      const isAuthPath = url.includes('/auth/') || url === '' || url === '/';
+      if (isAuthPath) {
+        window.dispatchEvent(new CustomEvent(AUTH_ERROR_EVENT, { detail: { type: '403' } }));
+      }
     }
 
     return Promise.reject(err);

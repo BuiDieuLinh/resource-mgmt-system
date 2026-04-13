@@ -48,7 +48,6 @@ export const MENUS: AppMenu[] = [
     icon: IconTimelineEvent,
     children: [
       { label: 'Check In / Out', path: checkInOutUrl, icon: IconLogin },
-      { label: 'Overview', path: attendanceUrl },
       { label: 'Overview', path: attendanceUrl, roles: [EMPLOYEE_ROLE.ADMIN] },
       {
         label: 'Timesheet',

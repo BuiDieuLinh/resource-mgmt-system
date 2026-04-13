@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
+import { DEFAULT_TIMEZONE } from '@/constant';
 
 export interface TodayAttendance {
   id: string;
@@ -23,12 +24,14 @@ const getTodayAttendance = async (employeeId: string): Promise<TodayAttendanceRe
       year: today.getFullYear(),
     },
   });
-  // Find today's record from the list
   const body = res.data;
   const list = body?.data?.data ?? body?.data ?? [];
-  const todayStr = today.toISOString().slice(0, 10);
+  const todayLocal = today.toLocaleDateString('en-CA', { timeZone: DEFAULT_TIMEZONE });
   const record = Array.isArray(list)
-    ? (list.find((r: any) => r.work_date?.slice(0, 10) === todayStr) ?? null)
+    ? (list.find((r: any) => {
+        const workDate = r.work_date?.slice(0, 10);
+        return workDate === todayLocal;
+      }) ?? null)
     : null;
   return { data: record, error: false, message: '' };
 };

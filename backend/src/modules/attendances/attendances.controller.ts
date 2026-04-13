@@ -30,13 +30,13 @@ export class AttendancesController {
   constructor(private readonly attendancesService: AttendancesService) {}
 
   @Post('check-in')
-  @Roles(Role.EMPLOYEE, Role.MANAGER)
+  @Roles(Role.EMPLOYEE, Role.MANAGER, Role.ADMIN)
   checkIn(@Body() dto: CheckInDto) {
     return this.attendancesService.checkIn(dto);
   }
 
   @Post('check-out')
-  @Roles(Role.EMPLOYEE, Role.MANAGER)
+  @Roles(Role.EMPLOYEE, Role.MANAGER, Role.ADMIN)
   checkOut(@Body() dto: CheckOutDto) {
     return this.attendancesService.checkOut(dto);
   }
