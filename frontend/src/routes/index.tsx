@@ -36,6 +36,10 @@ import MyTimesheet from '@/modules/attendances/views/MyTimesheet';
 import MyProfile from '@/modules/employees/views/MyProfile';
 import Settings from '@/modules/settings/views/Settings';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import PerformanceCycles from '@/modules/performance/views/PerformanceCycles';
+import CycleDetail from '@/modules/performance/views/CycleDetail';
+import PerformanceReview from '@/modules/performance/views/PerformanceReview';
+import { performanceCyclesUrl, performanceCycleDetailUrl, performanceReviewUrl } from './url';
 
 export const router = createBrowserRouter([
   {
@@ -88,6 +92,9 @@ export const router = createBrowserRouter([
           { path: myTimesheetUrl, element: <MyTimesheet /> },
           { path: myProfileUrl, element: <MyProfile /> },
           { path: settingsUrl, element: <Settings /> },
+          { path: performanceCyclesUrl, element: <PerformanceCycles /> },
+          { path: performanceCycleDetailUrl, element: <CycleDetail /> },
+          { path: performanceReviewUrl, element: <PerformanceReview /> },
         ],
       },
     ],

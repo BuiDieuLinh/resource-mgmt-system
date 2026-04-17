@@ -10,6 +10,8 @@ import {
   checkInOutUrl,
   myLeaveRequestUrl,
   myTimesheetUrl,
+  performanceCyclesUrl,
+  performanceReviewUrl,
 } from '@/routes/url';
 import {
   IconGauge,
@@ -21,6 +23,8 @@ import {
   IconCalendarOff,
   IconLogin,
   IconClock,
+  IconTrophy,
+  IconStar,
 } from '@tabler/icons-react';
 
 export type AppMenu = {
@@ -71,6 +75,24 @@ export const MENUS: AppMenu[] = [
         label: 'My Leave Request',
         path: myLeaveRequestUrl,
         icon: IconCalendarOff,
+      },
+    ],
+  },
+  {
+    label: 'Performance',
+    icon: IconTrophy,
+    children: [
+      {
+        label: 'Review Cycles',
+        path: performanceCyclesUrl,
+        icon: IconTrophy,
+        roles: [EMPLOYEE_ROLE.ADMIN],
+      },
+      {
+        label: 'Performance Review',
+        path: performanceReviewUrl,
+        icon: IconStar,
+        roles: [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.MANAGER],
       },
     ],
   },
