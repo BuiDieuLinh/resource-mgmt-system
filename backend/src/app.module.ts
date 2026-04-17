@@ -12,6 +12,7 @@ import { WorkPolicyModule } from './modules/work-policies/work-policy.module';
 import { AttendancesModule } from './modules/attendances/attendances.module';
 import { LeaveRequestModule } from './modules/leave-requests/leave-request.module';
 import { HolidayModule } from './modules/holidays/holiday.module';
+import { PerformanceModule } from './modules/performance/performance.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { HolidayModule } from './modules/holidays/holiday.module';
     AttendancesModule,
     LeaveRequestModule,
     HolidayModule,
+    PerformanceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

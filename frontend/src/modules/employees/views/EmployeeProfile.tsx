@@ -1,4 +1,15 @@
-import { Stack, Group, Card, Avatar, Text, Badge, Grid, Divider, ThemeIcon } from '@mantine/core';
+import {
+  Stack,
+  Group,
+  Card,
+  Avatar,
+  Text,
+  Badge,
+  Grid,
+  Divider,
+  ThemeIcon,
+  Button,
+} from '@mantine/core';
 import {
   IconMail,
   IconPhone,
@@ -11,6 +22,8 @@ import {
   IconCoffee,
   IconUser,
   IconMapPin,
+  IconTrophy,
+  IconEye,
 } from '@tabler/icons-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGetEmployee } from '../api/get-employee';
@@ -25,6 +38,10 @@ import type { IWorkSchedule } from '../types';
 import type { IWorkPolicy } from '../../work-policies/types';
 import { WorkDayBadges } from '../components/WorkDayBadges';
 import { minutesToTime, formatDate } from '../../../constant';
+import { useGetMyAwards } from '../../performance/api';
+import { AwardRevealPage } from '../../performance/components/AwardRevealPage';
+import { useState } from 'react';
+import type { IAward } from '../../performance/types';
 
 function InfoRow({
   icon,
@@ -139,6 +156,14 @@ export default function EmployeeProfile() {
   const { data, isLoading: _loading, error, refetch } = useGetEmployee(id!);
   const isLoading = useDelayedLoading(_loading);
   const { data: policyData } = useGetActivePolicy();
+  const { data: myAwards = [] } = useGetMyAwards();
+  const [previewAward, setPreviewAward] = useState<IAward | null>(null);
+
+  const RANK_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'] as const;
+  const CATEGORY_LABEL: Record<string, string> = {
+    top_employee: 'Nhân Viên Xuất Sắc',
+    top_manager: 'Quản Lý Xuất Sắc',
+  };
 
   if (isLoading)
     return (
@@ -355,10 +380,68 @@ export default function EmployeeProfile() {
                   </div>
                 </>
               )}
+
+              {myAwards.length > 0 && (
+                <>
+                  <Divider />
+                  <div>
+                    <SectionTitle>Awards & Recognition</SectionTitle>
+                    <Stack gap="sm" mt="sm">
+                      {myAwards.map((award) => (
+                        <Group
+                          key={award.id}
+                          justify="space-between"
+                          p="sm"
+                          style={{
+                            background: 'var(--mantine-color-gray-0)',
+                            borderRadius: 8,
+                            border: '1px solid var(--mantine-color-gray-2)',
+                          }}
+                        >
+                          <Group gap="sm">
+                            <ThemeIcon size="md" radius="xl" variant="light" color="yellow">
+                              <IconTrophy size={14} color={RANK_COLORS[(award.rank - 1) % 3]} />
+                            </ThemeIcon>
+                            <Stack gap={2}>
+                              <Text size="sm" fw={600}>
+                                {award.title}
+                              </Text>
+                              <Group gap={6}>
+                                <Badge size="xs" variant="light" color="blue">
+                                  {CATEGORY_LABEL[award.category] ?? award.category}
+                                </Badge>
+                                <Text size="xs" c="dimmed">
+                                  {award.cycle?.title}
+                                </Text>
+                              </Group>
+                            </Stack>
+                          </Group>
+                          <Button
+                            size="xs"
+                            variant="subtle"
+                            leftSection={<IconEye size={12} />}
+                            onClick={() => setPreviewAward(award)}
+                          >
+                            Preview
+                          </Button>
+                        </Group>
+                      ))}
+                    </Stack>
+                  </div>
+                </>
+              )}
             </Stack>
           </Card>
         </Grid.Col>
       </Grid>
+
+      {previewAward && (
+        <AwardRevealPage
+          awards={[previewAward]}
+          onClose={() => setPreviewAward(null)}
+          previewMode
+        />
+      )}
     </Stack>
   );
 }

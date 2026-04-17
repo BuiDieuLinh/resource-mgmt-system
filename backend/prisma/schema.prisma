@@ -38,9 +38,13 @@ model Employees {
   created_at  DateTime  @default(now())
   position    Positions @relation(fields: [position_id], references: [id])
 
-  work_schedules EmployeeWorkSchedules[]
-  attendances    Attendances[]
-  leave_requests LeaveRequests[]
+  work_schedules     EmployeeWorkSchedules[]
+  attendances        Attendances[]
+  leave_requests     LeaveRequests[]
+  reviews_received   PerformanceReviews[] @relation("ReviewedEmployee")
+  reviews_given      PerformanceReviews[] @relation("ReviewerEmployee")
+  awards             Awards[]
+  award_reveals      AwardReveals[]
 
   @@map("employees")
 }
@@ -213,4 +217,92 @@ model LeaveRequests {
 
   @@index([employee_id, start_date, end_date])
   @@map("leave_requests")
+}
+
+enum ReviewPeriodType {
+  monthly
+  quarterly
+}
+
+enum ReviewStatus {
+  draft
+  submitted
+  published
+}
+
+enum AwardCategory {
+  top_employee
+  top_manager
+}
+
+model ReviewCycles {
+  id          String           @id @default(uuid()) @db.Uuid
+  title       String           @db.VarChar(100)   
+  period_type ReviewPeriodType
+  period_year Int
+  period_seq  Int              
+  announce_date DateTime       @db.Date            
+  created_by  String           @db.Uuid            
+  created_at  DateTime         @default(now())
+
+  reviews PerformanceReviews[]
+  awards  Awards[]
+
+  @@unique([period_type, period_year, period_seq])
+  @@map("review_cycles")
+}
+
+model PerformanceReviews {
+  id           String       @id @default(uuid()) @db.Uuid
+  cycle_id     String       @db.Uuid
+  employee_id  String       @db.Uuid
+  reviewer_id  String       @db.Uuid              
+  score        Int                                 
+  comment      String?      @db.Text             
+  achievements String?      @db.Text              
+  status       ReviewStatus @default(draft)
+  attendance_days    Int?
+  late_count         Int?
+  absent_count       Int?
+  overtime_minutes   Int?
+  created_at   DateTime     @default(now())
+  updated_at   DateTime     @updatedAt
+
+  cycle    ReviewCycles @relation(fields: [cycle_id], references: [id])
+  employee Employees    @relation("ReviewedEmployee", fields: [employee_id], references: [id])
+  reviewer Employees    @relation("ReviewerEmployee", fields: [reviewer_id], references: [id])
+
+  @@unique([cycle_id, employee_id])
+  @@map("performance_reviews")
+}
+
+model Awards {
+  id          String        @id @default(uuid()) @db.Uuid
+  cycle_id    String        @db.Uuid
+  employee_id String        @db.Uuid
+  category    AwardCategory
+  rank        Int           
+  title       String        @db.VarChar(200)      
+  description String?       @db.Text              
+  created_at  DateTime      @default(now())
+
+  cycle    ReviewCycles @relation(fields: [cycle_id], references: [id])
+  employee Employees    @relation(fields: [employee_id], references: [id])
+  reveals  AwardReveals[]
+
+  @@unique([cycle_id, employee_id, category])
+  @@map("awards")
+}
+
+model AwardReveals {
+  id          String   @id @default(uuid()) @db.Uuid
+  award_id    String   @db.Uuid
+  employee_id String   @db.Uuid
+  seen_at     DateTime @default(now())
+
+  award    Awards    @relation(fields: [award_id], references: [id])
+  employee Employees @relation(fields: [employee_id], references: [id])
+
+  @@unique([award_id, employee_id])
+  @@map("award_reveals")
 }

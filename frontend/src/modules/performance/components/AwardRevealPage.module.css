@@ -1,0 +1,323 @@
+/* ─── Keyframes ─────────────────────────────────────────────────────────────── */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes ringPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.15;
+  }
+}
+
+@keyframes shimmerGold {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* ─── Root overlay ──────────────────────────────────────────────────────────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  overflow: auto;
+  background: linear-gradient(160deg, #fffbf0 0%, #f8f4ff 35%, #f0f8ff 65%, #fff8f5 100%);
+}
+
+/* ─── Confetti canvas ───────────────────────────────────────────────────────── */
+.confettiCanvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10001;
+}
+
+/* ─── LightBg ───────────────────────────────────────────────────────────────── */
+.bgOrb {
+  position: fixed;
+  top: -10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(245, 200, 66, 0.12) 0%, transparent 70%);
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+.bgDotGrid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.055) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.bgTopRule {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #b8860b 30%,
+    #d4a017 50%,
+    #b8860b 70%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* ─── Company footer ────────────────────────────────────────────────────────── */
+.footer {
+  text-align: center;
+  padding-top: 8px;
+}
+
+.footerText {
+  color: #bbb;
+  letter-spacing: 1px;
+}
+
+/* ─── Close button (preview mode) ──────────────────────────────────────────── */
+.closeBtn {
+  position: fixed !important;
+  top: 20px;
+  right: 20px;
+  color: #888 !important;
+  z-index: 2;
+}
+
+.closeBtnAll {
+  position: fixed !important;
+  top: 24px;
+  right: 24px;
+  color: #888 !important;
+  z-index: 2;
+}
+
+/* ─── Award card ────────────────────────────────────────────────────────────── */
+.cardInner {
+  border-radius: 16px;
+  background: white;
+  overflow: hidden;
+}
+
+.cardDivider {
+  width: 60%;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* ─── Personal reveal ───────────────────────────────────────────────────────── */
+.personalWrap {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.topBar {
+  padding: 20px 40px;
+  position: relative;
+  z-index: 1;
+}
+
+.ceremonyLabel {
+  color: #ccc;
+  letter-spacing: 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 60px 32px;
+  position: relative;
+  z-index: 1;
+}
+
+.innerGroup {
+  width: 100%;
+  max-width: 860px;
+}
+
+.avatarRing {
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  animation: ringPulse 2.5s ease-in-out infinite;
+}
+
+.verticalDivider {
+  width: 1px;
+  align-self: stretch;
+  min-height: 280px;
+  flex-shrink: 0;
+}
+
+.trophyIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: float 3s ease-in-out infinite;
+}
+
+.sectionLabel {
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.signatureLine {
+  width: 120px;
+  height: 1px;
+  margin-bottom: 4px;
+}
+
+.personalFooter {
+  padding: 10px 40px 18px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── All-view header ───────────────────────────────────────────────────────── */
+.allHeader {
+  padding: 28px 32px 32px;
+  position: relative;
+  z-index: 1;
+}
+
+.companyGroup {
+  min-width: 200px;
+}
+
+.companyLogoFallback {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #b8860b, #d4a017);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(184, 134, 11, 0.25);
+  flex-shrink: 0;
+}
+
+.companyLogoFallbackSm {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #b8860b, #d4a017);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.companyName {
+  color: #1a1a2e;
+  line-height: 1.2;
+}
+
+.companyTagline {
+  color: #aaa;
+  line-height: 1.2;
+}
+
+.eventLabel {
+  color: #ccc;
+  letter-spacing: 5px;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.shimmerTitle {
+  background: linear-gradient(135deg, #b8860b 0%, #1a1a2e 40%, #7c3aed 80%, #b8860b 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmerGold 5s linear infinite;
+  font-size: clamp(22px, 3.5vw, 40px);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.dateLabel {
+  color: #bbb;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.dateValue {
+  color: #555;
+}
+
+.headerDivider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(184, 134, 11, 0.3) 30%,
+    rgba(124, 58, 237, 0.2) 70%,
+    transparent
+  );
+}
+
+.dateStack {
+  min-width: 200px;
+}
+
+/* ─── Categories section ────────────────────────────────────────────────────── */
+.categoriesStack {
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.catDividerLine {
+  height: 1.5px;
+  flex: 1;
+  max-width: 140px;
+}
+
+/* ─── Bottom CTA ────────────────────────────────────────────────────────────── */
+.ctaWrap {
+  text-align: center;
+  padding-bottom: 56px;
+  position: relative;
+  z-index: 1;
+}
+
+.ctaBtn {
+  background: linear-gradient(135deg, #b8860b, #d4a017) !important;
+  color: white !important;
+  font-weight: 900 !important;
+  font-size: 16px !important;
+  padding: 14px 56px !important;
+  box-shadow: 0 8px 32px rgba(184, 134, 11, 0.3) !important;
+  border: none !important;
+}

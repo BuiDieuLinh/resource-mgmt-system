@@ -2,6 +2,7 @@ import { AppShell } from '@mantine/core';
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Navbar } from './Navbar';
+import { AwardRevealGate } from '@/modules/performance/components/AwardRevealGate';
 
 export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false);
@@ -15,6 +16,8 @@ export default function AdminLayout() {
       <AppShell.Main>
         <Outlet />
       </AppShell.Main>
+
+      <AwardRevealGate />
     </AppShell>
   );
 }
