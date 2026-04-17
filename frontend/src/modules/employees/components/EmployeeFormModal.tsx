@@ -14,7 +14,11 @@ import { DateInput } from '@mantine/dates';
 import { useForm } from '@mantine/form';
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { IconCalendar, IconClockHour5, IconClockHour8, IconUser } from '@tabler/icons-react';
-import { employeeValidationRules, EXISTS_MSG } from '../rule-form/employee-validation';
+import {
+  employeeValidationRules,
+  hireDateRule,
+  EXISTS_MSG,
+} from '../rule-form/employee-validation';
 import type { EmployeeFormValues } from '../types';
 import { useGetAllPositions } from '../../positions/api/get-positions';
 import { checkEmployeeExists, type CheckExistsField } from '../api/check-employee-exists';
@@ -50,8 +54,8 @@ const EMPTY_VALUES: EmployeeFormValues = {
   email: '',
   phone: '',
   identify_card: '',
-  gender: '',
-  date_of_birth: null,
+  gender: 'Male',
+  date_of_birth: '2000-01-01',
   address: '',
   hire_date: new Date(),
   position_id: '',
@@ -93,7 +97,7 @@ export function EmployeeFormModal({
       identify_card: employeeValidationRules.identify_card,
       gender: employeeValidationRules.gender,
       date_of_birth: employeeValidationRules.date_of_birth,
-      hire_date: employeeValidationRules.hire_date,
+      hire_date: hireDateRule(mode),
       address: employeeValidationRules.address,
       position_id: employeeValidationRules.position_id,
       status: employeeValidationRules.status,
@@ -118,6 +122,13 @@ export function EmployeeFormModal({
       );
     }
   }, [opened]);
+
+  // Re-sync position_id after positions finish loading (Select clears value if options not ready)
+  useEffect(() => {
+    if (opened && !isPositionsLoading && initialValues?.position_id) {
+      form.setFieldValue('position_id', initialValues.position_id);
+    }
+  }, [isPositionsLoading]);
 
   const scheduleCheck = useCallback(
     (field: CheckExistsField, value: string) => {
@@ -345,7 +356,10 @@ export function EmployeeFormModal({
                 placeholder={DATE_FORMAT}
                 valueFormat={DATE_FORMAT}
                 required
-                maxDate={new Date()}
+                excludeDate={(date) =>
+                  new Date(date).getDay() === 0 || new Date(date).getDay() === 6
+                }
+                {...(mode === 'edit' ? { maxDate: new Date() } : {})}
                 {...form.getInputProps('hire_date')}
               />
             </Grid.Col>

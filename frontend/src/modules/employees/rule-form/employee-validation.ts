@@ -71,10 +71,8 @@ export const employeeValidationRules = {
     if (!value) return 'Hire date is required';
 
     const date = new Date(value);
-    const today = new Date();
 
     if (isNaN(date.getTime())) return 'Invalid date format';
-    if (date > today) return 'Hire date cannot be in the future';
 
     return null;
   },
@@ -100,6 +98,21 @@ export const employeeValidationRules = {
     return null;
   },
 };
+
+export const hireDateRule = (mode: 'add' | 'edit') => (value: Date | string | null | undefined) => {
+  if (!value) return 'Hire date is required';
+
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return 'Invalid date format';
+
+  if (mode === 'edit' && date > new Date()) return 'Hire date cannot be in the future';
+
+  const dow = date.getDay();
+  if (dow === 0 || dow === 6) return 'Hire date cannot be on a weekend';
+
+  return null;
+};
+
 export const EXISTS_MSG: Record<CheckExistsField, string> = {
   employee_code: 'Employee code already exists',
   email: 'Email is already in use',
