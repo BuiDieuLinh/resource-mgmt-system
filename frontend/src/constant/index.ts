@@ -117,3 +117,13 @@ export const LEVEL_COLOR: Record<LevelPosition, string> = {
   lead: 'orange',
   manager: 'red',
 };
+
+export const EMPLOYEE_ROLE = {
+  SUPER_ADMIN: 'super_admin',
+  ADMIN: 'admin',
+  MANAGER: 'manager',
+  EMPLOYEE: 'employee',
+} as const;
+
+export const DEFAULT_TIMEZONE = 'Asia/Ho_Chi_Minh';
+export const DEFAULT_LOCALE = 'vi-VN';

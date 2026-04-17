@@ -10,6 +10,7 @@ import {
   getWorkingDaysInMonth,
   dateToMinutes,
   overlapMinutes,
+  toLocalWorkDate,
 } from '../../common/utils/date.util';
 import {
   resolvePagination,
@@ -23,6 +24,23 @@ import { CreateAttendanceDto } from './dto/create-attendance.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
 import { AttendanceAction, AttendanceStatus } from '@prisma/client';
 
+/** Haversine formula — returns distance in meters between two GPS coords */
+function haversineMeters(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 @Injectable()
 export class AttendancesService {
   constructor(
@@ -32,8 +50,7 @@ export class AttendancesService {
 
   async checkIn(dto: CheckInDto) {
     const timestamp = dto.timestamp ? new Date(dto.timestamp) : new Date();
-    const workDate = new Date(timestamp);
-    workDate.setHours(0, 0, 0, 0);
+    const workDate = toLocalWorkDate(timestamp);
 
     const schedule = await this.prisma.employeeWorkSchedules.findFirst({
       where: { employee_id: dto.employee_id },
@@ -41,9 +58,46 @@ export class AttendancesService {
     if (!schedule)
       throw new BadRequestException('No work schedule found for employee');
 
-    // Snapshot active policy at check-in time
     const policyRes = await this.workPolicyService.getActive(timestamp);
     const policy = policyRes.data;
+
+    // GPS validation
+    if (
+      policy?.office_latitude != null &&
+      policy?.office_longitude != null &&
+      dto.latitude != null &&
+      dto.longitude != null
+    ) {
+      const dist = haversineMeters(
+        Number(dto.latitude),
+        Number(dto.longitude),
+        Number(policy.office_latitude),
+        Number(policy.office_longitude),
+      );
+      const maxDist = policy.max_distance_meters ?? 100;
+      if (dist > maxDist) {
+        throw new BadRequestException(
+          `You are too far from the office (${Math.round(dist)}m away, max ${maxDist}m allowed)`,
+        );
+      }
+    } else if (
+      policy?.office_latitude != null &&
+      (dto.latitude == null || dto.longitude == null)
+    ) {
+      throw new BadRequestException('GPS location is required for check-in');
+    }
+
+    const existing = await this.prisma.attendances.findUnique({
+      where: {
+        employee_id_work_date: {
+          employee_id: dto.employee_id,
+          work_date: workDate,
+        },
+      },
+    });
+    if (existing?.check_in_time) {
+      throw new BadRequestException('Already checked in today');
+    }
 
     const attendance = await this.prisma.attendances.upsert({
       where: {
@@ -106,8 +160,7 @@ export class AttendancesService {
 
   async checkOut(dto: CheckOutDto) {
     const timestamp = dto.timestamp ? new Date(dto.timestamp) : new Date();
-    const workDate = new Date(timestamp);
-    workDate.setHours(0, 0, 0, 0);
+    const workDate = toLocalWorkDate(timestamp);
 
     const attendance = await this.prisma.attendances.findUnique({
       where: {
@@ -241,6 +294,14 @@ export class AttendancesService {
     });
 
     return ResponseHelper.success(Array.from(summaryMap.values()));
+  }
+
+  async findByAuthUser(authUserId: string, month: number, year: number) {
+    const employee = await this.prisma.employees.findUnique({
+      where: { auth_user_id: authUserId },
+    });
+    if (!employee) throw new NotFoundException('Employee profile not found');
+    return this.findByEmployee(employee.id, month, year);
   }
 
   async findByEmployee(employeeId: string, month: number, year: number) {

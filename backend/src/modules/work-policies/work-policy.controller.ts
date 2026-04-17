@@ -7,11 +7,17 @@ import {
   Body,
   Param,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { WorkPolicyService } from './work-policy.service';
 import { CreateWorkPolicyDto } from './dto/work-policy.dto';
+import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { Role } from 'src/common/constant/roles';
 
 @Controller('work-policies')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class WorkPolicyController {
   constructor(private readonly workPolicyService: WorkPolicyService) {}
 
@@ -26,16 +32,19 @@ export class WorkPolicyController {
   }
 
   @Post()
+  @Roles(Role.ADMIN)
   create(@Body() dto: CreateWorkPolicyDto) {
     return this.workPolicyService.create(dto);
   }
 
   @Patch(':id')
+  @Roles(Role.ADMIN)
   update(@Param('id') id: string, @Body() dto: CreateWorkPolicyDto) {
     return this.workPolicyService.update(id, dto);
   }
 
   @Delete(':id')
+  @Roles(Role.ADMIN)
   remove(@Param('id') id: string) {
     return this.workPolicyService.remove(id);
   }

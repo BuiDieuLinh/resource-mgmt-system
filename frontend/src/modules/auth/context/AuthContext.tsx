@@ -1,6 +1,9 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { authApi, type AuthUser } from '../api/auth.api';
-import { AUTH_LOGIN_URL } from '@/lib/api';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { AUTH_URL } from '@/constant/config';
+import { AUTH_ERROR_EVENT } from '@/lib/api';
+import { queryClient } from '@/lib/react-query';
 
 interface AuthState {
   user: AuthUser | null;
@@ -10,22 +13,36 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
+const getAuthOrigin = () => {
+  try {
+    return new URL(AUTH_URL).origin;
+  } catch {
+    return 'http://localhost:5173';
+  }
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const setStoreUser = useAuthStore((s) => s.setUser);
+
+  const AUTH_LOGIN_URL = `${AUTH_URL}login`;
+
+  const syncUser = (u: AuthUser | null) => {
+    setUser(u);
+    setStoreUser(u);
+  };
 
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      const allowedOrigin = import.meta.env.VITE_AUTH_LOGIN_URL
-        ? new URL(import.meta.env.VITE_AUTH_LOGIN_URL).origin
-        : 'http://localhost:5173';
+    const authOrigin = getAuthOrigin();
 
-      if (event.origin !== allowedOrigin) return;
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== authOrigin) return;
       if (event.data?.type === 'auth:token' && event.data.token) {
         localStorage.setItem('access_token', event.data.token);
         authApi
           .getMe()
-          .then((res) => setUser(res.data.data))
+          .then((res) => syncUser(res.data.data))
           .catch(() => localStorage.removeItem('access_token'))
           .finally(() => setIsLoading(false));
       }
@@ -33,30 +50,75 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     window.addEventListener('message', handleMessage);
 
+    const handleAuthError = (e: Event) => {
+      const { type } = (e as CustomEvent).detail;
+      queryClient.clear();
+      if (type === '403') {
+        window.location.replace('/403');
+      } else if (type === 'expired') {
+        window.location.replace('/session-expired');
+      } else {
+        window.location.replace('/401');
+      }
+    };
+    window.addEventListener(AUTH_ERROR_EVENT, handleAuthError);
+
     if (window.opener) {
-      const authOrigin = import.meta.env.VITE_AUTH_LOGIN_URL
-        ? new URL(import.meta.env.VITE_AUTH_LOGIN_URL).origin
-        : 'http://localhost:5173';
+      const existingToken = localStorage.getItem('access_token');
+      if (existingToken) {
+        authApi
+          .getMe()
+          .then((res) => syncUser(res.data.data))
+          .catch(() => {
+            localStorage.removeItem('access_token');
+            window.location.href = AUTH_LOGIN_URL;
+          })
+          .finally(() => setIsLoading(false));
+        return () => {
+          window.removeEventListener('message', handleMessage);
+          window.removeEventListener(AUTH_ERROR_EVENT, handleAuthError);
+        };
+      }
+
       window.opener.postMessage('auth:ready', authOrigin);
+
+      const timeout = setTimeout(() => {
+        if (!localStorage.getItem('access_token')) {
+          window.location.href = AUTH_LOGIN_URL;
+        } else {
+          setIsLoading(false);
+        }
+      }, 5000);
+
+      return () => {
+        window.removeEventListener('message', handleMessage);
+        window.removeEventListener(AUTH_ERROR_EVENT, handleAuthError);
+        clearTimeout(timeout);
+      };
     }
 
     const token = localStorage.getItem('access_token');
     if (token) {
       authApi
         .getMe()
-        .then((res) => setUser(res.data.data))
-        .catch(() => localStorage.removeItem('access_token'))
+        .then((res) => syncUser(res.data.data))
+        .catch(() => {
+          localStorage.removeItem('access_token');
+          window.location.href = AUTH_LOGIN_URL;
+        })
         .finally(() => setIsLoading(false));
-    } else if (!window.opener) {
-      setIsLoading(false);
+    } else {
+      window.location.href = AUTH_LOGIN_URL;
     }
 
-    return () => window.removeEventListener('message', handleMessage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      window.removeEventListener(AUTH_ERROR_EVENT, handleAuthError);
+    };
   }, []);
 
   const logout = () => {
     localStorage.removeItem('access_token');
-    setUser(null);
     window.location.href = AUTH_LOGIN_URL;
   };
 

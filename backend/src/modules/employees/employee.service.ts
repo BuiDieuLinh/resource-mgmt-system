@@ -155,6 +155,10 @@ export class EmployeeService {
       where.status = query.filter;
     }
 
+    if (query.department_id) {
+      where.position = { department_id: query.department_id };
+    }
+
     const [employees, count] = await this.prisma.$transaction([
       this.prisma.employees.findMany({
         where,
@@ -192,6 +196,27 @@ export class EmployeeService {
     });
     if (!position) throw new NotFoundException('Position not found');
     return ResponseHelper.success(position);
+  }
+
+  async findByUserId(userId: string) {
+    const employee = await this.prisma.employees.findFirst({
+      where: { auth_user_id: userId },
+      include: {
+        position: { include: { department: true } },
+        work_schedules: true,
+      },
+    });
+    if (!employee)
+      throw new NotFoundException(`No employee linked to user ${userId}`);
+    return ResponseHelper.success(employee);
+  }
+
+  async getManagerDepartmentId(authUserId: string): Promise<string | null> {
+    const employee = await this.prisma.employees.findFirst({
+      where: { auth_user_id: authUserId },
+      include: { position: true },
+    });
+    return employee?.position?.department_id ?? null;
   }
 
   async update(id: string, dto: UpdateEmployeeDto) {

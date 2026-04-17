@@ -19,6 +19,7 @@ import MonthNavigator from '../components/MonthPickerInput';
 import { BaseTable, type TableColumn } from '@/components/BaseTable/BaseTable';
 import { formatHours } from '../utils/format';
 import { useGetAttendances } from '../api/get-attendances';
+import { DEFAULT_LOCALE, DEFAULT_TIMEZONE } from '@/constant/index';
 
 type TimesheetRow = {
   id: string;
@@ -51,18 +52,18 @@ export default function TimesheetPage() {
       date: (r as any).work_date || r.date,
       check_in:
         (r as any).check_in_time || r.check_in
-          ? new Date((r as any).check_in_time || r.check_in).toLocaleTimeString('vn-VN', {
+          ? new Date((r as any).check_in_time || r.check_in).toLocaleTimeString(DEFAULT_LOCALE, {
               hour: '2-digit',
               minute: '2-digit',
-              timeZone: 'UTC',
+              timeZone: DEFAULT_TIMEZONE,
             })
           : '',
       check_out:
         (r as any).check_out_time || r.check_out
-          ? new Date((r as any).check_out_time || r.check_out).toLocaleTimeString('vn-VN', {
+          ? new Date((r as any).check_out_time || r.check_out).toLocaleTimeString(DEFAULT_LOCALE, {
               hour: '2-digit',
               minute: '2-digit',
-              timeZone: 'UTC',
+              timeZone: DEFAULT_TIMEZONE,
             })
           : '',
       hours: r.over_time || 0,

@@ -1,13 +1,9 @@
 import axios from 'axios';
 import { API_BASE_URL } from '@/constant/config';
 
-export const AUTH_LOGIN_URL = import.meta.env.VITE_AUTH_LOGIN_URL ?? 'http://localhost:5173/login';
-
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });
 
@@ -17,13 +13,37 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+// Emit custom events so the React router can handle navigation (SPA-friendly)
+export const AUTH_ERROR_EVENT = 'auth:error';
+
 apiClient.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    const status = err.response?.status;
+    const message = err.response?.data?.message ?? '';
+
+    if (status === 401) {
       localStorage.removeItem('access_token');
-      window.location.href = AUTH_LOGIN_URL;
+      import('@/stores/useAuthStore').then(({ useAuthStore }) => {
+        useAuthStore.getState().logout();
+      });
+      const isExpired =
+        message.toLowerCase().includes('expired') || message.toLowerCase().includes('jwt');
+      window.dispatchEvent(
+        new CustomEvent(AUTH_ERROR_EVENT, {
+          detail: { type: isExpired ? 'expired' : '401' },
+        }),
+      );
     }
+
+    if (status === 403) {
+      const url: string = err.config?.url ?? '';
+      const isAuthPath = url.includes('/auth/') || url === '' || url === '/';
+      if (isAuthPath) {
+        window.dispatchEvent(new CustomEvent(AUTH_ERROR_EVENT, { detail: { type: '403' } }));
+      }
+    }
+
     return Promise.reject(err);
   },
 );
