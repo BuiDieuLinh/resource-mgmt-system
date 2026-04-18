@@ -1,4 +1,4 @@
-import { Tooltip } from '@mantine/core';
+import { Tooltip, useMantineColorScheme } from '@mantine/core';
 import type { IAttendance } from '../../types';
 import {
   toPct,
@@ -30,7 +30,7 @@ function buildSegments(
     segments.push({
       left: toPct(workStart),
       width: toPct(checkIn) - toPct(workStart),
-      color: '#ff6b6b',
+      color: 'var(--mantine-color-red-6)',
       label: 'Late',
     });
   }
@@ -40,7 +40,7 @@ function buildSegments(
     segments.push({
       left: toPct(checkIn),
       width: toPct(workEnd_) - toPct(checkIn),
-      color: isLate ? '#fd7e14' : '#12b886',
+      color: isLate ? 'var(--mantine-color-orange-5)' : 'var(--mantine-color-teal-6)',
       label: 'Work',
     });
   }
@@ -49,7 +49,7 @@ function buildSegments(
     segments.push({
       left: toPct(checkOut),
       width: toPct(workEnd) - toPct(checkOut),
-      color: '#fcc419',
+      color: 'var(--mantine-color-yellow-5)',
       label: 'Early leave',
     });
   }
@@ -58,7 +58,7 @@ function buildSegments(
     segments.push({
       left: toPct(workEnd),
       width: toPct(checkOut) - toPct(workEnd),
-      color: '#339af0',
+      color: 'var(--mantine-color-blue-5)',
       label: 'Overtime',
     });
   }
@@ -79,6 +79,9 @@ export function TimelineBar({
   workEndMin = WORK_END_MIN,
   hideWorkWindow = false,
 }: Props) {
+  const { colorScheme } = useMantineColorScheme();
+  const dark = colorScheme === 'dark';
+
   const checkIn = toMinutesUTC(record?.check_in_time ?? record?.check_in);
   const checkOut = toMinutesUTC(record?.check_out_time ?? record?.check_out);
 
@@ -92,9 +95,13 @@ export function TimelineBar({
       ? buildSegments(checkIn, checkOut, effectiveStart, effectiveEnd)
       : [];
 
+  const trackBg = dark ? 'rgba(255,255,255,0.06)' : '#f1f3f5';
+  const windowBg = dark ? 'rgba(255,255,255,0.1)' : '#dee2e6';
+  const tickMain = dark ? 'rgba(255,255,255,0.35)' : '#868e96';
+  const tickSub = dark ? 'rgba(255,255,255,0.12)' : '#ced4da';
+
   return (
     <div style={{ position: 'relative', height: 24, width: '100%' }}>
-      {/* full track */}
       <div
         style={{
           position: 'absolute',
@@ -102,12 +109,11 @@ export function TimelineBar({
           left: 0,
           right: 0,
           height: 8,
-          background: '#f1f3f5',
+          background: trackBg,
           borderRadius: 4,
         }}
       />
 
-      {/* standard work window highlight */}
       {!hideWorkWindow && (
         <div
           style={{
@@ -117,7 +123,7 @@ export function TimelineBar({
             width: `${workEndPct - workStartPct}%`,
             height: 8,
             borderRadius: 2,
-            background: '#dee2e6',
+            background: windowBg,
           }}
         />
       )}
@@ -134,6 +140,7 @@ export function TimelineBar({
               borderRadius: 3,
               background: s.color,
               cursor: 'default',
+              opacity: dark ? 0.85 : 1,
             }}
           />
         </Tooltip>
@@ -148,7 +155,7 @@ export function TimelineBar({
             left: `${toPct(min)}%`,
             width: 1,
             height: 16,
-            background: min === effectiveStart || min === effectiveEnd ? '#868e96' : '#ced4da',
+            background: min === effectiveStart || min === effectiveEnd ? tickMain : tickSub,
             transform: 'translateX(-50%)',
             pointerEvents: 'none',
           }}

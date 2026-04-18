@@ -1,5 +1,5 @@
-import { Card, Text, Group, Badge, Tooltip } from '@mantine/core';
-import { IconAlertCircle, IconSunHigh } from '@tabler/icons-react';
+import { Card, Text, Group, Badge, Tooltip, useMantineColorScheme } from '@mantine/core';
+import { IconAlertCircle, IconStarFilled } from '@tabler/icons-react';
 import type { IAttendance, ILeaveRequest, IHoliday, IWorkSchedule } from '../../types';
 import { fmtTime, leaveOverlapsDay } from '../../utils/format';
 import { TimelineBar } from './TimelineBar';
@@ -34,6 +34,8 @@ export function DayRow({
   workStartMin,
   workEndMin,
 }: Props) {
+  const { colorScheme } = useMantineColorScheme();
+  const dark = colorScheme === 'dark';
   const jsDay = day.getDay();
   const dow = DOW_MAP[jsDay];
 
@@ -57,7 +59,6 @@ export function DayRow({
 
   const isWeekend = !isWorkDay;
 
-  // Check holiday
   const dayIso = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
   const holiday = holidays.find((h) => h.holiday_date.slice(0, 10) === dayIso);
 
@@ -73,9 +74,10 @@ export function DayRow({
   const overtimeMin = record?.overtime ?? 0;
 
   let bgColor: string | undefined;
-  if (holiday) bgColor = 'var(--mantine-color-orange-0)';
-  else if (dayLeaves.length > 0) bgColor = 'var(--mantine-color-blue-0)';
-  else if (isWeekend) bgColor = 'var(--mantine-color-gray-0)';
+  if (holiday) bgColor = dark ? 'rgba(255, 146, 43, 0.08)' : 'var(--mantine-color-orange-0)';
+  else if (dayLeaves.length > 0)
+    bgColor = dark ? 'rgba(51, 154, 240, 0.08)' : 'var(--mantine-color-blue-0)';
+  else if (isWeekend) bgColor = dark ? 'rgba(255,255,255,0.03)' : 'var(--mantine-color-gray-0)';
 
   return (
     <Card withBorder p="xs" radius="sm" bg={bgColor}>
@@ -93,7 +95,7 @@ export function DayRow({
           </Text>
           {holiday && (
             <Tooltip label={holiday.name} withArrow>
-              <IconSunHigh size={12} color="var(--mantine-color-orange-5)" />
+              <IconStarFilled size={12} color="var(--mantine-color-orange-5)" />
             </Tooltip>
           )}
         </Group>
