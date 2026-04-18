@@ -96,6 +96,7 @@ export class EmployeeController {
   }
 
   @Get('by-user/:userId')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
   findByUserId(@Param('userId') userId: string) {
     return this.service.findByUserId(userId);
   }
