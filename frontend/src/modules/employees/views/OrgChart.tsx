@@ -20,7 +20,8 @@ import {
   IconId,
 } from '@tabler/icons-react';
 import { useGetEmployees } from '../api/get-employees';
-import { Loading } from '../../../components/Loading/Loading';
+import { OrgChartSkeleton } from '@/components/Skeleton/OrgChartSkeleton';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import type { IEmployee } from '../types';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { employeeListUrl } from '@/routes/url';
@@ -159,7 +160,11 @@ export default function OrgChartPage() {
   const dark = colorScheme === 'dark';
   const theme = useMantineTheme();
 
-  const { data: employeesData, isLoading } = useGetEmployees({ pageIndex: 1, pageSize: 1000 });
+  const { data: employeesData, isLoading: _loading } = useGetEmployees({
+    pageIndex: 1,
+    pageSize: 1000,
+  });
+  const isLoading = useDelayedLoading(_loading);
   const employees = employeesData?.data || [];
 
   const deptMap = new Map<string, DepartmentNode>();
@@ -182,7 +187,7 @@ export default function OrgChartPage() {
 
   const strokeColor = dark ? theme.colors.dark[3] : theme.colors.gray[4];
 
-  if (isLoading) return <Loading />;
+  if (isLoading) return <OrgChartSkeleton />;
 
   return (
     <Stack gap="lg">

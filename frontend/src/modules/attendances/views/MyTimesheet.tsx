@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Stack, Group, Select, Loader, Center, SegmentedControl } from '@mantine/core';
+import { Stack, Group, Select, SegmentedControl } from '@mantine/core';
 import { IconCalendar, IconCalendarWeek } from '@tabler/icons-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { AttendanceSummaryCards } from '../components/AttendanceSummaryCards';
@@ -7,6 +7,8 @@ import { TimelineHeader } from '../components/AttendanceTimeline/TimelineHeader'
 import { DayRow } from '../components/AttendanceTimeline/DayRow';
 import { LeaveRequestModal } from '../components/LeaveRequestModal';
 import MonthNavigator from '../components/MonthPickerInput';
+import { TimesheetSkeleton } from '@/components/Skeleton/TimesheetSkeleton';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { CheckInOutButton } from '../components/CheckInOutButton';
 import { getDaysInMonth, getWeeksInMonth } from '../utils/format';
 import { useGetMyAttendance } from '../api/get-my-attendance';
@@ -22,7 +24,8 @@ export default function MyTimesheetPage() {
   const month = selectedMonth ? selectedMonth.getMonth() + 1 : now.getMonth() + 1;
   const year = selectedMonth ? selectedMonth.getFullYear() : now.getFullYear();
 
-  const { data, isLoading } = useGetMyAttendance(month, year);
+  const { data, isLoading: _loading } = useGetMyAttendance(month, year);
+  const isLoading = useDelayedLoading(_loading);
 
   const workStartMin = useMemo(() => {
     const schedules = data?.work_schedules ?? [];
@@ -69,12 +72,7 @@ export default function MyTimesheetPage() {
     setWeekIdx(0);
   };
 
-  if (isLoading)
-    return (
-      <Center h={400}>
-        <Loader />
-      </Center>
-    );
+  if (isLoading) return <TimesheetSkeleton />;
 
   return (
     <Stack gap="md">

@@ -1,16 +1,5 @@
 import { useState, useMemo } from 'react';
-import {
-  Stack,
-  Group,
-  Title,
-  Text,
-  Button,
-  Avatar,
-  Select,
-  Loader,
-  Center,
-  SegmentedControl,
-} from '@mantine/core';
+import { Stack, Group, Title, Text, Button, Avatar, Select, SegmentedControl } from '@mantine/core';
 import { IconCheck, IconCalendar, IconCalendarWeek } from '@tabler/icons-react';
 import { useParams } from 'react-router-dom';
 import { useGetEmployeeAttendance } from '../api/get-employee-attendance';
@@ -23,6 +12,8 @@ import MonthNavigator from '../components/MonthPickerInput';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { getDaysInMonth, getWeeksInMonth } from '../utils/format';
 import { attendanceUrl } from '@/routes/url';
+import { TimesheetSkeleton } from '@/components/Skeleton/TimesheetSkeleton';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import type { IAttendance, ILeaveRequest } from '../types';
 
 export default function AttendanceDetailPage() {
@@ -37,7 +28,8 @@ export default function AttendanceDetailPage() {
   const month = selectedMonth ? selectedMonth.getMonth() + 1 : now.getMonth() + 1;
   const year = selectedMonth ? selectedMonth.getFullYear() : now.getFullYear();
 
-  const { data, isLoading } = useGetEmployeeAttendance(employeeId!, month, year);
+  const { data, isLoading: _loading } = useGetEmployeeAttendance(employeeId!, month, year);
+  const isLoading = useDelayedLoading(_loading);
   const { mutate: approve, isPending: approving } = useApproveTimesheet();
 
   const allDays = useMemo(() => getDaysInMonth(year, month), [year, month]);
@@ -87,12 +79,7 @@ export default function AttendanceDetailPage() {
 
   const employee = data?.employee;
 
-  if (isLoading)
-    return (
-      <Center h={400}>
-        <Loader />
-      </Center>
-    );
+  if (isLoading) return <TimesheetSkeleton />;
 
   return (
     <Stack gap="md">
