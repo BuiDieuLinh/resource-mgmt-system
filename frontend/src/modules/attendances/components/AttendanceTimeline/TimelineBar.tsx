@@ -15,26 +15,31 @@ interface Segment {
   label: string;
 }
 
-function buildSegments(checkIn: number, checkOut: number): Segment[] {
+function buildSegments(
+  checkIn: number,
+  checkOut: number,
+  workStart = WORK_START_MIN,
+  workEnd = WORK_END_MIN,
+): Segment[] {
   const segments: Segment[] = [];
-  const isLate = checkIn > WORK_START_MIN;
-  const isEarlyLeave = checkOut < WORK_END_MIN;
-  const hasOvertime = checkOut > WORK_END_MIN;
+  const isLate = checkIn > workStart;
+  const isEarlyLeave = checkOut < workEnd;
+  const hasOvertime = checkOut > workEnd;
 
   if (isLate) {
     segments.push({
-      left: toPct(WORK_START_MIN),
-      width: toPct(checkIn) - toPct(WORK_START_MIN),
+      left: toPct(workStart),
+      width: toPct(checkIn) - toPct(workStart),
       color: '#ff6b6b',
       label: 'Late',
     });
   }
 
-  const workEnd = Math.min(checkOut, WORK_END_MIN);
-  if (workEnd > checkIn) {
+  const workEnd_ = Math.min(checkOut, workEnd);
+  if (workEnd_ > checkIn) {
     segments.push({
       left: toPct(checkIn),
-      width: toPct(workEnd) - toPct(checkIn),
+      width: toPct(workEnd_) - toPct(checkIn),
       color: isLate ? '#fd7e14' : '#12b886',
       label: 'Work',
     });
@@ -43,7 +48,7 @@ function buildSegments(checkIn: number, checkOut: number): Segment[] {
   if (isEarlyLeave) {
     segments.push({
       left: toPct(checkOut),
-      width: toPct(WORK_END_MIN) - toPct(checkOut),
+      width: toPct(workEnd) - toPct(checkOut),
       color: '#fcc419',
       label: 'Early leave',
     });
@@ -51,8 +56,8 @@ function buildSegments(checkIn: number, checkOut: number): Segment[] {
 
   if (hasOvertime) {
     segments.push({
-      left: toPct(WORK_END_MIN),
-      width: toPct(checkOut) - toPct(WORK_END_MIN),
+      left: toPct(workEnd),
+      width: toPct(checkOut) - toPct(workEnd),
       color: '#339af0',
       label: 'Overtime',
     });
@@ -63,15 +68,29 @@ function buildSegments(checkIn: number, checkOut: number): Segment[] {
 
 interface Props {
   record?: IAttendance;
+  workStartMin?: number;
+  workEndMin?: number;
+  hideWorkWindow?: boolean;
 }
 
-export function TimelineBar({ record }: Props) {
+export function TimelineBar({
+  record,
+  workStartMin = WORK_START_MIN,
+  workEndMin = WORK_END_MIN,
+  hideWorkWindow = false,
+}: Props) {
   const checkIn = toMinutesUTC(record?.check_in_time ?? record?.check_in);
   const checkOut = toMinutesUTC(record?.check_out_time ?? record?.check_out);
 
-  const workStartPct = toPct(WORK_START_MIN);
-  const workEndPct = toPct(WORK_END_MIN);
-  const segments = checkIn != null && checkOut != null ? buildSegments(checkIn, checkOut) : [];
+  const effectiveStart = record?.scheduled_start ?? workStartMin;
+  const effectiveEnd = record?.scheduled_end ?? workEndMin;
+
+  const workStartPct = toPct(effectiveStart);
+  const workEndPct = toPct(effectiveEnd);
+  const segments =
+    checkIn != null && checkOut != null
+      ? buildSegments(checkIn, checkOut, effectiveStart, effectiveEnd)
+      : [];
 
   return (
     <div style={{ position: 'relative', height: 24, width: '100%' }}>
@@ -89,17 +108,19 @@ export function TimelineBar({ record }: Props) {
       />
 
       {/* standard work window highlight */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 8,
-          left: `${workStartPct}%`,
-          width: `${workEndPct - workStartPct}%`,
-          height: 8,
-          borderRadius: 2,
-          background: '#dee2e6',
-        }}
-      />
+      {!hideWorkWindow && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 8,
+            left: `${workStartPct}%`,
+            width: `${workEndPct - workStartPct}%`,
+            height: 8,
+            borderRadius: 2,
+            background: '#dee2e6',
+          }}
+        />
+      )}
 
       {segments.map((s, i) => (
         <Tooltip key={i} label={s.label} withArrow position="top">
@@ -127,7 +148,7 @@ export function TimelineBar({ record }: Props) {
             left: `${toPct(min)}%`,
             width: 1,
             height: 16,
-            background: min === WORK_START_MIN || min === WORK_END_MIN ? '#868e96' : '#ced4da',
+            background: min === effectiveStart || min === effectiveEnd ? '#868e96' : '#ced4da',
             transform: 'translateX(-50%)',
             pointerEvents: 'none',
           }}

@@ -4,6 +4,10 @@ export interface IAttendance {
   id: string;
   employee_id: string;
   work_date?: string;
+  scheduled_start?: number;
+  scheduled_end?: number;
+  break_start?: number | null;
+  break_end?: number | null;
   check_in_time?: string;
   check_out_time?: string;
   check_in_lat?: number;
@@ -53,6 +57,33 @@ export interface IAttendanceSummary {
   over_time: number;
 }
 
+export interface IWorkSchedule {
+  id: string;
+  employee_id: string;
+  day_of_week: number;
+  start_time: number;
+  end_time: number;
+}
+
+export interface IWorkPolicy {
+  id: string;
+  is_flexible_enabled: boolean;
+  flexible_start?: number | null;
+  flexible_end?: number | null;
+  break_start?: number | null;
+  break_end?: number | null;
+  effective_from: string;
+  effective_to?: string | null;
+}
+
+export interface IHoliday {
+  id: string;
+  name: string;
+  holiday_date: string;
+  description?: string | null;
+  is_paid: boolean;
+}
+
 export interface IEmployeeAttendanceDetail {
   employee: {
     id: string;
@@ -64,6 +95,9 @@ export interface IEmployeeAttendanceDetail {
   };
   records: IAttendance[];
   leave_requests: ILeaveRequest[];
+  work_schedules: IWorkSchedule[];
+  work_policy: IWorkPolicy | null;
+  holidays: IHoliday[];
   summary: IAttendanceSummary;
 }
 

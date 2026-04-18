@@ -307,30 +307,38 @@ export class AttendancesService {
   async findByEmployee(employeeId: string, month: number, year: number) {
     const monthRange = getMonthRange(month, year);
 
-    const [records, employee, leaveRequests] = await this.prisma.$transaction([
-      this.prisma.attendances.findMany({
-        where: { employee_id: employeeId, work_date: monthRange },
-        include: { logs: { orderBy: { timestamp: 'asc' } } },
-        orderBy: { work_date: 'asc' },
-      }),
-      this.prisma.employees.findUnique({
-        where: { id: employeeId },
-        include: {
-          position: { include: { department: true } },
-          work_schedules: true,
-        },
-      }),
-      this.prisma.leaveRequests.findMany({
-        where: {
-          employee_id: employeeId,
-          start_date: { lte: monthRange.lte },
-          end_date: { gte: monthRange.gte },
-        },
-      }),
-    ]);
+    const [records, employee, leaveRequests, holidays] =
+      await this.prisma.$transaction([
+        this.prisma.attendances.findMany({
+          where: { employee_id: employeeId, work_date: monthRange },
+          include: { logs: { orderBy: { timestamp: 'asc' } } },
+          orderBy: { work_date: 'asc' },
+        }),
+        this.prisma.employees.findUnique({
+          where: { id: employeeId },
+          include: {
+            position: { include: { department: true } },
+            work_schedules: true,
+          },
+        }),
+        this.prisma.leaveRequests.findMany({
+          where: {
+            employee_id: employeeId,
+            start_date: { lte: monthRange.lte },
+            end_date: { gte: monthRange.gte },
+          },
+        }),
+        this.prisma.holidays.findMany({
+          where: {
+            holiday_date: { gte: monthRange.gte, lte: monthRange.lte },
+          },
+        }),
+      ]);
 
     if (!employee)
       throw new NotFoundException(`Employee ${employeeId} not found`);
+
+    const work_policy = await this.workPolicyService.getActive(monthRange.gte);
 
     const planDay = getWorkingDaysInMonth(month, year);
     const actualDay = records.filter(
@@ -340,6 +348,9 @@ export class AttendancesService {
     return ResponseHelper.success({
       employee,
       records,
+      work_schedules: employee.work_schedules,
+      work_policy: work_policy?.data ?? null,
+      holidays,
       leave_requests: leaveRequests,
       summary: {
         plan_day: planDay,

@@ -24,6 +24,18 @@ export default function MyTimesheetPage() {
 
   const { data, isLoading } = useGetMyAttendance(month, year);
 
+  const workStartMin = useMemo(() => {
+    const schedules = data?.work_schedules ?? [];
+    if (!schedules.length) return undefined;
+    return Math.min(...schedules.map((s) => s.start_time));
+  }, [data]);
+
+  const workEndMin = useMemo(() => {
+    const schedules = data?.work_schedules ?? [];
+    if (!schedules.length) return undefined;
+    return Math.max(...schedules.map((s) => s.end_time));
+  }, [data]);
+
   const allDays = useMemo(() => getDaysInMonth(year, month), [year, month]);
   const weeks = useMemo(() => getWeeksInMonth(year, month), [year, month]);
 
@@ -129,6 +141,10 @@ export default function MyTimesheetPage() {
             record={recordMap.get(day.toDateString())}
             leaveRequests={data?.leave_requests ?? []}
             onLeaveClick={setLeaveModal}
+            holidays={data?.holidays ?? []}
+            workSchedules={data?.work_schedules ?? []}
+            workStartMin={workStartMin}
+            workEndMin={workEndMin}
           />
         ))}
       </Stack>
