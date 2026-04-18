@@ -6,12 +6,12 @@ import {
   Text,
   Button,
   Avatar,
-  Tabs,
   Select,
   Loader,
   Center,
+  SegmentedControl,
 } from '@mantine/core';
-import { IconCheck, IconCalendar, IconClock } from '@tabler/icons-react';
+import { IconCheck, IconCalendar, IconCalendarWeek } from '@tabler/icons-react';
 import { useParams } from 'react-router-dom';
 import { useGetEmployeeAttendance } from '../api/get-employee-attendance';
 import { useApproveTimesheet } from '../api/approve-timesheet';
@@ -19,56 +19,52 @@ import { LeaveRequestModal } from '../components/LeaveRequestModal';
 import { AttendanceSummaryCards } from '../components/AttendanceSummaryCards';
 import { TimelineHeader } from '../components/AttendanceTimeline/TimelineHeader';
 import { DayRow } from '../components/AttendanceTimeline/DayRow';
-import { buildMockAttendanceDetail } from '../mock/attendance-detail.mock';
+import MonthNavigator from '../components/MonthPickerInput';
+import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { getDaysInMonth, getWeeksInMonth } from '../utils/format';
-import { useUrlParams } from '@/hooks/useUrlParams';
+import { attendanceUrl } from '@/routes/url';
 import type { IAttendance, ILeaveRequest } from '../types';
 
 export default function AttendanceDetailPage() {
   const { employeeId } = useParams<{ employeeId: string }>();
 
-  const { getInt, get, set } = useUrlParams({
-    month: String(new Date().getMonth() + 1),
-    year: String(new Date().getFullYear()),
-    view: 'month',
-    week: '0',
-  });
-
-  const month = getInt('month');
-  const year = getInt('year');
-  const viewTab = get('view');
-  const weekIdx = getInt('week');
-
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState<Date | null>(now);
+  const [viewTab, setViewTab] = useState('month');
+  const [weekIdx, setWeekIdx] = useState(0);
   const [leaveModal, setLeaveModal] = useState<ILeaveRequest | null>(null);
 
-  const { isLoading } = useGetEmployeeAttendance(employeeId!, month, year);
-  const { mutate: approve, isPending: approving } = useApproveTimesheet();
+  const month = selectedMonth ? selectedMonth.getMonth() + 1 : now.getMonth() + 1;
+  const year = selectedMonth ? selectedMonth.getFullYear() : now.getFullYear();
 
-  // TODO: replace with real API data when backend is ready
-  const data = useMemo(() => buildMockAttendanceDetail(year, month), [year, month]);
+  const { data, isLoading } = useGetEmployeeAttendance(employeeId!, month, year);
+  const { mutate: approve, isPending: approving } = useApproveTimesheet();
 
   const allDays = useMemo(() => getDaysInMonth(year, month), [year, month]);
   const weeks = useMemo(() => getWeeksInMonth(year, month), [year, month]);
 
   const recordMap = useMemo(() => {
     const map = new Map<string, IAttendance>();
-    data.records.forEach((r) => {
+    (data?.records ?? []).forEach((r) => {
       const key = new Date(r.work_date ?? r.date ?? '').toDateString();
       map.set(key, r);
     });
     return map;
-  }, [data.records]);
+  }, [data]);
+
+  const workStartMin = useMemo(() => {
+    const schedules = data?.work_schedules ?? [];
+    if (!schedules.length) return undefined;
+    return Math.min(...schedules.map((s) => s.start_time));
+  }, [data]);
+
+  const workEndMin = useMemo(() => {
+    const schedules = data?.work_schedules ?? [];
+    if (!schedules.length) return undefined;
+    return Math.max(...schedules.map((s) => s.end_time));
+  }, [data]);
 
   const displayDays = viewTab === 'week' ? (weeks[weekIdx] ?? []) : allDays;
-
-  const monthOptions = useMemo(
-    () =>
-      Array.from({ length: 12 }, (_, i) => ({
-        value: `${year}-${i + 1}`,
-        label: new Date(year, i, 1).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' }),
-      })),
-    [year],
-  );
 
   const weekOptions = useMemo(
     () =>
@@ -79,7 +75,17 @@ export default function AttendanceDetailPage() {
     [weeks],
   );
 
-  const { employee, summary, leave_requests } = data;
+  const handleMonthChange = (d: Date | null) => {
+    setSelectedMonth(d);
+    setWeekIdx(0);
+  };
+
+  const handleViewChange = (v: string) => {
+    setViewTab(v);
+    setWeekIdx(0);
+  };
+
+  const employee = data?.employee;
 
   if (isLoading)
     return (
@@ -90,74 +96,84 @@ export default function AttendanceDetailPage() {
 
   return (
     <Stack gap="md">
+      <PageHeader
+        breadcrumbs={[
+          { label: 'Attendance', path: attendanceUrl },
+          { label: employee?.full_name ?? '...' },
+        ]}
+      />
+
       {/* Header */}
       <Group justify="space-between" align="center">
         <Group gap="sm">
           <Avatar size="md" radius="xl" color="blue">
-            {employee.full_name
+            {(employee?.full_name ?? '?')
               .split(' ')
-              .map((n) => n[0])
+              .map((n: string) => n[0])
               .join('')
               .slice(0, 2)}
           </Avatar>
           <Stack gap={0}>
-            <Title order={3}>{employee.full_name}</Title>
+            <Title order={3}>{employee?.full_name ?? '—'}</Title>
             <Text size="xs" c="dimmed">
-              {employee.department.department_name} · {employee.position.position_name}
+              {employee?.department?.department_name} · {employee?.position?.position_name}
             </Text>
           </Stack>
         </Group>
 
-        <Button
-          leftSection={<IconCheck size={16} />}
-          color="green"
-          loading={approving}
-          onClick={() => employeeId && approve({ employeeId, month, year })}
-        >
-          Approve Timesheet
-        </Button>
+        <Group gap="sm">
+          <MonthNavigator value={selectedMonth} onChange={handleMonthChange} />
+          <Button
+            leftSection={<IconCheck size={16} />}
+            color="green"
+            loading={approving}
+            onClick={() => employeeId && approve({ employeeId, month, year })}
+          >
+            Approve Timesheet
+          </Button>
+        </Group>
       </Group>
 
       {/* Summary */}
-      <AttendanceSummaryCards summary={summary} />
+      {data?.summary && <AttendanceSummaryCards summary={data.summary} />}
 
       {/* View controls */}
-      <Group justify="space-between" align="center">
-        <Tabs value={viewTab} onChange={(v) => set({ view: v, week: '0' })}>
-          <Tabs.List>
-            <Tabs.Tab value="month" leftSection={<IconCalendar size={14} />}>
-              Month
-            </Tabs.Tab>
-            <Tabs.Tab value="week" leftSection={<IconClock size={14} />}>
-              Week
-            </Tabs.Tab>
-          </Tabs.List>
-        </Tabs>
-
-        <Group gap="sm">
+      <Group align="center">
+        <SegmentedControl
+          size="sm"
+          value={viewTab}
+          onChange={handleViewChange}
+          data={[
+            {
+              value: 'month',
+              label: (
+                <Group gap={6} w={70}>
+                  <IconCalendar size={14} />
+                  Month
+                </Group>
+              ),
+            },
+            {
+              value: 'week',
+              label: (
+                <Group gap={6} w={70}>
+                  <IconCalendarWeek size={14} />
+                  Week
+                </Group>
+              ),
+            },
+          ]}
+        />
+        {viewTab === 'week' && (
           <Select
-            checkIconPosition="right"
             size="sm"
-            value={`${year}-${month}`}
-            data={monthOptions}
-            onChange={(v) => {
-              if (!v) return;
-              const [y, m] = v.split('-').map(Number);
-              set({ year: y, month: m, week: '0' });
-            }}
-            w={200}
+            checkIconPosition="right"
+            value={String(weekIdx)}
+            data={weekOptions}
+            onChange={(v) => setWeekIdx(Number(v ?? 0))}
+            w={240}
           />
-          {viewTab === 'week' && (
-            <Select
-              size="sm"
-              checkIconPosition="right"
-              value={String(weekIdx)}
-              data={weekOptions}
-              onChange={(v) => set({ week: v })}
-              w={220}
-            />
-          )}
-        </Group>
+        )}
       </Group>
 
       {/* Timeline */}
@@ -170,8 +186,12 @@ export default function AttendanceDetailPage() {
             key={day.toISOString()}
             day={day}
             record={recordMap.get(day.toDateString())}
-            leaveRequests={leave_requests}
+            leaveRequests={data?.leave_requests ?? []}
             onLeaveClick={setLeaveModal}
+            holidays={data?.holidays ?? []}
+            workSchedules={data?.work_schedules ?? []}
+            workStartMin={workStartMin}
+            workEndMin={workEndMin}
           />
         ))}
       </Stack>
@@ -180,7 +200,7 @@ export default function AttendanceDetailPage() {
         opened={!!leaveModal}
         onClose={() => setLeaveModal(null)}
         leaveRequest={leaveModal}
-        employeeName={employee.full_name}
+        employeeName={employee?.full_name ?? ''}
       />
     </Stack>
   );
