@@ -22,8 +22,7 @@ export class MailScheduler {
       throw new Error('APP_TIMEZONE is not set in environment variables');
   }
 
-  // @Cron('0 8 * * *', { timeZone: process.env.APP_TIMEZONE })
-  @Cron('0 */5 * * * *', { timeZone: process.env.APP_TIMEZONE })
+  @Cron('0 8 * * *', { timeZone: process.env.APP_TIMEZONE })
   async sendHireDateWelcomeEmails() {
     const todayStr = dayjs.utc().format('YYYY-MM-DD');
     const startOfDay = dayjs.utc(todayStr).startOf('day').toDate();
