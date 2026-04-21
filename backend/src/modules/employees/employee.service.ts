@@ -448,6 +448,8 @@ export class EmployeeService {
     const failed: Array<{ employee_code: string; reason: string }> = [];
 
     for (const empData of employeesData) {
+      let authUserId: string | null = null;
+
       try {
         const position = await this.prisma.positions.findFirst({
           where: { position_name: empData.position_name },
@@ -464,6 +466,10 @@ export class EmployeeService {
         const dateOfBirth = parseDate(empData.date_of_birth);
         const hireDate = parseDate(empData.hire_date) || new Date();
 
+        // Create auth account first
+        const authUser = await this.authCoreService.createUser(empData.email);
+        authUserId = authUser.id;
+
         await this.prisma.employees.create({
           data: {
             employee_code: empData.employee_code,
@@ -477,11 +483,15 @@ export class EmployeeService {
             date_of_birth: dateOfBirth,
             hire_date: hireDate,
             position_id: position.id,
+            auth_user_id: authUser.id,
           },
         });
 
         imported.push(empData.employee_code);
       } catch (error) {
+        if (authUserId) {
+          await this.authCoreService.deleteUser(authUserId);
+        }
         failed.push({
           employee_code: empData.employee_code,
           reason: error.message,

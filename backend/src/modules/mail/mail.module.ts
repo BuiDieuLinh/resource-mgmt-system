@@ -16,6 +16,7 @@ import { PrismaModule } from 'src/prisma/prisma.module';
           host: config.get<string>('MAIL_HOST'),
           port: config.get<number>('MAIL_PORT'),
           secure: false,
+          family: 4,
           auth: {
             user: config.get<string>('MAIL_USER'),
             pass: config.get<string>('MAIL_PASS'),
