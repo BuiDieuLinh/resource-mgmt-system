@@ -19,7 +19,7 @@ import { PRIMARY_COLOR } from '@/theme';
 import { InlineCell } from './InlineCell';
 import { COLUMNS, type PreviewEmployee } from './types';
 import { validateRow, dropServerErrorsForField, getColumnError } from './validation';
-import s from './import-preview/ImportPreview.module.css';
+import s from './ImportPreview.module.css';
 
 export type { PreviewEmployee };
 
