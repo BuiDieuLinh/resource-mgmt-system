@@ -363,9 +363,9 @@ export class EmployeeService {
         identify_card: emp.identify_card,
         gender: emp.gender || '',
         date_of_birth: emp.date_of_birth
-          ? new Date(emp.date_of_birth).toLocaleDateString()
+          ? dayjs.utc(emp.date_of_birth).format('YYYY-MM-DD')
           : '',
-        hire_date: new Date(emp.hire_date).toLocaleDateString(),
+        hire_date: dayjs.utc(emp.hire_date).format('YYYY-MM-DD'),
         department: emp.position.department.department_name,
         position: emp.position.position_name,
         status: emp.status,
@@ -381,10 +381,8 @@ export class EmployeeService {
       await workbook.xlsx.load(buffer);
 
       const worksheet = workbook.worksheets[0];
-
-      if (!worksheet) {
+      if (!worksheet)
         throw new BadRequestException('No worksheet found in the Excel file');
-      }
 
       const requiredHeaders = [
         'Employee Code',
@@ -394,14 +392,44 @@ export class EmployeeService {
         'Department',
         'Position',
       ];
-
       const validation = validateHeaders(worksheet, requiredHeaders);
-
       if (!validation.valid) {
         throw new BadRequestException(
           `Missing required columns: ${validation.missing.join(', ')}. Found columns: ${validation.found.join(', ')}`,
         );
       }
+
+      const [
+        existingCodes,
+        existingEmails,
+        existingCards,
+        positions,
+        departments,
+      ] = await Promise.all([
+        this.prisma.employees.findMany({ select: { employee_code: true } }),
+        this.prisma.employees.findMany({ select: { email: true } }),
+        this.prisma.employees.findMany({ select: { identify_card: true } }),
+        this.prisma.positions.findMany({ select: { position_name: true } }),
+        this.prisma.departments.findMany({ select: { department_name: true } }),
+      ]);
+
+      const existingCodeSet = new Set(
+        existingCodes.map((e) => e.employee_code),
+      );
+      const existingEmailSet = new Set(existingEmails.map((e) => e.email));
+      const existingCardSet = new Set(
+        existingCards.map((e) => e.identify_card),
+      );
+      const validPositions = new Set(
+        positions.map((p) => p.position_name.toLowerCase()),
+      );
+      const validDepartments = new Set(
+        departments.map((d) => d.department_name.toLowerCase()),
+      );
+
+      const seenCodes = new Set<string>();
+      const seenEmails = new Set<string>();
+      const seenCards = new Set<string>();
 
       const employees: any[] = [];
 
@@ -420,15 +448,102 @@ export class EmployeeService {
           hire_date: getCellValue(row.getCell(9)),
           department_name: getCellValue(row.getCell(10)),
           position_name: getCellValue(row.getCell(11)),
+          address: getCellValue(row.getCell(12)) || '',
         };
 
         if (
-          employeeData.employee_code &&
-          employeeData.full_name &&
-          employeeData.email
+          !employeeData.employee_code &&
+          !employeeData.full_name &&
+          !employeeData.email
+        )
+          return;
+
+        const errors: string[] = [];
+
+        if (!employeeData.employee_code)
+          errors.push('Employee Code is required');
+        if (!employeeData.full_name) errors.push('Full Name is required');
+        if (!employeeData.email) errors.push('Email is required');
+        if (!employeeData.identify_card)
+          errors.push('Identify Card is required');
+        if (!employeeData.department_name)
+          errors.push('Department is required');
+        if (!employeeData.position_name) errors.push('Position is required');
+
+        if (
+          employeeData.email &&
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(employeeData.email)
         ) {
-          employees.push(employeeData);
+          errors.push('Invalid email format');
         }
+
+        if (
+          employeeData.employee_code &&
+          existingCodeSet.has(employeeData.employee_code)
+        ) {
+          errors.push(
+            `Employee code "${employeeData.employee_code}" already exists`,
+          );
+        }
+        if (employeeData.email && existingEmailSet.has(employeeData.email)) {
+          errors.push(`Email "${employeeData.email}" already exists`);
+        }
+        if (
+          employeeData.identify_card &&
+          existingCardSet.has(employeeData.identify_card)
+        ) {
+          errors.push(
+            `Identify card "${employeeData.identify_card}" already exists`,
+          );
+        }
+
+        if (employeeData.employee_code) {
+          if (seenCodes.has(employeeData.employee_code)) {
+            errors.push(`Duplicate employee code in file`);
+          } else seenCodes.add(employeeData.employee_code);
+        }
+        if (employeeData.email) {
+          if (seenEmails.has(employeeData.email)) {
+            errors.push(`Duplicate email in file`);
+          } else seenEmails.add(employeeData.email);
+        }
+        if (employeeData.identify_card) {
+          if (seenCards.has(employeeData.identify_card)) {
+            errors.push(`Duplicate identify card in file`);
+          } else seenCards.add(employeeData.identify_card);
+        }
+
+        if (
+          employeeData.position_name &&
+          !validPositions.has(employeeData.position_name.toLowerCase())
+        ) {
+          errors.push(
+            `Position "${employeeData.position_name}" not found in system`,
+          );
+        }
+        if (
+          employeeData.department_name &&
+          !validDepartments.has(employeeData.department_name.toLowerCase())
+        ) {
+          errors.push(
+            `Department "${employeeData.department_name}" not found in system`,
+          );
+        }
+
+        if (
+          employeeData.date_of_birth &&
+          !/^\d{4}-\d{2}-\d{2}$/.test(employeeData.date_of_birth)
+        ) {
+          errors.push('Date of birth must be YYYY-MM-DD format');
+        }
+        if (
+          employeeData.hire_date &&
+          !/^\d{4}-\d{2}-\d{2}$/.test(employeeData.hire_date)
+        ) {
+          errors.push('Hire date must be YYYY-MM-DD format');
+        }
+
+        employees.push({ ...employeeData, errors, row_number: rowNumber });
       });
 
       if (employees.length === 0) {
@@ -439,6 +554,7 @@ export class EmployeeService {
 
       return ResponseHelper.success(employees, 'Preview loaded successfully');
     } catch (error) {
+      if (error instanceof BadRequestException) throw error;
       throw new BadRequestException(`Preview failed: ${error.message}`);
     }
   }

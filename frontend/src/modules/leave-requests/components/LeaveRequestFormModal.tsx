@@ -14,7 +14,7 @@ import { TIME_OPTIONS } from '@/modules/employees/utils/time-option';
 interface LeaveRequestFormModalProps {
   opened: boolean;
   onClose: () => void;
-  mode: 'add' | 'edit';
+  mode: 'add' | 'edit' | 'view';
   initialValues?: ILeaveRequest | null;
   onSubmit: (payload: ILeaveRequestPayload, id?: string) => void | Promise<void>;
   loading?: boolean;

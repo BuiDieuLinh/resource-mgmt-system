@@ -4,7 +4,7 @@ import { IconCheck, IconCalendar, IconCalendarWeek } from '@tabler/icons-react';
 import { useParams } from 'react-router-dom';
 import { useGetEmployeeAttendance } from '../api/get-employee-attendance';
 import { useApproveTimesheet } from '../api/approve-timesheet';
-import { LeaveRequestModal } from '../components/LeaveRequestModal';
+import { LeaveRequestFormModal } from '@/modules/leave-requests/components/LeaveRequestFormModal';
 import { AttendanceSummaryCards } from '../components/AttendanceSummaryCards';
 import { TimelineHeader } from '../components/AttendanceTimeline/TimelineHeader';
 import { DayRow } from '../components/AttendanceTimeline/DayRow';
@@ -183,11 +183,13 @@ export default function AttendanceDetailPage() {
         ))}
       </Stack>
 
-      <LeaveRequestModal
+      <LeaveRequestFormModal
         opened={!!leaveModal}
         onClose={() => setLeaveModal(null)}
-        leaveRequest={leaveModal}
-        employeeName={employee?.full_name ?? ''}
+        initialValues={leaveModal}
+        mode="view"
+        loading={false}
+        onSubmit={() => {}}
       />
     </Stack>
   );

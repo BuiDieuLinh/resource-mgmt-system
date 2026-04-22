@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { AttendanceSummaryCards } from '../components/AttendanceSummaryCards';
 import { TimelineHeader } from '../components/AttendanceTimeline/TimelineHeader';
 import { DayRow } from '../components/AttendanceTimeline/DayRow';
-import { LeaveRequestModal } from '../components/LeaveRequestModal';
+import { LeaveRequestFormModal } from '@/modules/leave-requests/components/LeaveRequestFormModal';
 import MonthNavigator from '../components/MonthPickerInput';
 import { TimesheetSkeleton } from '@/components/Skeleton/TimesheetSkeleton';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
@@ -147,12 +147,13 @@ export default function MyTimesheetPage() {
         ))}
       </Stack>
 
-      <LeaveRequestModal
+      <LeaveRequestFormModal
         opened={!!leaveModal}
         onClose={() => setLeaveModal(null)}
-        leaveRequest={leaveModal}
-        employeeName={data?.employee?.full_name ?? ''}
-        mode="employee"
+        initialValues={leaveModal}
+        mode="view"
+        loading={false}
+        onSubmit={() => {}}
       />
     </Stack>
   );

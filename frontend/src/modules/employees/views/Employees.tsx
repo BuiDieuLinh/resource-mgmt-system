@@ -20,7 +20,7 @@ import {
   IconDotsVertical,
   IconPlus,
 } from '@tabler/icons-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { BaseTable, type TableColumn } from '../../../components/BaseTable/BaseTable';
@@ -30,7 +30,7 @@ import ErrorState from '../../../components/ErrorState/ErrorState';
 
 import type { IEmployee, EmployeeFormValues } from '../types';
 import { EmployeeFormModal } from '../components/EmployeeFormModal';
-import { ImportPreviewModal } from '../components/ImportPreviewModal';
+import { ImportPreviewModal } from '../components/import-preview/ImportPreviewModal';
 import { useGetEmployees } from '../api/get-employees';
 import { useCreateEmployee } from '../api/create-employee';
 import { useUpdateEmployee } from '../api/update-employee';
@@ -42,9 +42,11 @@ import { mapEmployeeToFormValues } from '../utils/employee-mapper';
 import { formatDate } from '../../../constant';
 import { TableSkeleton } from '../../../components/Skeleton/TableSkeleton';
 import { useDelayedLoading } from '../../../hooks/useDelayedLoading';
+import { normalizeString } from '../utils/search';
 
 export default function EmployeesPage() {
   const navigate = useNavigate();
+  const [input, setInput] = useState('');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<string | null>(null);
 
@@ -142,9 +144,18 @@ export default function EmployeesPage() {
   };
 
   const handleSearch = (value: string) => {
-    setSearch(value);
-    setPage(1);
+    setInput(value);
   };
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      const cleaned = normalizeString(input);
+      setSearch(cleaned);
+      setPage(1);
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [input]);
 
   const handleFilterChange = (value: string | null) => {
     setFilter(value);
@@ -188,10 +199,10 @@ export default function EmployeesPage() {
     }
   };
 
-  const handleConfirmImport = async () => {
-    const notiId = notify.loading('Importing employees...');
+  const handleConfirmImport = async (selectedRows: PreviewEmployee[]) => {
+    const notiId = notify.loading(`Importing ${selectedRows.length} employees...`);
     try {
-      const result = await importMutation.mutateAsync(previewData);
+      const result = await importMutation.mutateAsync(selectedRows);
       notify.success(notiId, {
         message: `Imported: ${result.data.imported}, Failed: ${result.data.failed}`,
       });
@@ -336,7 +347,7 @@ export default function EmployeesPage() {
             <TextInput
               placeholder="Search by name, email or code"
               leftSection={<IconSearch size={16} />}
-              value={search}
+              value={input}
               onChange={(e) => handleSearch(e.currentTarget.value)}
             />
 
