@@ -1,12 +1,10 @@
-import { useState } from 'react';
-import { Stack, Tabs, Switch, SegmentedControl } from '@mantine/core';
+import { Stack, Tabs, Switch } from '@mantine/core';
 import {
   IconShieldCheck,
   IconCalendarEvent,
   IconSettings2,
   IconSun,
   IconMoon,
-  IconLanguage,
 } from '@tabler/icons-react';
 import { useMantineColorScheme } from '@mantine/core';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
@@ -18,7 +16,6 @@ import { EMPLOYEE_ROLE } from '@/constant';
 
 function PreferencesSection() {
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
-  const [lang, setLang] = useState('vi');
   const isDark = colorScheme === 'dark';
 
   return (
@@ -38,28 +35,6 @@ function PreferencesSection() {
               size="sm"
               onLabel={<IconSun size={11} />}
               offLabel={<IconMoon size={11} />}
-            />
-          }
-        />
-      </SettingsCard>
-
-      <SectionLabel>Language</SectionLabel>
-      <SettingsCard>
-        <SettingRow
-          icon={<IconLanguage size={15} />}
-          color="teal"
-          title="Display language"
-          description="Choose the language for the interface"
-          noDivider
-          right={
-            <SegmentedControl
-              size="xs"
-              value={lang}
-              onChange={setLang}
-              data={[
-                { label: 'Tiếng Việt', value: 'vi' },
-                { label: 'English', value: 'en' },
-              ]}
             />
           }
         />

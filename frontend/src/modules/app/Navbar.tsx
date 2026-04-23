@@ -15,7 +15,6 @@ import {
   ScrollArea,
   Stack,
   useMantineColorScheme,
-  SegmentedControl,
 } from '@mantine/core';
 import {
   IconChevronRight,
@@ -29,7 +28,6 @@ import {
   IconSettings,
   IconLogout,
   IconChevronDown,
-  IconLanguage,
   IconHome,
 } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -72,7 +70,6 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
-  const [lang, setLang] = useState('vi');
   const [notis, setNotis] = useState(MOCK_NOTIS);
   const unread = notis.filter((n) => !n.read).length;
   const { user, logout } = useAuth();
@@ -271,28 +268,6 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
       </div>
 
       <div className={classes.footer}>
-        {footerRow(
-          <IconLanguage size={16} color="var(--mantine-color-dimmed)" />,
-          'Language',
-          <SegmentedControl
-            size="xs"
-            value={lang}
-            onChange={setLang}
-            data={[
-              { label: 'VI', value: 'vi' },
-              { label: 'EN', value: 'en' },
-            ]}
-            styles={{
-              root: {
-                background: 'transparent',
-                border: '1px solid var(--mantine-color-default-border)',
-                padding: 2,
-              },
-              label: { paddingInline: 7, paddingBlock: 1, fontSize: 10, fontWeight: 700 },
-            }}
-          />,
-        )}
-
         {footerRow(
           colorScheme === 'dark' ? (
             <IconSun size={16} color="var(--mantine-color-dimmed)" />
