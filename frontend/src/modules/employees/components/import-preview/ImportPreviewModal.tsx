@@ -173,14 +173,14 @@ export function ImportPreviewModal({
         </Group>
 
         {errorCount > 0 && (
-          <Alert icon={<IconAlertTriangle size={14} />} color="orange" p="xs">
+          <Alert icon={<IconAlertTriangle size={16} />} color="orange" p="xs">
             {errorCount} row(s) have errors. Click any cell to edit inline — validation updates
             instantly.
           </Alert>
         )}
 
         {!canImport && rows.length > 0 && (
-          <Alert icon={<IconAlertTriangle size={14} />} color="red" p="xs">
+          <Alert icon={<IconAlertTriangle size={16} />} color="red" p="xs">
             No valid rows to import. Fix the errors above before importing.
           </Alert>
         )}
@@ -259,7 +259,7 @@ export function ImportPreviewModal({
                         </Tooltip>
                       ) : (
                         <Badge size="xs" color="teal" variant="light">
-                          <IconCheck size={10} style={{ marginRight: 2 }} />
+                          <IconCheck size={12} style={{ marginRight: 2 }} />
                           OK
                         </Badge>
                       )}
@@ -292,7 +292,7 @@ export function ImportPreviewModal({
         </ScrollArea>
 
         <Text size="xs" c="dimmed">
-          <IconInfoCircle size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+          <IconInfoCircle size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
           Click any cell to edit. Enter to confirm, Escape to cancel. Dates must be YYYY-MM-DD.
         </Text>
 
@@ -318,7 +318,7 @@ export function ImportPreviewModal({
                 loading={loading}
                 disabled={selectedCount === 0}
                 onClick={handleConfirm}
-                leftSection={<IconCheck size={14} />}
+                leftSection={<IconCheck size={16} />}
               >
                 Import {selectedCount} Employee{selectedCount !== 1 ? 's' : ''}
               </Button>

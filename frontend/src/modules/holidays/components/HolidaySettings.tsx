@@ -83,7 +83,7 @@ export function HolidaySettings() {
             <Button
               size="xs"
               variant="light"
-              leftSection={<IconPlus size={13} />}
+              leftSection={<IconPlus size={15} />}
               onClick={() => {
                 setEditHoliday(null);
                 setOpened(true);
@@ -100,7 +100,7 @@ export function HolidaySettings() {
       <SettingsCard>
         {holidays.length === 0 ? (
           <Box py="xl" ta="center">
-            <IconCalendarEvent size={28} color="#adb5bd" style={{ margin: '0 auto 6px' }} />
+            <IconCalendarEvent size={30} color="#adb5bd" style={{ margin: '0 auto 6px' }} />
             <Text size="sm" c="dimmed">
               No holidays for {year}
             </Text>
@@ -109,7 +109,7 @@ export function HolidaySettings() {
           holidays.map((h, i) => (
             <SettingRow
               key={h.id}
-              icon={<IconCalendar size={14} />}
+              icon={<IconCalendar size={16} />}
               color="orange"
               title={h.name}
               description={formatDate(h.holiday_date)}
@@ -130,7 +130,7 @@ export function HolidaySettings() {
                         setOpened(true);
                       }}
                     >
-                      <IconEdit size={13} />
+                      <IconEdit size={15} />
                     </ActionIcon>
                   </Tooltip>
                   <Tooltip label="Delete" withArrow>
@@ -143,7 +143,7 @@ export function HolidaySettings() {
                         handleDelete(h.id);
                       }}
                     >
-                      <IconTrash size={13} />
+                      <IconTrash size={15} />
                     </ActionIcon>
                   </Tooltip>
                 </Group>

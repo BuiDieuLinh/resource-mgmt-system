@@ -289,10 +289,10 @@ export default function EmployeesPage() {
             onClick={() => navigate(`/employees/${row.id}/profile`)}
             title="View Profile"
           >
-            <IconEye size={16} />
+            <IconEye size={18} />
           </ActionIcon>
           <ActionIcon variant="subtle" color="gray" onClick={() => handleEdit(row)} title="Edit">
-            <IconEdit size={16} />
+            <IconEdit size={18} />
           </ActionIcon>
         </Group>
       ),
@@ -310,12 +310,12 @@ export default function EmployeesPage() {
         description="Manage your workforce — add, edit, and organize employees"
         right={
           <Group>
-            <Button leftSection={<IconPlus size={16} />} onClick={handleAdd}>
+            <Button leftSection={<IconPlus size={18} />} onClick={handleAdd}>
               Add employee
             </Button>
             <Menu shadow="md" width={200} position="bottom-start">
               <Menu.Target>
-                <Button variant="light" leftSection={<IconDotsVertical size={16} />}>
+                <Button variant="light" leftSection={<IconDotsVertical size={18} />}>
                   Actions
                 </Button>
               </Menu.Target>
@@ -323,19 +323,19 @@ export default function EmployeesPage() {
               <Menu.Dropdown>
                 <Menu.Item
                   variant="light"
-                  leftSection={<IconSitemap size={16} />}
+                  leftSection={<IconSitemap size={18} />}
                   onClick={() => navigate('/employees/org-chart')}
                 >
                   View Org Chart
                 </Menu.Item>
-                <Menu.Item leftSection={<IconFileExport size={16} />} onClick={handleExport}>
+                <Menu.Item leftSection={<IconFileExport size={18} />} onClick={handleExport}>
                   Export to Excel
                 </Menu.Item>
                 <FileButton onChange={handleImportFile} accept=".xlsx,.xls">
                   {(props) => (
                     <Menu.Item
                       {...props}
-                      leftSection={<IconFileImport size={16} />}
+                      leftSection={<IconFileImport size={18} />}
                       closeMenuOnClick={false}
                     >
                       Import from Excel
@@ -346,7 +346,7 @@ export default function EmployeesPage() {
             </Menu>
             <TextInput
               placeholder="Search by name, email or code"
-              leftSection={<IconSearch size={16} />}
+              leftSection={<IconSearch size={18} />}
               value={input}
               onChange={(e) => handleSearch(e.currentTarget.value)}
             />

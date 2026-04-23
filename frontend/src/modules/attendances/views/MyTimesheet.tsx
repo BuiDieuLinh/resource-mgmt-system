@@ -94,7 +94,7 @@ export default function MyTimesheetPage() {
               value: 'month',
               label: (
                 <Group gap={4}>
-                  <IconCalendar size={14} />
+                  <IconCalendar size={16} />
                   Month
                 </Group>
               ),
@@ -103,7 +103,7 @@ export default function MyTimesheetPage() {
               value: 'week',
               label: (
                 <Group gap={4}>
-                  <IconCalendarWeek size={14} />
+                  <IconCalendarWeek size={16} />
                   Week
                 </Group>
               ),

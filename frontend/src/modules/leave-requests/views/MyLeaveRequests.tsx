@@ -130,12 +130,12 @@ export default function MyLeaveRequestsPage() {
           <Group gap={4} justify="center">
             <Tooltip label="Edit" withArrow>
               <ActionIcon size="sm" variant="subtle" color="gray" onClick={() => handleEdit(r)}>
-                <IconEdit size={14} />
+                <IconEdit size={16} />
               </ActionIcon>
             </Tooltip>
             <Tooltip label="Delete" withArrow>
               <ActionIcon size="sm" variant="subtle" color="red" onClick={() => handleDelete(r.id)}>
-                <IconTrash size={14} />
+                <IconTrash size={16} />
               </ActionIcon>
             </Tooltip>
           </Group>
@@ -165,7 +165,7 @@ export default function MyLeaveRequestsPage() {
               value={filterStatus}
               onChange={setFilterStatus}
             />
-            <Button leftSection={<IconPlus size={16} />} onClick={handleOpen}>
+            <Button leftSection={<IconPlus size={18} />} onClick={handleOpen}>
               New Request
             </Button>
           </Group>

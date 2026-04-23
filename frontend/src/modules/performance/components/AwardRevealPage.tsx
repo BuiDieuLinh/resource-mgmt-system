@@ -243,7 +243,7 @@ function PersonalReveal({
         <Button
           size="xs"
           variant="subtle"
-          leftSection={<IconX size={12} />}
+          leftSection={<IconX size={14} />}
           onClick={onClose}
           className={s.closeBtn}
         >
@@ -278,7 +278,7 @@ function PersonalReveal({
               <Image src={COMPANY_LOGO_URL} h={32} w="auto" fit="contain" />
             ) : (
               <Box className={s.companyLogoFallbackSm}>
-                <IconBuildingSkyscraper size={18} color="white" />
+                <IconBuildingSkyscraper size={20} color="white" />
               </Box>
             )}
             <Stack gap={0}>
@@ -386,7 +386,7 @@ function PersonalReveal({
                   boxShadow: `0 4px 16px ${r.glow}`,
                 }}
               >
-                <IconTrophy size={26} color={r.color} />
+                <IconTrophy size={28} color={r.color} />
               </Box>
               <Stack gap={1}>
                 <Text fw={700} size="sm" style={{ color: r.color, letterSpacing: 1 }}>
@@ -436,7 +436,7 @@ function PersonalReveal({
                   <Button
                     radius="xl"
                     onClick={onClose}
-                    leftSection={<IconSparkles size={16} />}
+                    leftSection={<IconSparkles size={18} />}
                     style={{
                       background: `linear-gradient(135deg,${r.color},${r.accent})`,
                       color: 'white',
@@ -517,7 +517,7 @@ export function AwardRevealPage({ awards, onClose, previewMode = false, personal
               <Button
                 size="xs"
                 variant="subtle"
-                leftSection={<IconX size={12} />}
+                leftSection={<IconX size={14} />}
                 onClick={onClose}
                 className={s.closeBtnAll}
               >
@@ -540,7 +540,7 @@ export function AwardRevealPage({ awards, onClose, previewMode = false, personal
                   <Image src={COMPANY_LOGO_URL} h={36} w="auto" fit="contain" />
                 ) : (
                   <Box className={s.companyLogoFallback}>
-                    <IconBuildingSkyscraper size={22} color="white" />
+                    <IconBuildingSkyscraper size={24} color="white" />
                   </Box>
                 )}
                 <Stack gap={1}>
@@ -646,7 +646,7 @@ export function AwardRevealPage({ awards, onClose, previewMode = false, personal
                 size="xl"
                 radius="xl"
                 onClick={onClose}
-                leftSection={<IconSparkles size={20} />}
+                leftSection={<IconSparkles size={22} />}
                 className={s.ctaBtn}
               >
                 Congratulations to all! 🎉

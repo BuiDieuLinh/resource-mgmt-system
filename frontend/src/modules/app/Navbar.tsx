@@ -123,14 +123,14 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
           {collapsed ? (
             <Tooltip label="Expand" position="right" withArrow>
               <ActionIcon variant="subtle" color="gray" size="sm" onClick={onToggle}>
-                <IconLayoutSidebarLeftExpand size={16} />
+                <IconLayoutSidebarLeftExpand size={18} />
               </ActionIcon>
             </Tooltip>
           ) : (
             <Group gap="sm" justify="space-between" wrap="nowrap" style={{ width: '100%' }}>
               <Group gap="sm" wrap="nowrap">
                 <ThemeIcon size={34} radius="md" color="deepPurple" variant="filled">
-                  <IconHierarchy size={18} />
+                  <IconHierarchy size={20} />
                 </ThemeIcon>
                 <Text fw={700} size="md" style={{ letterSpacing: '-0.3px' }}>
                   RMS Core
@@ -138,7 +138,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
               </Group>
               <Tooltip label="Collapse" position="right" withArrow>
                 <ActionIcon variant="subtle" color="gray" size="sm" onClick={onToggle}>
-                  <IconLayoutSidebarLeftCollapse size={16} />
+                  <IconLayoutSidebarLeftCollapse size={18} />
                 </ActionIcon>
               </Tooltip>
             </Group>
@@ -270,13 +270,13 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
       <div className={classes.footer}>
         {footerRow(
           colorScheme === 'dark' ? (
-            <IconSun size={16} color="var(--mantine-color-dimmed)" />
+            <IconSun size={18} color="var(--mantine-color-dimmed)" />
           ) : (
-            <IconMoon size={16} color="var(--mantine-color-dimmed)" />
+            <IconMoon size={18} color="var(--mantine-color-dimmed)" />
           ),
           colorScheme === 'dark' ? 'Light mode' : 'Dark mode',
           <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => toggleColorScheme()}>
-            {colorScheme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
+            {colorScheme === 'dark' ? <IconSun size={17} /> : <IconMoon size={17} />}
           </ActionIcon>,
           () => toggleColorScheme(),
         )}
@@ -286,7 +286,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
             <div>
               {footerRow(
                 <Indicator label={unread} size={15} disabled={unread === 0} color="red" offset={2}>
-                  <IconBell size={16} color="var(--mantine-color-dimmed)" />
+                  <IconBell size={18} color="var(--mantine-color-dimmed)" />
                 </Indicator>,
                 'Notifications',
                 unread > 0 ? (
@@ -338,7 +338,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
                     <Group gap="sm" wrap="nowrap" align="flex-start">
                       <Indicator color="deepPurple" size={7} disabled={n.read} mt={6}>
                         <Avatar size={28} radius="xl" color="deepPurple" variant="light">
-                          <IconBell size={13} />
+                          <IconBell size={15} />
                         </Avatar>
                       </Indicator>
                       <Box style={{ flex: 1, minWidth: 0 }}>
@@ -367,10 +367,10 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
             <div>
               {footerRow(
                 <Avatar size={22} radius="xl" color="deepPurple" src={null}>
-                  <IconUser size={12} />
+                  <IconUser size={14} />
                 </Avatar>,
                 user?.email ?? '',
-                <IconChevronDown size={12} color="var(--mantine-color-dimmed)" />,
+                <IconChevronDown size={14} color="var(--mantine-color-dimmed)" />,
               )}
             </div>
           </Menu.Target>

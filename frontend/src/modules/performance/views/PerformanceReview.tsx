@@ -148,7 +148,7 @@ export default function PerformanceReviewPage() {
 
               {existingReview && (
                 <Alert
-                  icon={<IconInfoCircle size={14} />}
+                  icon={<IconInfoCircle size={16} />}
                   color={STATUS_COLOR[existingReview.status]}
                   variant="light"
                 >
@@ -166,7 +166,7 @@ export default function PerformanceReviewPage() {
                   </Text>
                   <Badge size="lg" color={scoreColor} variant="light">
                     <Group gap={4}>
-                      <IconStar size={12} fill="currentColor" />
+                      <IconStar size={14} fill="currentColor" />
                       {form.values.score} / 100
                     </Group>
                   </Badge>
@@ -216,7 +216,7 @@ export default function PerformanceReviewPage() {
                     Save Draft
                   </Button>
                   <Button
-                    leftSection={<IconCheck size={16} />}
+                    leftSection={<IconCheck size={18} />}
                     disabled={!selectedCycle || !selectedEmployee}
                     loading={submitReview.isPending}
                     onClick={() => handleSave(true)}
@@ -278,7 +278,7 @@ export default function PerformanceReviewPage() {
                     <Group gap="xs">
                       <Badge size="xs" variant="light" color="blue">
                         <Group gap={2}>
-                          <IconStar size={10} fill="currentColor" />
+                          <IconStar size={12} fill="currentColor" />
                           {r.score}
                         </Group>
                       </Badge>

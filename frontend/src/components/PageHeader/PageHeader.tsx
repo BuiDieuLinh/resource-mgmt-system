@@ -58,7 +58,7 @@ export function PageHeader({
                     color: 'var(--mantine-color-dimmed)',
                   }}
                 >
-                  <IconHome size={12} />
+                  <IconHome size={14} />
                 </UnstyledButton>
               ) : isLast ? (
                 <Text size="xs" fw={600} c="dark.4">
@@ -71,7 +71,7 @@ export function PageHeader({
                   </Text>
                 </UnstyledButton>
               )}
-              {!isLast && <IconChevronRight size={11} color="var(--mantine-color-dimmed)" />}
+              {!isLast && <IconChevronRight size={13} color="var(--mantine-color-dimmed)" />}
             </Group>
           );
         })}

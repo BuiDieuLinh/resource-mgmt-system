@@ -194,7 +194,7 @@ export default function AttendancesPage() {
               Export CSV
             </Button>
             <Button
-              leftSection={<IconPlus size={16} />}
+              leftSection={<IconPlus size={18} />}
               onClick={() => {
                 setEditing(null);
                 setModalOpen(true);
@@ -217,7 +217,7 @@ export default function AttendancesPage() {
               <Group gap="md" align="flex-end">
                 <TextInput
                   placeholder="Search employee..."
-                  leftSection={<IconSearch size={14} />}
+                  leftSection={<IconSearch size={16} />}
                   value={search}
                   onChange={(e) => setSearch(e.currentTarget.value)}
                 />

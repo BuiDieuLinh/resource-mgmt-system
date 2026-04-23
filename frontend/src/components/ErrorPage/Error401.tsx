@@ -16,7 +16,7 @@ export default function Error401() {
   return (
     <Stack align="center" justify="center" h="100vh" gap="md">
       <ThemeIcon size={64} radius="xl" color="orange" variant="light">
-        <IconLock size={32} />
+        <IconLock size={34} />
       </ThemeIcon>
       <Title order={2}>401 — Unauthorized</Title>
       <Text c="dimmed" ta="center" maw={400}>

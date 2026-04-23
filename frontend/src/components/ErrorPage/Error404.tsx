@@ -19,7 +19,7 @@ export default function Error404() {
           }}
         >
           <Stack align="center" gap="md">
-            <IconMoodSad size={64} stroke={1.5} />
+            <IconMoodSad size={66} stroke={1.5} />
 
             <Title order={1} size={120} c="dimmed">
               404

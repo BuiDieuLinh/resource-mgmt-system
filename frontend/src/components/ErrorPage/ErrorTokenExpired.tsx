@@ -17,7 +17,7 @@ export default function ErrorTokenExpired() {
   return (
     <Stack align="center" justify="center" h="100vh" gap="md">
       <ThemeIcon size={64} radius="xl" color="yellow" variant="light">
-        <IconClockOff size={32} />
+        <IconClockOff size={34} />
       </ThemeIcon>
       <Title order={2}>Session Expired</Title>
       <Text c="dimmed" ta="center" maw={400}>

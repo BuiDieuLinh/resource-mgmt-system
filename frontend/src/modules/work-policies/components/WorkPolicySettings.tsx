@@ -70,7 +70,7 @@ export function WorkPolicySettings() {
           <Button
             size="xs"
             variant="light"
-            leftSection={<IconPlus size={13} />}
+            leftSection={<IconPlus size={15} />}
             onClick={() => {
               setEditPolicy(null);
               setOpened(true);
@@ -86,7 +86,7 @@ export function WorkPolicySettings() {
       <SettingsCard>
         {policies.length === 0 ? (
           <Box py="xl" ta="center">
-            <IconShieldCheck size={28} color="#adb5bd" style={{ margin: '0 auto 6px' }} />
+            <IconShieldCheck size={30} color="#adb5bd" style={{ margin: '0 auto 6px' }} />
             <Text size="sm" c="dimmed">
               No policies configured
             </Text>
@@ -105,7 +105,7 @@ export function WorkPolicySettings() {
             return (
               <SettingRow
                 key={p.id}
-                icon={<IconShieldCheck size={14} />}
+                icon={<IconShieldCheck size={16} />}
                 color={active ? 'green' : 'gray'}
                 title={`${formatDate(p.effective_from)} – ${p.effective_to ? formatDate(p.effective_to) : 'ongoing'}`}
                 description={`Break: ${breakText}  ·  Flex: ${flexText}`}
@@ -126,7 +126,7 @@ export function WorkPolicySettings() {
                           setOpened(true);
                         }}
                       >
-                        <IconEdit size={13} />
+                        <IconEdit size={15} />
                       </ActionIcon>
                     </Tooltip>
                     <Tooltip label="Delete" withArrow>
@@ -139,7 +139,7 @@ export function WorkPolicySettings() {
                           handleDelete(p.id);
                         }}
                       >
-                        <IconTrash size={13} />
+                        <IconTrash size={15} />
                       </ActionIcon>
                     </Tooltip>
                   </Group>

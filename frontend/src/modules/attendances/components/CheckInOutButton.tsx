@@ -90,7 +90,7 @@ export function CheckInOutButton() {
         size="sm"
         variant="light"
         color="blue"
-        leftSection={<IconLogin size={15} />}
+        leftSection={<IconLogin size={17} />}
         disabled={hasCheckedIn || checkInMutation.isPending}
         loading={checkInMutation.isPending}
         onClick={handleCheckIn}
@@ -102,7 +102,7 @@ export function CheckInOutButton() {
         size="sm"
         variant="light"
         color="red"
-        leftSection={<IconLogout size={15} />}
+        leftSection={<IconLogout size={17} />}
         disabled={!hasCheckedIn || hasCheckedOut || checkOutMutation.isPending}
         loading={checkOutMutation.isPending}
         onClick={handleCheckOut}

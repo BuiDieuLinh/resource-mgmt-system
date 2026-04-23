@@ -126,7 +126,7 @@ export default function PerformanceCyclesPage() {
       align: 'center',
       render: (r) => (
         <Group gap={4} justify="center">
-          <IconTrophy size={14} color="#FFD700" />
+          <IconTrophy size={16} color="#FFD700" />
           <Text size="sm">{r._count?.awards ?? 0}</Text>
         </Group>
       ),
@@ -142,7 +142,7 @@ export default function PerformanceCyclesPage() {
               size="xs"
               variant="subtle"
               color="yellow"
-              leftSection={<IconEye size={12} />}
+              leftSection={<IconEye size={14} />}
               onClick={(e) => {
                 e.stopPropagation();
                 setPreviewCycleId(r.id);
@@ -151,7 +151,7 @@ export default function PerformanceCyclesPage() {
               Preview
             </Button>
           )}
-          <IconChevronRight size={16} color="var(--mantine-color-dimmed)" />
+          <IconChevronRight size={18} color="var(--mantine-color-dimmed)" />
         </Group>
       ),
     },
@@ -163,7 +163,7 @@ export default function PerformanceCyclesPage() {
         title="Review Cycles"
         description="Manage performance review cycles and awards"
         right={
-          <Button leftSection={<IconPlus size={16} />} onClick={() => setOpened(true)}>
+          <Button leftSection={<IconPlus size={18} />} onClick={() => setOpened(true)}>
             New Cycle
           </Button>
         }
@@ -188,7 +188,7 @@ export default function PerformanceCyclesPage() {
           <Button
             variant="gradient"
             gradient={{ from: 'violet', to: 'blue' }}
-            leftSection={<IconTrophy size={16} />}
+            leftSection={<IconTrophy size={18} />}
             onClick={handleShowPreview}
           >
             Preview Award Reveal

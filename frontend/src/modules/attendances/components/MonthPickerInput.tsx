@@ -31,17 +31,17 @@ export default function MonthNavigator({ value, onChange }: MonthNavigatorProps)
   return (
     <Group>
       <ActionIcon title="Previous" variant="light" onClick={goToPreviousMonth}>
-        <IconChevronLeft size={16} />
+        <IconChevronLeft size={18} />
       </ActionIcon>
       <MantineMonthPickerInput
-        leftSection={<IconCalendar size={18} stroke={1.5} />}
+        leftSection={<IconCalendar size={20} stroke={1.5} />}
         leftSectionPointerEvents="none"
         valueFormat="MMM YYYY"
         value={value}
         onChange={handleMonthChange}
       />
       <ActionIcon title="Next" variant="light" onClick={goToNextMonth}>
-        <IconChevronRight size={16} />
+        <IconChevronRight size={18} />
       </ActionIcon>
     </Group>
   );

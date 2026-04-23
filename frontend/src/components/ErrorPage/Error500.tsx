@@ -18,7 +18,7 @@ export default function Error500() {
           }}
         >
           <Stack align="center" gap="md">
-            <IconAlertTriangle size={64} stroke={1.5} color="red" />
+            <IconAlertTriangle size={66} stroke={1.5} color="red" />
 
             <Title order={1} size={120} c="red">
               500

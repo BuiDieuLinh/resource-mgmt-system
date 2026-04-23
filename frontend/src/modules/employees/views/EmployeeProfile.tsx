@@ -122,7 +122,7 @@ function WorkScheduleSection({
           {Math.round(totalNetHours * 10) / 10}h/week
         </Badge>
         {breakMinutes > 0 && (
-          <Badge variant="light" color="gray" size="sm" leftSection={<IconCoffee size={10} />}>
+          <Badge variant="light" color="gray" size="sm" leftSection={<IconCoffee size={12} />}>
             {breakMinutes}min break
           </Badge>
         )}
@@ -132,7 +132,7 @@ function WorkScheduleSection({
         <Stack key={i} gap="xs">
           {i > 0 && <Divider />}
           <Group gap="xs" mb={6}>
-            <IconClock size={14} color="var(--mantine-color-dimmed)" />
+            <IconClock size={16} color="var(--mantine-color-dimmed)" />
             <Text size="sm" fw={600}>
               {minutesToTime(shift.start)} – {minutesToTime(shift.end)}
             </Text>
@@ -235,7 +235,7 @@ export default function EmployeeProfile() {
                 alt={employee.full_name}
                 color="deepPurple"
               >
-                <IconUser size={40} />
+                <IconUser size={42} />
               </Avatar>
               <Stack align="center" gap={4}>
                 <Text size="md" fw={700} ta="center" lh={1.3}>
@@ -263,11 +263,11 @@ export default function EmployeeProfile() {
             <Divider my="md" />
 
             <Stack gap="sm">
-              <InfoRow icon={<IconMail size={12} />} label="Email" value={employee.email} />
+              <InfoRow icon={<IconMail size={14} />} label="Email" value={employee.email} />
               {employee.phone && (
-                <InfoRow icon={<IconPhone size={12} />} label="Phone" value={employee.phone} />
+                <InfoRow icon={<IconPhone size={14} />} label="Phone" value={employee.phone} />
               )}
-              <InfoRow icon={<IconId size={12} />} label="ID Card" value={employee.identify_card} />
+              <InfoRow icon={<IconId size={14} />} label="ID Card" value={employee.identify_card} />
             </Stack>
           </Card>
         </Grid.Col>
@@ -280,7 +280,7 @@ export default function EmployeeProfile() {
                 <Grid gutter="lg">
                   <Grid.Col span={6}>
                     <InfoRow
-                      icon={<IconGenderMale size={12} />}
+                      icon={<IconGenderMale size={14} />}
                       label="Gender"
                       value={employee.gender || '—'}
                     />
@@ -288,7 +288,7 @@ export default function EmployeeProfile() {
                   {employee.date_of_birth && (
                     <Grid.Col span={6}>
                       <InfoRow
-                        icon={<IconCalendar size={12} />}
+                        icon={<IconCalendar size={14} />}
                         label="Date of Birth"
                         value={formatDate(employee.date_of_birth)}
                       />
@@ -296,14 +296,14 @@ export default function EmployeeProfile() {
                   )}
                   <Grid.Col span={6}>
                     <InfoRow
-                      icon={<IconCalendar size={12} />}
+                      icon={<IconCalendar size={14} />}
                       label="Hire Date"
                       value={formatDate(employee.hire_date)}
                     />
                   </Grid.Col>
                   <Grid.Col span={6}>
                     <InfoRow
-                      icon={<IconMapPin size={12} />}
+                      icon={<IconMapPin size={14} />}
                       label="Address"
                       value={employee.address}
                     />
@@ -318,14 +318,14 @@ export default function EmployeeProfile() {
                 <Grid gutter="lg">
                   <Grid.Col span={6}>
                     <InfoRow
-                      icon={<IconBuilding size={12} />}
+                      icon={<IconBuilding size={14} />}
                       label="Department"
                       value={employee.position.department?.department_name || '—'}
                     />
                   </Grid.Col>
                   <Grid.Col span={6}>
                     <InfoRow
-                      icon={<IconBriefcase size={12} />}
+                      icon={<IconBriefcase size={14} />}
                       label="Position"
                       value={employee.position?.position_name || '—'}
                     />
@@ -333,7 +333,7 @@ export default function EmployeeProfile() {
                   {employee.position?.level && (
                     <Grid.Col span={6}>
                       <InfoRow
-                        icon={<IconBriefcase size={12} />}
+                        icon={<IconBriefcase size={14} />}
                         label="Level"
                         value={
                           <Badge variant="light" color="blue" size="sm" radius="sm">
@@ -364,14 +364,14 @@ export default function EmployeeProfile() {
                     <Stack gap="md">
                       {employee.position?.description && (
                         <InfoRow
-                          icon={<IconBriefcase size={12} />}
+                          icon={<IconBriefcase size={14} />}
                           label="Position Description"
                           value={employee.position.description}
                         />
                       )}
                       {employee.position.department?.description && (
                         <InfoRow
-                          icon={<IconBuilding size={12} />}
+                          icon={<IconBuilding size={14} />}
                           label="Department Description"
                           value={employee.position.department.description}
                         />
@@ -400,7 +400,7 @@ export default function EmployeeProfile() {
                         >
                           <Group gap="sm">
                             <ThemeIcon size="md" radius="xl" variant="light" color="yellow">
-                              <IconTrophy size={14} color={RANK_COLORS[(award.rank - 1) % 3]} />
+                              <IconTrophy size={16} color={RANK_COLORS[(award.rank - 1) % 3]} />
                             </ThemeIcon>
                             <Stack gap={2}>
                               <Text size="sm" fw={600}>
@@ -419,7 +419,7 @@ export default function EmployeeProfile() {
                           <Button
                             size="xs"
                             variant="subtle"
-                            leftSection={<IconEye size={12} />}
+                            leftSection={<IconEye size={14} />}
                             onClick={() => setPreviewAward(award)}
                           >
                             Preview

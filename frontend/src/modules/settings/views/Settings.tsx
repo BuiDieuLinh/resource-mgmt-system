@@ -23,7 +23,7 @@ function PreferencesSection() {
       <SectionLabel>Appearance</SectionLabel>
       <SettingsCard>
         <SettingRow
-          icon={isDark ? <IconSun size={15} /> : <IconMoon size={15} />}
+          icon={isDark ? <IconSun size={17} /> : <IconMoon size={17} />}
           color={isDark ? 'yellow' : 'indigo'}
           title="Dark mode"
           description={isDark ? 'Currently using dark theme' : 'Currently using light theme'}
@@ -33,8 +33,8 @@ function PreferencesSection() {
               checked={isDark}
               onChange={toggleColorScheme}
               size="sm"
-              onLabel={<IconSun size={11} />}
-              offLabel={<IconMoon size={11} />}
+              onLabel={<IconSun size={13} />}
+              offLabel={<IconMoon size={13} />}
             />
           }
         />
@@ -55,16 +55,16 @@ export default function SettingsPage() {
 
       <Tabs defaultValue="preferences" variant="outline">
         <Tabs.List mb="lg">
-          <Tabs.Tab value="preferences" leftSection={<IconSettings2 size={14} />}>
+          <Tabs.Tab value="preferences" leftSection={<IconSettings2 size={16} />}>
             Preferences
           </Tabs.Tab>
           {isAdmin && (
-            <Tabs.Tab value="work-policy" leftSection={<IconShieldCheck size={14} />}>
+            <Tabs.Tab value="work-policy" leftSection={<IconShieldCheck size={16} />}>
               Work Policies
             </Tabs.Tab>
           )}
           {isAdmin && (
-            <Tabs.Tab value="holidays" leftSection={<IconCalendarEvent size={14} />}>
+            <Tabs.Tab value="holidays" leftSection={<IconCalendarEvent size={16} />}>
               Public Holidays
             </Tabs.Tab>
           )}

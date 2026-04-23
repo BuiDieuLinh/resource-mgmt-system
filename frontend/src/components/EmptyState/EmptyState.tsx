@@ -21,7 +21,7 @@ export function EmptyState({
   return (
     <Center py={60}>
       <Stack align="center" gap="md">
-        <Box c="gray.5">{icon || <IconInbox size={48} stroke={1.5} />}</Box>
+        <Box c="gray.5">{icon || <IconInbox size={50} stroke={1.5} />}</Box>
 
         <Stack gap={4} align="center">
           <Text size="lg" fw={500} c="gray.7">

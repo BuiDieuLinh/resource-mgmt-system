@@ -138,7 +138,7 @@ export default function CycleDetailPage() {
       sortAccessor: (r) => r.score ?? 0,
       render: (r) => (
         <Group gap={4} justify="center">
-          <IconStar size={13} color="#FFD700" fill="#FFD700" />
+          <IconStar size={15} color="#FFD700" fill="#FFD700" />
           <Text fw={600} size="sm">
             {r.score}
           </Text>
@@ -178,7 +178,7 @@ export default function CycleDetailPage() {
           variant="light"
           style={{ background: `${RANK_COLORS[r.rank - 1]}22` }}
         >
-          <IconTrophy size={12} color={RANK_COLORS[r.rank - 1]} />
+          <IconTrophy size={14} color={RANK_COLORS[r.rank - 1]} />
         </ThemeIcon>
       ),
     },
@@ -227,7 +227,7 @@ export default function CycleDetailPage() {
               size="sm"
               onClick={() => setPreviewAwards([r])}
             >
-              <IconEye size={14} />
+              <IconEye size={16} />
             </ActionIcon>
           </Tooltip>
           <Tooltip label="Delete award">
@@ -237,7 +237,7 @@ export default function CycleDetailPage() {
               size="sm"
               onClick={() => deleteAward.mutate(r.id)}
             >
-              <IconTrash size={14} />
+              <IconTrash size={16} />
             </ActionIcon>
           </Tooltip>
         </Group>
@@ -268,7 +268,7 @@ export default function CycleDetailPage() {
               <Button
                 variant="light"
                 color="yellow"
-                leftSection={<IconEye size={16} />}
+                leftSection={<IconEye size={18} />}
                 onClick={() => setPreviewAwards(awards)}
               >
                 Preview Reveal
@@ -278,14 +278,14 @@ export default function CycleDetailPage() {
               <Button
                 variant="light"
                 color="green"
-                leftSection={<IconCheck size={16} />}
+                leftSection={<IconCheck size={18} />}
                 onClick={handlePublish}
                 loading={publishReviews.isPending}
               >
                 Publish {submittedCount} reviews
               </Button>
             )}
-            <Button leftSection={<IconPlus size={16} />} onClick={() => setAwardModal(true)}>
+            <Button leftSection={<IconPlus size={18} />} onClick={() => setAwardModal(true)}>
               Add Award
             </Button>
           </Group>
@@ -294,10 +294,10 @@ export default function CycleDetailPage() {
 
       <Tabs defaultValue="reviews" variant="outline">
         <Tabs.List mb="lg">
-          <Tabs.Tab value="reviews" leftSection={<IconStar size={14} />}>
+          <Tabs.Tab value="reviews" leftSection={<IconStar size={16} />}>
             Reviews ({reviews.length})
           </Tabs.Tab>
-          <Tabs.Tab value="awards" leftSection={<IconTrophy size={14} />}>
+          <Tabs.Tab value="awards" leftSection={<IconTrophy size={16} />}>
             Awards ({awards.length})
           </Tabs.Tab>
         </Tabs.List>

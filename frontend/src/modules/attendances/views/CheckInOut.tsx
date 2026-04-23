@@ -250,7 +250,7 @@ export default function CheckInOutPage() {
                         padding: '4px 14px',
                       }}
                     >
-                      <IconCircleCheck size={13} color="white" />
+                      <IconCircleCheck size={15} color="white" />
                       <Text size="xs" style={{ color: 'white' }}>
                         In at{' '}
                         {checkInTime.toLocaleTimeString('vi-VN', {
@@ -320,7 +320,7 @@ export default function CheckInOutPage() {
                   <Button
                     size="md"
                     radius="xl"
-                    leftSection={<IconLogin size={16} />}
+                    leftSection={<IconLogin size={18} />}
                     disabled={hasCheckedIn || checkInMutation.isPending || !canAct}
                     loading={checkInMutation.isPending}
                     onClick={handleCheckIn}
@@ -338,7 +338,7 @@ export default function CheckInOutPage() {
                   <Button
                     size="md"
                     radius="xl"
-                    leftSection={<IconLogout size={16} />}
+                    leftSection={<IconLogout size={18} />}
                     disabled={
                       !hasCheckedIn || hasCheckedOut || checkOutMutation.isPending || !canAct
                     }
@@ -379,7 +379,7 @@ export default function CheckInOutPage() {
                     size="md"
                     radius="md"
                   >
-                    {position ? <IconWifi size={16} /> : <IconWifiOff size={16} />}
+                    {position ? <IconWifi size={18} /> : <IconWifiOff size={18} />}
                   </ThemeIcon>
                   <div>
                     <Text size="sm" fw={600}>
@@ -444,7 +444,7 @@ export default function CheckInOutPage() {
               )}
 
               {gpsError && (
-                <Alert icon={<IconAlertCircle size={14} />} color="red" mt="sm" p="sm" radius="md">
+                <Alert icon={<IconAlertCircle size={16} />} color="red" mt="sm" p="sm" radius="md">
                   <Text size="xs">{gpsError}</Text>
                 </Alert>
               )}

@@ -153,7 +153,7 @@ export default function TimesheetPage() {
       title: 'Location',
       render: (r: TimesheetRow) => (
         <Group gap="xs">
-          <IconMapPin size={16} />
+          <IconMapPin size={18} />
           <Text size="sm">{r.location}</Text>
         </Group>
       ),
@@ -165,7 +165,7 @@ export default function TimesheetPage() {
       sortable: true,
       render: (r: TimesheetRow) => (
         <Group gap={4} justify="center">
-          <IconRoute size={16} />
+          <IconRoute size={18} />
           <Text size="sm" fw={500}>
             {r.distance} km
           </Text>
@@ -211,7 +211,7 @@ export default function TimesheetPage() {
         right={
           <Group>
             <MonthNavigator value={selectedMonth} onChange={setSelectedMonth} />
-            <Button leftSection={<IconDownload size={16} />} variant="light" onClick={handleExport}>
+            <Button leftSection={<IconDownload size={18} />} variant="light" onClick={handleExport}>
               Export
             </Button>
           </Group>

@@ -184,7 +184,7 @@ export default function LeaveRequestsPage() {
                   color="green"
                   onClick={() => handleStatus(r.id, 'approved')}
                 >
-                  <IconCheck size={14} />
+                  <IconCheck size={16} />
                 </ActionIcon>
               </Tooltip>
               <Tooltip label="Reject" withArrow>
@@ -194,12 +194,12 @@ export default function LeaveRequestsPage() {
                   color="red"
                   onClick={() => handleStatus(r.id, 'rejected')}
                 >
-                  <IconX size={14} />
+                  <IconX size={16} />
                 </ActionIcon>
               </Tooltip>
               <Tooltip label="Edit" withArrow>
                 <ActionIcon size="sm" variant="subtle" color="gray" onClick={() => handleEdit(r)}>
-                  <IconEdit size={14} />
+                  <IconEdit size={16} />
                 </ActionIcon>
               </Tooltip>
               <Tooltip label="Delete" withArrow>
@@ -209,7 +209,7 @@ export default function LeaveRequestsPage() {
                   color="red"
                   onClick={() => handleDelete(r.id)}
                 >
-                  <IconTrash size={14} />
+                  <IconTrash size={16} />
                 </ActionIcon>
               </Tooltip>
             </>
@@ -251,7 +251,7 @@ export default function LeaveRequestsPage() {
               value={filterStatus}
               onChange={setFilterStatus}
             />
-            <Button leftSection={<IconPlus size={16} />} onClick={handleOpen}>
+            <Button leftSection={<IconPlus size={18} />} onClick={handleOpen}>
               New Request
             </Button>
           </Group>

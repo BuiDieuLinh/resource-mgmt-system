@@ -111,7 +111,7 @@ export default function AttendanceDetailPage() {
         <Group gap="sm">
           <MonthNavigator value={selectedMonth} onChange={handleMonthChange} />
           <Button
-            leftSection={<IconCheck size={16} />}
+            leftSection={<IconCheck size={18} />}
             color="green"
             loading={approving}
             onClick={() => employeeId && approve({ employeeId, month, year })}
@@ -135,7 +135,7 @@ export default function AttendanceDetailPage() {
               value: 'month',
               label: (
                 <Group gap={6} w={70}>
-                  <IconCalendar size={14} />
+                  <IconCalendar size={16} />
                   Month
                 </Group>
               ),
@@ -144,7 +144,7 @@ export default function AttendanceDetailPage() {
               value: 'week',
               label: (
                 <Group gap={6} w={70}>
-                  <IconCalendarWeek size={14} />
+                  <IconCalendarWeek size={16} />
                   Week
                 </Group>
               ),
