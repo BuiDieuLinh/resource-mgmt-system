@@ -13,6 +13,7 @@ import { AttendancesModule } from './modules/attendances/attendances.module';
 import { LeaveRequestModule } from './modules/leave-requests/leave-request.module';
 import { HolidayModule } from './modules/holidays/holiday.module';
 import { PerformanceModule } from './modules/performance/performance.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 import { MailModule } from './modules/mail/mail.module';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -33,6 +34,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     LeaveRequestModule,
     HolidayModule,
     PerformanceModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

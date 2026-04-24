@@ -12,13 +12,16 @@ import {
   QueryLeaveRequestDto,
 } from './dto/leave-request.dto';
 import { HolidayService } from 'src/modules/holidays/holiday.service';
-import { LeaveStatus } from '@prisma/client';
+import { EmployeeStatus, LeaveStatus, PositionLevel } from '@prisma/client';
+
+import { NotificationsService } from 'src/modules/notifications/notifications.service';
 
 @Injectable()
 export class LeaveRequestService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly holidayService: HolidayService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async getManagerDepartmentId(authUserId: string): Promise<string | null> {
@@ -181,6 +184,29 @@ export class LeaveRequestService {
         reason: dto.reason ?? null,
       },
     });
+
+    const manager = await this.prisma.employees.findFirst({
+      where: {
+        status: EmployeeStatus.active,
+        position: {
+          department_id: employee.position_id,
+          level: PositionLevel.manager,
+        },
+        NOT: { id: employee.id },
+      },
+      include: { position: true },
+    });
+    if (manager?.auth_user_id) {
+      await this.notificationsService.notifyLeaveSubmitted({
+        managerAuthId: manager.auth_user_id,
+        employeeName: employee.full_name,
+        leaveType: dto.leave_type,
+        startDate: dto.start_date,
+        endDate: dto.end_date,
+        submissionId: created.id,
+      });
+    }
+
     return ResponseHelper.success(created, 'Leave request submitted');
   }
 
@@ -226,7 +252,21 @@ export class LeaveRequestService {
     const updated = await this.prisma.leaveRequests.update({
       where: { id },
       data,
+      include: {
+        employee: { select: { auth_user_id: true, full_name: true } },
+      },
     });
+
+    if (updated.employee?.auth_user_id) {
+      await this.notificationsService.notifyLeaveStatusChanged({
+        employeeAuthId: updated.employee.auth_user_id,
+        status: dto.status as 'approved' | 'rejected',
+        leaveType: existing.leave_type,
+        startDate: existing.start_date.toISOString().slice(0, 10),
+        endDate: existing.end_date.toISOString().slice(0, 10),
+      });
+    }
+
     return ResponseHelper.success(updated, `Leave request ${dto.status}`);
   }
 

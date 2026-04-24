@@ -37,29 +37,10 @@ import classes from './Navbar.module.css';
 import { useAuth } from '@/modules/auth/context/AuthContext';
 import { AUTH_URL } from '@/constant/config';
 import { myProfileUrl, settingsUrl } from '@/routes/url';
-const MOCK_NOTIS = [
-  {
-    id: '1',
-    title: 'New leave request',
-    desc: 'Nguyen Van A submitted a leave request',
-    time: '2m ago',
-    read: false,
-  },
-  {
-    id: '2',
-    title: 'Attendance approved',
-    desc: 'Your timesheet for March has been approved',
-    time: '1h ago',
-    read: false,
-  },
-  {
-    id: '3',
-    title: 'Policy updated',
-    desc: 'Work policy effective from April 1st',
-    time: '3h ago',
-    read: true,
-  },
-];
+import { useGetNotifications, useMarkRead, useMarkAllRead } from '@/modules/notifications/api';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+dayjs.extend(relativeTime);
 
 interface NavbarProps {
   collapsed: boolean;
@@ -70,10 +51,15 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
-  const [notis, setNotis] = useState(MOCK_NOTIS);
-  const unread = notis.filter((n) => !n.read).length;
   const { user, logout } = useAuth();
   const AUTH_APP_URL = `${AUTH_URL}apps` || new URL(AUTH_URL).origin;
+
+  const { data: notiData } = useGetNotifications();
+  const markReadMutation = useMarkRead();
+  const markAllReadMutation = useMarkAllRead();
+
+  const notifications = notiData?.notifications ?? [];
+  const unread = notiData?.unread_count ?? 0;
 
   const userRoles = user?.roles ?? [];
   const canSee = (roles?: string[]) => !roles?.length || roles.some((r) => userRoles.includes(r));
@@ -309,9 +295,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
                 Notifications
               </Text>
               {unread > 0 && (
-                <UnstyledButton
-                  onClick={() => setNotis((p) => p.map((n) => ({ ...n, read: true })))}
-                >
+                <UnstyledButton onClick={() => markAllReadMutation.mutate()}>
                   <Text size="xs" c="deepPurple" fw={500}>
                     Mark all read
                   </Text>
@@ -321,40 +305,47 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
             <Divider />
             <ScrollArea.Autosize mah={320}>
               <Stack gap={0}>
-                {notis.map((n) => (
-                  <UnstyledButton
-                    key={n.id}
-                    px="sm"
-                    py={10}
-                    style={{
-                      background: n.read ? 'transparent' : 'var(--mantine-color-deepPurple-0)',
-                      borderBottom: '1px solid var(--mantine-color-default-border)',
-                      width: '100%',
-                    }}
-                    onClick={() =>
-                      setNotis((p) => p.map((x) => (x.id === n.id ? { ...x, read: true } : x)))
-                    }
-                  >
-                    <Group gap="sm" wrap="nowrap" align="flex-start">
-                      <Indicator color="deepPurple" size={7} disabled={n.read} mt={6}>
-                        <Avatar size={28} radius="xl" color="deepPurple" variant="light">
-                          <IconBell size={15} />
-                        </Avatar>
-                      </Indicator>
-                      <Box style={{ flex: 1, minWidth: 0 }}>
-                        <Text size="xs" fw={600} truncate>
-                          {n.title}
-                        </Text>
-                        <Text size="xs" c="dimmed" lineClamp={2}>
-                          {n.desc}
-                        </Text>
-                        <Text size="xs" c="dimmed" mt={2}>
-                          {n.time}
-                        </Text>
-                      </Box>
-                    </Group>
-                  </UnstyledButton>
-                ))}
+                {notifications.length === 0 ? (
+                  <Text size="xs" c="dimmed" ta="center" py="md" px="sm">
+                    No notifications yet
+                  </Text>
+                ) : (
+                  notifications.map((n) => (
+                    <UnstyledButton
+                      key={n.id}
+                      px="sm"
+                      py={10}
+                      style={{
+                        background: n.is_read ? 'transparent' : 'var(--mantine-color-deepPurple-0)',
+                        borderBottom: '1px solid var(--mantine-color-default-border)',
+                        width: '100%',
+                      }}
+                      onClick={() => {
+                        if (!n.is_read) markReadMutation.mutate(n.id);
+                        if (n.link) navigate(n.link);
+                      }}
+                    >
+                      <Group gap="sm" wrap="nowrap" align="flex-start">
+                        <Indicator color="deepPurple" size={7} disabled={n.is_read} mt={6}>
+                          <Avatar size={28} radius="xl" color="deepPurple" variant="light">
+                            <IconBell size={15} />
+                          </Avatar>
+                        </Indicator>
+                        <Box style={{ flex: 1, minWidth: 0 }}>
+                          <Text size="xs" fw={600} truncate>
+                            {n.title}
+                          </Text>
+                          <Text size="xs" c="dimmed" lineClamp={2}>
+                            {n.body}
+                          </Text>
+                          <Text size="xs" c="dimmed" mt={2}>
+                            {dayjs(n.created_at).fromNow()}
+                          </Text>
+                        </Box>
+                      </Group>
+                    </UnstyledButton>
+                  ))
+                )}
               </Stack>
             </ScrollArea.Autosize>
           </Menu.Dropdown>

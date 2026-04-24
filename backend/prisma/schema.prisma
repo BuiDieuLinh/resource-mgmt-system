@@ -306,3 +306,29 @@ model AwardReveals {
   @@unique([award_id, employee_id])
   @@map("award_reveals")
 }
+
+enum NotificationType {
+  leave_submitted
+  leave_approved
+  leave_rejected
+  eval_cycle_started
+  eval_deadline_reminder
+  eval_submission_rejected
+  eval_result_published
+  timesheet_approved
+}
+
+model Notifications {
+  id          String           @id @default(uuid()) @db.Uuid
+  user_id     String           @db.Uuid   
+  type        NotificationType
+  title       String           @db.VarChar(200)
+  body        String           @db.Text
+  link        String?          @db.VarChar(500)
+  is_read     Boolean          @default(false)
+  created_at  DateTime         @default(now())
+
+  @@index([user_id, is_read])
+  @@index([user_id, created_at])
+  @@map("notifications")
+}

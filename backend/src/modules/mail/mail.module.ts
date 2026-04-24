@@ -4,10 +4,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailService } from './mail.service';
 import { MailScheduler } from './mail.scheduler';
 import { PrismaModule } from 'src/prisma/prisma.module';
+import { NotificationsModule } from 'src/modules/notifications/notifications.module';
 
 @Module({
   imports: [
     PrismaModule,
+    NotificationsModule,
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

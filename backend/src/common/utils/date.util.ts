@@ -64,3 +64,14 @@ export function overlapMinutes(
   const end = Math.min(aEnd, bEnd);
   return Math.max(0, end - start);
 }
+
+export function fmtDate(value: string | Date): string {
+  const d = new Date(value);
+  return d
+    .toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+    .replace(/ /g, ' ');
+}
