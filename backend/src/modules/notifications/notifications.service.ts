@@ -83,7 +83,7 @@ export class NotificationsService {
         : NotificationType.leave_rejected,
       title: approved ? 'Leave Request Approved' : 'Leave Request Rejected',
       body: `Your ${opts.leaveType} leave (${fmtDate(opts.startDate)} – ${fmtDate(opts.endDate)}) has been ${opts.status}`,
-      link: 'my/leave-requests',
+      link: 'leave-requests',
     });
   }
 

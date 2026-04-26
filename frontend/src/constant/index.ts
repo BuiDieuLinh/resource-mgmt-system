@@ -42,6 +42,11 @@ export const LEAVE_STATUS_LABEL: Record<LeaveStatus, string> = {
   rejected: 'Rejected',
 };
 
+export const LEAVE_STATUS_OPTIONS = Object.entries(LEAVE_STATUS_LABEL).map(([value, label]) => ({
+  value,
+  label,
+}));
+
 export const ATTENDANCE_STATUS = {
   PENDING: 'pending',
   APPROVED: 'approved',

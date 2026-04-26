@@ -343,6 +343,13 @@ export default function EmployeeProfile() {
                       />
                     </Grid.Col>
                   )}
+                  <Grid.Col span={6}>
+                    <InfoRow
+                      icon={<IconCalendar size={14} />}
+                      label="Annual Leave"
+                      value={`${employee.annual_leave_days} days/year`}
+                    />
+                  </Grid.Col>
                 </Grid>
               </div>
 

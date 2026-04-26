@@ -17,7 +17,6 @@ export const settingsUrl = '/settings';
 
 export const myProfileUrl = '/my/profile';
 export const myTimesheetUrl = '/my/timesheet';
-export const myLeaveRequestUrl = '/my/leave-requests';
 
 // Performance & Awards
 export const performanceCyclesUrl = '/performance/cycles';

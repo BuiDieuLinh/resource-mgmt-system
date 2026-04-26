@@ -4,6 +4,8 @@ export interface ILeaveRequest {
   id: string;
   employee_id: string;
   employee?: { id: string; full_name: string; employee_code: string };
+  approver_manager?: { id: string; full_name: string } | null;
+  approver_admin?: { id: string; full_name: string } | null;
   leave_type: LeaveType;
   start_date: string;
   end_date: string;
@@ -13,8 +15,10 @@ export interface ILeaveRequest {
   status: LeaveStatus;
   approved_by_manager?: string | null;
   manager_approved_at?: string | null;
+  manager_comment?: string | null;
   approved_by_admin?: string | null;
   admin_approved_at?: string | null;
+  admin_comment?: string | null;
   created_at: string;
 }
 

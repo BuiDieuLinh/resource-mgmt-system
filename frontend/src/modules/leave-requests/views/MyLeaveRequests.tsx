@@ -81,24 +81,23 @@ export default function MyLeaveRequestsPage() {
         </Badge>
       ),
     },
-    { key: 'start_date', title: 'Start', sortable: true, render: (r) => formatDate(r.start_date) },
-    { key: 'end_date', title: 'End', sortable: true, render: (r) => formatDate(r.end_date) },
     {
-      key: 'leave_time',
-      title: 'Time',
+      key: 'period',
+      title: 'Period',
       render: (r) => {
-        if (r.leave_start_minutes == null && r.leave_end_minutes == null)
-          return (
-            <Text size="sm" c="dimmed">
-              Full day
-            </Text>
-          );
-        const start = r.leave_start_minutes != null ? minutesToTime(r.leave_start_minutes) : '—';
-        const end = r.leave_end_minutes != null ? minutesToTime(r.leave_end_minutes) : '—';
+        const timeLabel =
+          r.leave_start_minutes != null || r.leave_end_minutes != null
+            ? `${r.leave_start_minutes != null ? minutesToTime(r.leave_start_minutes) : '—'} – ${r.leave_end_minutes != null ? minutesToTime(r.leave_end_minutes) : '—'}`
+            : 'Full day';
         return (
-          <Text size="sm">
-            {start} – {end}
-          </Text>
+          <Stack gap={1}>
+            <Text size="sm">
+              {formatDate(r.start_date)} – {formatDate(r.end_date)}
+            </Text>
+            <Text size="xs" c="dimmed">
+              {timeLabel}
+            </Text>
+          </Stack>
         );
       },
     },

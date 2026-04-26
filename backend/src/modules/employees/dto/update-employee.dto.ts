@@ -7,6 +7,9 @@ import {
   IsEnum,
   ValidateNested,
   IsArray,
+  IsInt,
+  Min,
+  Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { WorkScheduleDto } from 'src/modules/work-schedules/dto/work-schedule.dto';
@@ -60,6 +63,11 @@ export class UpdateEmployeeDto {
   @IsOptional()
   @IsEnum(EmployeeStatus)
   status?: EmployeeStatus;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  annual_leave_days?: number;
 
   @IsOptional()
   @IsArray()

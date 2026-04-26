@@ -13,6 +13,7 @@ import {
 } from './dto/leave-request.dto';
 import { HolidayService } from 'src/modules/holidays/holiday.service';
 import { EmployeeStatus, LeaveStatus, PositionLevel } from '@prisma/client';
+import { Role } from 'src/common/constant/roles';
 
 import { NotificationsService } from 'src/modules/notifications/notifications.service';
 
@@ -27,27 +28,32 @@ export class LeaveRequestService {
   async getManagerDepartmentId(authUserId: string): Promise<string | null> {
     const employee = await this.prisma.employees.findFirst({
       where: { auth_user_id: authUserId },
-      include: { position: true },
+      select: { position: { select: { department_id: true } } },
     });
     return employee?.position?.department_id ?? null;
   }
 
+  private readonly leaveInclude = {
+    employee: {
+      select: { id: true, full_name: true, employee_code: true },
+    },
+    approver_manager: { select: { id: true, full_name: true } },
+    approver_admin: { select: { id: true, full_name: true } },
+  } as const;
+
   async findByAuthUser(authUserId: string, status?: string) {
     const employee = await this.prisma.employees.findUnique({
       where: { auth_user_id: authUserId },
+      select: { id: true },
     });
     if (!employee) throw new NotFoundException('Employee profile not found');
 
-    const where: any = { employee_id: employee.id };
-    if (status) where.status = status;
-
     const requests = await this.prisma.leaveRequests.findMany({
-      where,
-      include: {
-        employee: {
-          select: { id: true, full_name: true, employee_code: true },
-        },
+      where: {
+        employee_id: employee.id,
+        ...(status ? { status: status as LeaveStatus } : {}),
       },
+      include: this.leaveInclude,
       orderBy: { created_at: 'desc' },
     });
     return ResponseHelper.success(requests);
@@ -65,11 +71,7 @@ export class LeaveRequestService {
 
     const requests = await this.prisma.leaveRequests.findMany({
       where,
-      include: {
-        employee: {
-          select: { id: true, full_name: true, employee_code: true },
-        },
-      },
+      include: this.leaveInclude,
       orderBy: { created_at: 'desc' },
     });
     return ResponseHelper.success(requests);
@@ -78,11 +80,7 @@ export class LeaveRequestService {
   async findOne(id: string) {
     const request = await this.prisma.leaveRequests.findUnique({
       where: { id },
-      include: {
-        employee: {
-          select: { id: true, full_name: true, employee_code: true },
-        },
-      },
+      include: this.leaveInclude,
     });
     if (!request) throw new NotFoundException(`Leave request ${id} not found`);
     return ResponseHelper.success(request);
@@ -106,7 +104,10 @@ export class LeaveRequestService {
 
     const employee = await this.prisma.employees.findUnique({
       where: { id: dto.employee_id },
-      include: { work_schedules: true },
+      include: {
+        work_schedules: true,
+        position: { select: { department_id: true } },
+      },
     });
     if (!employee)
       throw new NotFoundException(`Employee ${dto.employee_id} not found`);
@@ -185,26 +186,27 @@ export class LeaveRequestService {
       },
     });
 
-    const manager = await this.prisma.employees.findFirst({
-      where: {
-        status: EmployeeStatus.active,
-        position: {
-          department_id: employee.position_id,
-          level: PositionLevel.manager,
+    if (employee.position?.department_id) {
+      const manager = await this.prisma.employees.findFirst({
+        where: {
+          status: EmployeeStatus.active,
+          position: {
+            department_id: employee.position.department_id,
+            level: PositionLevel.manager,
+          },
+          NOT: { id: employee.id },
         },
-        NOT: { id: employee.id },
-      },
-      include: { position: true },
-    });
-    if (manager?.auth_user_id) {
-      await this.notificationsService.notifyLeaveSubmitted({
-        managerAuthId: manager.auth_user_id,
-        employeeName: employee.full_name,
-        leaveType: dto.leave_type,
-        startDate: dto.start_date,
-        endDate: dto.end_date,
-        submissionId: created.id,
       });
+      if (manager?.auth_user_id) {
+        await this.notificationsService.notifyLeaveSubmitted({
+          managerAuthId: manager.auth_user_id,
+          employeeName: employee.full_name,
+          leaveType: dto.leave_type,
+          startDate: dto.start_date,
+          endDate: dto.end_date,
+          submissionId: created.id,
+        });
+      }
     }
 
     return ResponseHelper.success(created, 'Leave request submitted');
@@ -238,15 +240,70 @@ export class LeaveRequestService {
     return ResponseHelper.success(updated, 'Leave request updated');
   }
 
-  async updateStatus(id: string, dto: UpdateLeaveStatusDto) {
+  async updateStatus(
+    id: string,
+    dto: UpdateLeaveStatusDto,
+    actorAuthId?: string,
+    actorRoles: string[] = [],
+  ) {
     const existing = await this.prisma.leaveRequests.findUnique({
       where: { id },
+      include: {
+        employee: { select: { id: true, auth_user_id: true } },
+      },
     });
     if (!existing) throw new NotFoundException(`Leave request ${id} not found`);
+    if (existing.status !== LeaveStatus.pending) {
+      throw new BadRequestException(
+        'This leave request has already been finalized',
+      );
+    }
 
-    const data: any = { status: dto.status };
-    if (dto.status === LeaveStatus.approved) {
-      data.admin_approved_at = new Date();
+    const actorEmployee = actorAuthId
+      ? await this.prisma.employees.findFirst({
+          where: { auth_user_id: actorAuthId },
+          select: { id: true, position: { select: { level: true } } },
+        })
+      : null;
+
+    const isSuperAdmin = actorRoles.includes(Role.SUPER_ADMIN);
+    const isAdmin = isSuperAdmin || actorRoles.includes(Role.ADMIN);
+    const isManager =
+      !isAdmin &&
+      (actorEmployee?.position?.level === PositionLevel.manager ||
+        actorEmployee?.position?.level === PositionLevel.lead);
+
+    if (actorEmployee && existing.employee?.id === actorEmployee.id) {
+      throw new BadRequestException(
+        'You cannot approve or reject your own leave request',
+      );
+    }
+
+    if (isManager && existing.approved_by_admin) {
+      throw new BadRequestException('Admin has already finalized this request');
+    }
+    if (isManager && existing.approved_by_manager) {
+      throw new BadRequestException('You have already reviewed this request');
+    }
+    if (isAdmin && !isSuperAdmin && existing.approved_by_admin) {
+      throw new BadRequestException('Admin has already reviewed this request');
+    }
+
+    const now = new Date();
+    const data: any = {};
+
+    if (isManager) {
+      data.approved_by_manager = actorEmployee!.id;
+      data.manager_approved_at = now;
+      data.manager_comment = dto.comment ?? null;
+      if (dto.status === LeaveStatus.rejected) {
+        data.status = LeaveStatus.rejected;
+      }
+    } else {
+      data.approved_by_admin = actorEmployee!.id;
+      data.admin_approved_at = now;
+      data.admin_comment = dto.comment ?? null;
+      data.status = dto.status;
     }
 
     const updated = await this.prisma.leaveRequests.update({
@@ -257,17 +314,20 @@ export class LeaveRequestService {
       },
     });
 
-    if (updated.employee?.auth_user_id) {
+    if (data.status && updated.employee?.auth_user_id) {
       await this.notificationsService.notifyLeaveStatusChanged({
         employeeAuthId: updated.employee.auth_user_id,
-        status: dto.status as 'approved' | 'rejected',
+        status: data.status as 'approved' | 'rejected',
         leaveType: existing.leave_type,
         startDate: existing.start_date.toISOString().slice(0, 10),
         endDate: existing.end_date.toISOString().slice(0, 10),
       });
     }
 
-    return ResponseHelper.success(updated, `Leave request ${dto.status}`);
+    return ResponseHelper.success(
+      updated,
+      `Leave request ${data.status ?? 'reviewed'}`,
+    );
   }
 
   async remove(id: string) {

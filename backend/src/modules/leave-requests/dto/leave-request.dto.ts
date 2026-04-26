@@ -42,6 +42,10 @@ export class CreateLeaveRequestDto {
 export class UpdateLeaveStatusDto {
   @IsEnum(LeaveStatus)
   status: LeaveStatus;
+
+  @IsOptional()
+  @IsString()
+  comment?: string;
 }
 
 export class UpdateLeaveRequestDto {

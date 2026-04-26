@@ -65,8 +65,17 @@ export class LeaveRequestController {
 
   @Patch(':id/status')
   @Roles(Role.ADMIN, Role.MANAGER)
-  updateStatus(@Param('id') id: string, @Body() dto: UpdateLeaveStatusDto) {
-    return this.leaveRequestService.updateStatus(id, dto);
+  updateStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateLeaveStatusDto,
+    @CurrentUser() user: { userId: string; roles: string[] },
+  ) {
+    return this.leaveRequestService.updateStatus(
+      id,
+      dto,
+      user.userId,
+      user.roles ?? [],
+    );
   }
 
   @Patch(':id')

@@ -17,6 +17,7 @@ export interface IEmployee {
 
   hire_date: string;
   status: EmployeeStatus;
+  annual_leave_days: number;
 
   position: {
     id: string;

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import { URL_API_LEAVE_REQUESTS } from '@/constant/config';
 import type { ILeaveRequest } from '../types';
+import { leaveRequestKeys } from './keys';
 
 interface MyLeaveRequestsResponse {
   data: ILeaveRequest[];
@@ -18,7 +19,7 @@ const getMyLeaveRequests = async (status?: string): Promise<MyLeaveRequestsRespo
 
 export const useGetMyLeaveRequests = (status?: string) => {
   return useQuery({
-    queryKey: ['leave-requests', 'my', status],
+    queryKey: leaveRequestKeys.list({ scope: 'my', status }),
     queryFn: () => getMyLeaveRequests(status),
   });
 };
