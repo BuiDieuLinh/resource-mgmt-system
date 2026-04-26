@@ -39,31 +39,65 @@ export const MENUS: AppMenu[] = [
   {
     label: 'Employees',
     icon: IconUsers,
-    roles: [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.MANAGER],
     children: [
-      { label: 'Employee List', path: employeeListUrl, icon: IconUsers },
-      { label: 'Departments', path: employeeDepartmentsUrl, icon: IconBuilding },
-      { label: 'Positions', path: employeePositionsUrl, icon: IconBriefcase },
+      {
+        label: 'Employee List',
+        path: employeeListUrl,
+        icon: IconUsers,
+        roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.MANAGER],
+      },
+      {
+        label: 'Departments',
+        path: employeeDepartmentsUrl,
+        icon: IconBuilding,
+        roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN],
+      },
+      {
+        label: 'Positions',
+        path: employeePositionsUrl,
+        icon: IconBriefcase,
+        roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN],
+      },
     ],
   },
   {
     label: 'Attendance',
     icon: IconTimelineEvent,
     children: [
-      { label: 'Check In / Out', path: checkInOutUrl, icon: IconLogin },
-      { label: 'Overview', path: attendanceUrl, roles: [EMPLOYEE_ROLE.ADMIN] },
+      {
+        label: 'Check In / Out',
+        path: checkInOutUrl,
+        icon: IconLogin,
+        roles: [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.MANAGER, EMPLOYEE_ROLE.EMPLOYEE],
+      },
+      {
+        label: 'Overview',
+        path: attendanceUrl,
+        roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN],
+      },
       {
         label: 'Timesheet',
         path: timesheetUrl,
-        roles: [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.MANAGER],
+        roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.MANAGER],
       },
-      { label: 'My Timesheet', path: myTimesheetUrl, icon: IconClock },
+      {
+        label: 'My Timesheet',
+        path: myTimesheetUrl,
+        icon: IconClock,
+        roles: [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.MANAGER, EMPLOYEE_ROLE.EMPLOYEE],
+      },
     ],
   },
   {
     label: 'Leave Requests',
     icon: IconCalendarOff,
     path: leaveRequestUrl,
+    roles: [
+      EMPLOYEE_ROLE.SUPER_ADMIN,
+      EMPLOYEE_ROLE.ADMIN,
+      EMPLOYEE_ROLE.MANAGER,
+      EMPLOYEE_ROLE.EMPLOYEE,
+    ],
   },
   {
     label: 'Performance',
@@ -73,13 +107,13 @@ export const MENUS: AppMenu[] = [
         label: 'Review Cycles',
         path: performanceCyclesUrl,
         icon: IconTrophy,
-        roles: [EMPLOYEE_ROLE.ADMIN],
+        roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN],
       },
       {
         label: 'Performance Review',
         path: performanceReviewUrl,
         icon: IconStar,
-        roles: [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.MANAGER],
+        roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.MANAGER],
       },
     ],
   },
@@ -87,6 +121,6 @@ export const MENUS: AppMenu[] = [
     label: 'Settings',
     icon: IconSettings,
     path: settingsUrl,
-    roles: [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.SUPER_ADMIN],
+    roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN],
   },
 ];
