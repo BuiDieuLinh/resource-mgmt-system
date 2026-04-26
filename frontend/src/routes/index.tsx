@@ -48,42 +48,15 @@ export const router = createBrowserRouter([
         path: '/',
         element: <Layout />,
         children: [
-          {
-            path: '',
-            element: <Home />,
-          },
-          {
-            path: employeeListUrl,
-            element: <Employee />,
-          },
-          {
-            path: employeeDepartmentsUrl,
-            element: <Departments />,
-          },
-          {
-            path: employeePositionsUrl,
-            element: <Positions />,
-          },
-          {
-            path: employeeOrgChartUrl,
-            element: <OrgChart />,
-          },
-          {
-            path: employeeProfileUrl,
-            element: <EmployeeProfile />,
-          },
-          {
-            path: attendanceUrl,
-            element: <Attendance />,
-          },
-          {
-            path: timesheetUrl,
-            element: <Timesheet />,
-          },
-          {
-            path: attendanceDetailUrl,
-            element: <AttendanceDetail />,
-          },
+          { path: '', element: <Home /> },
+          { path: employeeListUrl, element: <Employee /> },
+          { path: employeeDepartmentsUrl, element: <Departments /> },
+          { path: employeePositionsUrl, element: <Positions /> },
+          { path: employeeOrgChartUrl, element: <OrgChart /> },
+          { path: employeeProfileUrl, element: <EmployeeProfile /> },
+          { path: attendanceUrl, element: <Attendance /> },
+          { path: timesheetUrl, element: <Timesheet /> },
+          { path: attendanceDetailUrl, element: <AttendanceDetail /> },
           { path: leaveRequestUrl, element: <LeaveRequests /> },
           { path: checkInOutUrl, element: <CheckInOut /> },
           { path: myTimesheetUrl, element: <MyTimesheet /> },
@@ -96,10 +69,7 @@ export const router = createBrowserRouter([
       },
     ],
   },
-  {
-    path: '*',
-    element: <Error404 />,
-  },
+  { path: '*', element: <Error404 /> },
   { path: '/401', element: <Error401 /> },
   { path: '/403', element: <Error403 /> },
   { path: '/session-expired', element: <ErrorTokenExpired /> },
