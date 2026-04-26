@@ -61,21 +61,9 @@ export const MENUS: AppMenu[] = [
     ],
   },
   {
-    label: 'Leave',
+    label: 'Leave Requests',
     icon: IconCalendarOff,
-    children: [
-      {
-        label: 'Leave Requests',
-        path: leaveRequestUrl,
-        icon: IconCalendarOff,
-        roles: [
-          EMPLOYEE_ROLE.SUPER_ADMIN,
-          EMPLOYEE_ROLE.ADMIN,
-          EMPLOYEE_ROLE.MANAGER,
-          EMPLOYEE_ROLE.EMPLOYEE,
-        ],
-      },
-    ],
+    path: leaveRequestUrl,
   },
   {
     label: 'Performance',
