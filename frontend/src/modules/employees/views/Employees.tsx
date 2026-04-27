@@ -39,10 +39,11 @@ import { usePreviewImport, type PreviewEmployee } from '../api/preview-import';
 import { exportEmployees } from '../api/export-employees';
 import { notify } from '../../../components/Notification';
 import { mapEmployeeToFormValues } from '../utils/employee-mapper';
-import { formatDate } from '../../../constant';
+import { EMPLOYEE_ROLE, formatDate } from '../../../constant';
 import { TableSkeleton } from '../../../components/Skeleton/TableSkeleton';
 import { useDelayedLoading } from '../../../hooks/useDelayedLoading';
 import { normalizeString } from '../utils/search';
+import { useHasRole } from '@/hooks/useHasRole';
 
 export default function EmployeesPage() {
   const navigate = useNavigate();
@@ -61,6 +62,7 @@ export default function EmployeesPage() {
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
 
   const isEdit = Boolean(editEmployee);
+  const isAdmin = useHasRole(EMPLOYEE_ROLE.ADMIN);
 
   const {
     data,
@@ -291,9 +293,11 @@ export default function EmployeesPage() {
           >
             <IconEye size={18} />
           </ActionIcon>
-          <ActionIcon variant="subtle" color="gray" onClick={() => handleEdit(row)} title="Edit">
-            <IconEdit size={18} />
-          </ActionIcon>
+          {isAdmin && (
+            <ActionIcon variant="subtle" color="gray" onClick={() => handleEdit(row)} title="Edit">
+              <IconEdit size={18} />
+            </ActionIcon>
+          )}
         </Group>
       ),
     },
@@ -310,9 +314,11 @@ export default function EmployeesPage() {
         description="Manage your workforce — add, edit, and organize employees"
         right={
           <Group>
-            <Button leftSection={<IconPlus size={18} />} onClick={handleAdd}>
-              Add employee
-            </Button>
+            {isAdmin && (
+              <Button leftSection={<IconPlus size={18} />} onClick={handleAdd}>
+                Add employee
+              </Button>
+            )}
             <Menu shadow="md" width={200} position="bottom-start">
               <Menu.Target>
                 <Button variant="light" leftSection={<IconDotsVertical size={18} />}>
@@ -328,20 +334,26 @@ export default function EmployeesPage() {
                 >
                   View Org Chart
                 </Menu.Item>
-                <Menu.Item leftSection={<IconFileExport size={18} />} onClick={handleExport}>
-                  Export to Excel
-                </Menu.Item>
-                <FileButton onChange={handleImportFile} accept=".xlsx,.xls">
-                  {(props) => (
-                    <Menu.Item
-                      {...props}
-                      leftSection={<IconFileImport size={18} />}
-                      closeMenuOnClick={false}
-                    >
-                      Import from Excel
+                {isAdmin && (
+                  <>
+                    <Menu.Item leftSection={<IconFileExport size={18} />} onClick={handleExport}>
+                      Export to Excel
                     </Menu.Item>
-                  )}
-                </FileButton>
+                  </>
+                )}
+                {isAdmin && (
+                  <FileButton onChange={handleImportFile} accept=".xlsx,.xls">
+                    {(props) => (
+                      <Menu.Item
+                        {...props}
+                        leftSection={<IconFileImport size={18} />}
+                        closeMenuOnClick={false}
+                      >
+                        Import from Excel
+                      </Menu.Item>
+                    )}
+                  </FileButton>
+                )}
               </Menu.Dropdown>
             </Menu>
             <TextInput
