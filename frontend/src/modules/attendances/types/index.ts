@@ -1,4 +1,4 @@
-import type { AttendanceStatus, LeaveStatus, LeaveType } from '@/constant';
+import type { AttendanceAction, AttendanceStatus, LeaveStatus, LeaveType } from '@/constant';
 
 export interface IAttendance {
   id: string;
@@ -33,6 +33,18 @@ export interface IAttendance {
   annual_leave?: number;
   unpaid_leave?: number;
   over_time?: number;
+  logs: IAttendanceLogs[];
+}
+
+export interface IAttendanceLogs {
+  id: string;
+  timestamp: Date;
+  attendance_id: string;
+  action: AttendanceAction;
+  latitude: number;
+  longitude: number;
+  ip_address: string | null;
+  user_agent: string | null;
 }
 
 export interface ILeaveRequest {

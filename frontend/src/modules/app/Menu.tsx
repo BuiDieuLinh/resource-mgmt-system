@@ -4,7 +4,6 @@ import {
   employeeDepartmentsUrl,
   employeePositionsUrl,
   attendanceUrl,
-  timesheetUrl,
   leaveRequestUrl,
   settingsUrl,
   checkInOutUrl,
@@ -74,11 +73,6 @@ export const MENUS: AppMenu[] = [
         label: 'Overview',
         path: attendanceUrl,
         roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN],
-      },
-      {
-        label: 'Timesheet',
-        path: timesheetUrl,
-        roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.MANAGER],
       },
       {
         label: 'My Timesheet',

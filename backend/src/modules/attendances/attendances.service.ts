@@ -249,7 +249,7 @@ export class AttendancesService {
 
     const monthRange = getMonthRange(month, year);
 
-    const [attendances, employees, leaveRequests, holidays] =
+    const [attendances, employees, leaveRequests, holidays, pendingLeaves] =
       await this.prisma.$transaction([
         this.prisma.attendances.findMany({
           where: {
@@ -281,6 +281,16 @@ export class AttendancesService {
         this.prisma.holidays.findMany({
           where: { holiday_date: { gte: monthRange.gte, lte: monthRange.lte } },
         }),
+        this.prisma.leaveRequests.findMany({
+          where: {
+            status: LeaveStatus.pending,
+            approved_by_admin: null,
+            ...(departmentId && {
+              employee: { position: { department_id: departmentId } },
+            }),
+          },
+          select: { employee_id: true },
+        }),
       ]);
 
     const holidayDates = new Set(
@@ -308,7 +318,13 @@ export class AttendancesService {
         holiday_days: holidayCount,
         over_time: 0,
         work_minutes: 0,
+        pending_leave_count: 0,
       });
+    });
+
+    pendingLeaves.forEach(({ employee_id }) => {
+      const stats = summaryMap.get(employee_id);
+      if (stats) stats.pending_leave_count += 1;
     });
 
     const todayBoundary = toLocalWorkDate(new Date());
@@ -417,9 +433,7 @@ export class AttendancesService {
     const work_policy = await this.workPolicyService.getActive(monthRange.gte);
 
     const planDay = getWorkingDaysInMonth(month, year);
-    const actualDay = records.filter(
-      (r) => r.status === AttendanceStatus.approved,
-    ).length;
+    const actualDay = records.filter((r) => r.check_in_time).length;
 
     return ResponseHelper.success({
       employee,
@@ -431,8 +445,8 @@ export class AttendancesService {
       summary: {
         plan_day: planDay,
         actual_day: actualDay,
-        late: records.filter((r) => r.late > 0).length,
-        absent: Math.max(0, planDay - actualDay),
+        late: records.reduce((s, r) => s + (r.late ?? 0), 0),
+        absent: Math.max(0, getWorkingDaysUpToToday(month, year) - actualDay),
         over_time: records.reduce((s, r) => s + (r.overtime ?? 0), 0),
         work_minutes: records.reduce((s, r) => s + (r.work_minutes ?? 0), 0),
       },

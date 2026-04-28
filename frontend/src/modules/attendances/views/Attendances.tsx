@@ -98,15 +98,58 @@ export default function AttendancesPage() {
     {
       key: 'employee_id',
       title: 'Employee',
-      render: (r) => (
-        <Anchor
-          size="sm"
-          style={{ cursor: 'pointer' }}
-          onClick={() => navigate(buildAttendanceDetailUrl(r.employee_id, month, year))}
-        >
-          {r.employee?.full_name ?? r.employee_id}
-        </Anchor>
-      ),
+      render: (r) => {
+        const pending = (r as any).pending_leave_count ?? 0;
+        return (
+          <Tooltip
+            label={
+              pending > 0
+                ? `${pending} leave request${pending > 1 ? 's' : ''} pending admin review`
+                : ''
+            }
+            withArrow
+            disabled={pending === 0}
+          >
+            <Group gap={6} wrap="nowrap" style={{ cursor: 'default' }}>
+              <Anchor
+                size="sm"
+                style={{ cursor: 'pointer' }}
+                onClick={() => navigate(buildAttendanceDetailUrl(r.employee_id, month, year))}
+              >
+                {r.employee?.full_name ?? r.employee_id}
+              </Anchor>
+              {pending > 0 && (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 3,
+                    padding: '1px 6px',
+                    borderRadius: 10,
+                    background: 'var(--mantine-color-orange-1)',
+                    border: '1px solid var(--mantine-color-orange-3)',
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: 'var(--mantine-color-orange-7)',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: '50%',
+                      background: 'var(--mantine-color-orange-5)',
+                      display: 'inline-block',
+                    }}
+                  />
+                  {pending} pending
+                </span>
+              )}
+            </Group>
+          </Tooltip>
+        );
+      },
     },
     { key: 'plan_day', title: 'Planned', render: (r) => formatDays(r.plan_day), sortable: true },
     { key: 'actual_day', title: 'Actual', render: (r) => formatDays(r.actual_day), sortable: true },

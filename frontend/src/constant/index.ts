@@ -55,6 +55,13 @@ export const ATTENDANCE_STATUS = {
 
 export type AttendanceStatus = (typeof ATTENDANCE_STATUS)[keyof typeof ATTENDANCE_STATUS];
 
+export const ATTENDANCE_ACTION = {
+  CHECKIN: 'check_in',
+  CHECKOUT: 'check_out',
+} as const;
+
+export type AttendanceAction = (typeof ATTENDANCE_ACTION)[keyof typeof ATTENDANCE_ACTION];
+
 export const DAY_LIST = [
   { dow: 0, label: 'Monday', isWeekend: false },
   { dow: 1, label: 'Tuesday', isWeekend: false },

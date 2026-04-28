@@ -9,7 +9,6 @@ import {
   employeeOrgChartUrl,
   employeeProfileUrl,
   attendanceUrl,
-  timesheetUrl,
   attendanceDetailUrl,
   leaveRequestUrl,
   settingsUrl,
@@ -26,7 +25,6 @@ import Departments from '@/modules/departments/views/Departments';
 import Positions from '@/modules/positions/views/Positions';
 import EmployeeProfile from '@/modules/employees/views/EmployeeProfile';
 import Attendance from '@/modules/attendances/views/Attendances';
-import Timesheet from '@/modules/attendances/views/Timesheet';
 import AttendanceDetail from '@/modules/attendances/views/AttendanceDetail';
 import CheckInOut from '@/modules/attendances/views/CheckInOut';
 import LeaveRequests from '@/modules/leave-requests/views/LeaveRequests';
@@ -55,7 +53,6 @@ export const router = createBrowserRouter([
           { path: employeeOrgChartUrl, element: <OrgChart /> },
           { path: employeeProfileUrl, element: <EmployeeProfile /> },
           { path: attendanceUrl, element: <Attendance /> },
-          { path: timesheetUrl, element: <Timesheet /> },
           { path: attendanceDetailUrl, element: <AttendanceDetail /> },
           { path: leaveRequestUrl, element: <LeaveRequests /> },
           { path: checkInOutUrl, element: <CheckInOut /> },
