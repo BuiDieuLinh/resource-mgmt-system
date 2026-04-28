@@ -103,7 +103,8 @@ export default function AttendanceDetailPage() {
           <Stack gap={0}>
             <Title order={3}>{employee?.full_name ?? '—'}</Title>
             <Text size="xs" c="dimmed">
-              {employee?.department?.department_name} · {employee?.position?.position_name}
+              {employee?.position?.department?.department_name} ·{' '}
+              {employee?.position?.position_name}
             </Text>
           </Stack>
         </Group>
