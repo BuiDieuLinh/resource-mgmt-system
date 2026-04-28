@@ -60,8 +60,9 @@ export class AttendancesController {
     month: number,
     @Query('year', new DefaultValuePipe(CURRENT_YEAR), ParseIntPipe)
     year: number,
+    @Query('department_id') departmentId?: string,
   ) {
-    return this.attendancesService.findSummaries(month, year);
+    return this.attendancesService.findSummaries(month, year, departmentId);
   }
 
   @Get('employee/:employeeId')

@@ -3,7 +3,7 @@ import type { AttendanceStatus, LeaveStatus, LeaveType } from '@/constant';
 export interface IAttendance {
   id: string;
   employee_id: string;
-  work_date?: string;
+  work_date: string;
   scheduled_start?: number;
   scheduled_end?: number;
   break_start?: number | null;
@@ -90,8 +90,12 @@ export interface IEmployeeAttendanceDetail {
     full_name: string;
     display_name?: string;
     employee_code: string;
-    department: { department_name: string };
-    position: { position_name: string };
+    position: {
+      position_name: string;
+      department: {
+        department_name: string;
+      };
+    };
   };
   records: IAttendance[];
   leave_requests: ILeaveRequest[];

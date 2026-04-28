@@ -14,6 +14,7 @@ export interface AttendanceSummariesResponse {
 interface GetAttendanceSummariesParams {
   month: number;
   year: number;
+  department_id?: string;
 }
 
 const getAttendanceSummaries = async (params: GetAttendanceSummariesParams): Promise<any[]> => {
