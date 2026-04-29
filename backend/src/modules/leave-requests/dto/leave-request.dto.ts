@@ -6,8 +6,11 @@ import {
   IsEnum,
   Min,
   Max,
+  IsArray,
 } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 import { LeaveStatus, LeaveType } from '@prisma/client';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 export class CreateLeaveRequestDto {
   @IsString()
@@ -78,16 +81,75 @@ export class UpdateLeaveRequestDto {
   reason?: string;
 }
 
-export class QueryLeaveRequestDto {
+export class QueryLeaveRequestDto extends PaginationDto {
   @IsOptional()
-  @IsString()
-  employee_id?: string;
+  @Transform(({ value }) => {
+    if (Array.isArray(value))
+      return value.flatMap((item) =>
+        typeof item === 'string' ? item.split(',') : [],
+      );
+    if (typeof value === 'string')
+      return value.split(',').filter((item) => item);
+    return undefined;
+  })
+  @IsArray()
+  @IsString({ each: true })
+  employee_id?: string[];
 
   @IsOptional()
-  @IsEnum(LeaveStatus)
-  status?: LeaveStatus;
+  @Transform(({ value }) => {
+    if (Array.isArray(value))
+      return value.flatMap((item) =>
+        typeof item === 'string' ? item.split(',') : [],
+      );
+    if (typeof value === 'string')
+      return value.split(',').filter((item) => item);
+    return undefined;
+  })
+  @IsArray()
+  @IsEnum(LeaveStatus, { each: true })
+  status?: LeaveStatus[];
 
   @IsOptional()
-  @IsString()
+  @Transform(({ value }) => {
+    if (Array.isArray(value))
+      return value.flatMap((item) =>
+        typeof item === 'string' ? item.split(',') : [],
+      );
+    if (typeof value === 'string')
+      return value.split(',').filter((item) => item);
+    return undefined;
+  })
+  @IsArray()
+  @IsString({ each: true })
   department_id?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(12)
+  month?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(2000)
+  @Max(2100)
+  year?: number;
+}
+
+export class BulkUpdateLeaveStatusDto {
+  @IsArray()
+  @IsString({ each: true })
+  ids: string[];
+
+  @IsEnum(LeaveStatus)
+  status: LeaveStatus;
+
+  @IsOptional()
+  @IsString()
+  comment?: string;
+
+  actorRoles?: string[];
 }

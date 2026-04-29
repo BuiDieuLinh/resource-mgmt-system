@@ -4,7 +4,6 @@ import {
   Group,
   Button,
   Badge,
-  Select,
   Text,
   ActionIcon,
   Tooltip,
@@ -22,9 +21,11 @@ import {
   IconX,
   IconUser,
   IconShieldCheck,
+  IconChecks,
 } from '@tabler/icons-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { BaseTable, type TableColumn } from '@/components/BaseTable/BaseTable';
+import { TablePagination } from '@/components/Pagination';
 import { notify } from '@/components/Notification';
 import ErrorState from '@/components/ErrorState/ErrorState';
 import {
@@ -42,6 +43,7 @@ import { useGetLeaveRequests } from '../api/get-leave-requests';
 import { useCreateLeaveRequest } from '../api/create-leave-request';
 import { useUpdateLeaveStatus } from '../api/update-leave-status';
 import { useDeleteLeaveRequest } from '../api/delete-leave-request';
+import { useBulkUpdateLeaveStatus } from '../api/bulk-update-status';
 import { LeaveRequestFormModal } from '../components/LeaveRequestFormModal';
 import type { ILeaveRequest, ILeaveRequestPayload } from '../types';
 import { useGetEmployees } from '@/modules/employees/api/get-employees';
@@ -49,10 +51,19 @@ import { useHasRole } from '@/hooks/useHasRole';
 import { STATUS_COLOR } from '../utils';
 import { useAuth } from '@/modules/auth/context/AuthContext';
 import { useGetEmployeeByUserId } from '@/modules/employees/api/get-employee-by-user';
+import { useGetAllDepartments } from '@/modules/departments/api/get-departments';
+import { EmployeeColumn } from '@/components/EmployeeColumn/EmployeeColumn';
+import MonthNavigator from '@/modules/attendances/components/MonthPickerInput';
+import {
+  FilterTreeSelect,
+  type CombinedFilterItem,
+} from '@/components/FilterTreeSelect/FilterTreeSelect';
 
 export default function LeaveRequestsPage() {
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
-  const [filterEmployee, setFilterEmployee] = useState<string | null>(null);
+  const [filterSelect, setFilterSelect] = useState<CombinedFilterItem[]>([]);
+  const [selectedMonth, setSelectedMonth] = useState<Date | null>(() => new Date());
+  const [page, setPage] = useState(1);
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
   const [opened, setOpened] = useState(false);
   const [editRequest, setEditRequest] = useState<ILeaveRequest | null>(null);
   const isAdmin = useHasRole(EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.SUPER_ADMIN);
@@ -63,10 +74,23 @@ export default function LeaveRequestsPage() {
   const currentEmployeeId = currentEmpData?.data?.id;
 
   const [actionModal, setActionModal] = useState<{
-    id: string;
+    ids: string[];
     status: 'approved' | 'rejected';
   } | null>(null);
   const [actionComment, setActionComment] = useState('');
+
+  const selectedStatusIds = filterSelect
+    .filter((item) => item.type === 'status')
+    .map((item) => item.value);
+  const selectedEmployeeIds = filterSelect
+    .filter((item) => item.type === 'employee')
+    .map((item) => item.value);
+  const selectedDepartmentIds = filterSelect
+    .filter((item) => item.type === 'department')
+    .map((item) => item.value);
+
+  const month = selectedMonth ? selectedMonth.getMonth() + 1 : new Date().getMonth() + 1;
+  const year = selectedMonth ? selectedMonth.getFullYear() : new Date().getFullYear();
 
   const {
     data: leaveData,
@@ -74,11 +98,17 @@ export default function LeaveRequestsPage() {
     error,
     refetch,
   } = useGetLeaveRequests({
-    status: filterStatus ?? undefined,
-    employee_id: filterEmployee ?? undefined,
+    status: selectedStatusIds.length ? selectedStatusIds.join(',') : undefined,
+    employee_id: selectedEmployeeIds.length ? selectedEmployeeIds.join(',') : undefined,
+    department_id: selectedDepartmentIds.length ? selectedDepartmentIds.join(',') : undefined,
+    month,
+    year,
+    pageIndex: page,
+    pageSize: 10,
   });
   const isLoading = useDelayedLoading(_loading);
   const requests = leaveData?.data ?? [];
+  const total = leaveData?.count ?? 0;
 
   const { data: empData } = useGetEmployees({ pageIndex: 1, pageSize: 999 });
   const employeeOptions = useMemo(
@@ -90,11 +120,34 @@ export default function LeaveRequestsPage() {
     [empData],
   );
 
+  const { data: deptData, isLoading: isDeptLoading } = useGetAllDepartments();
+
   const createMutation = useCreateLeaveRequest();
   const updateMutation = useUpdateLeaveStatus();
   const deleteMutation = useDeleteLeaveRequest();
+  const bulkMutation = useBulkUpdateLeaveStatus();
 
   const isEdit = Boolean(editRequest);
+
+  const selectableIndices = useMemo(() => {
+    return requests
+      .map((r, i) => ({ r, i }))
+      .filter(({ r }) => {
+        if (r.status !== LEAVE_STATUS.PENDING) return false;
+        if (r.employee_id === currentEmployeeId) return false;
+        if (isAdmin && !r.approved_by_admin) return true;
+        if (isManager && !isAdmin && !r.approved_by_manager && !r.approved_by_admin) return true;
+        return false;
+      })
+      .map(({ i }) => i);
+  }, [requests, currentEmployeeId, isAdmin, isManager]);
+
+  const someSelected = selectedIndices.size > 0;
+
+  const getSelectedRequests = () =>
+    Array.from(selectedIndices)
+      .map((i) => requests[i])
+      .filter(Boolean);
 
   const handleOpen = () => {
     setEditRequest(null);
@@ -113,29 +166,45 @@ export default function LeaveRequestsPage() {
     const notiId = notify.loading(isEdit ? 'Updating...' : 'Submitting...');
     try {
       await createMutation.mutateAsync(payload);
-      notify.success(notiId, {
-        message: isEdit ? 'Leave request updated' : 'Leave request submitted',
-      });
+      notify.success(notiId, { message: isEdit ? 'Updated' : 'Submitted' });
       handleClose();
     } catch (e: any) {
-      notify.error(notiId, { message: e?.response?.data?.message || 'Failed to submit' });
+      notify.error(notiId, { message: e?.response?.data?.message || 'Failed' });
     }
   };
 
-  const handleStatus = async (id: string, status: 'approved' | 'rejected') => {
+  const handleStatus = (id: string, status: 'approved' | 'rejected') => {
     setActionComment('');
-    setActionModal({ id, status });
+    setActionModal({ ids: [id], status });
+  };
+
+  const handleBulkAction = (status: 'approved' | 'rejected') => {
+    setActionComment('');
+    const ids = getSelectedRequests().map((r) => r.id);
+    setActionModal({ ids, status });
   };
 
   const handleConfirmAction = async () => {
     if (!actionModal) return;
-    const { id, status } = actionModal;
+    const { ids, status } = actionModal;
+    const isBulk = ids.length > 1;
     const notiId = notify.loading(
       status === LEAVE_STATUS.APPROVED ? 'Approving...' : 'Rejecting...',
     );
     try {
-      await updateMutation.mutateAsync({ id, status, comment: actionComment.trim() || undefined });
-      notify.success(notiId, { message: `Leave request ${status}` });
+      if (isBulk) {
+        await bulkMutation.mutateAsync({ ids, status, comment: actionComment.trim() || undefined });
+        setSelectedIndices(new Set());
+      } else {
+        await updateMutation.mutateAsync({
+          id: ids[0],
+          status,
+          comment: actionComment.trim() || undefined,
+        });
+      }
+      notify.success(notiId, {
+        message: `${isBulk ? `${ids.length} requests` : 'Leave request'} ${status}`,
+      });
       setActionModal(null);
     } catch (e: any) {
       notify.error(notiId, { message: e?.response?.data?.message || 'Action failed' });
@@ -157,7 +226,9 @@ export default function LeaveRequestsPage() {
       key: 'employee',
       title: 'Employee',
       sortable: true,
-      render: (r) => r.employee?.full_name ?? r.employee_id,
+      render: (r) => (
+        <EmployeeColumn employee={r.employee} showAvatar={true} showPendingBadge={false} />
+      ),
     },
     {
       key: 'leave_type',
@@ -170,7 +241,7 @@ export default function LeaveRequestsPage() {
     },
     {
       key: 'period',
-      title: 'Time Period',
+      title: 'Period',
       render: (r) => {
         const timeLabel =
           r.leave_start_minutes != null || r.leave_end_minutes != null
@@ -201,16 +272,15 @@ export default function LeaveRequestsPage() {
       key: 'approved_by',
       title: 'Review',
       render: (r) => (
-        <Stack gap={6}>
-          {/* Manager row */}
+        <Stack gap={4}>
           <Group gap={6} wrap="nowrap">
             <ThemeIcon
-              size={20}
+              size={18}
               radius="xl"
               variant="light"
               color={r.approved_by_manager ? 'green' : 'gray'}
             >
-              <IconUser size={11} />
+              <IconUser size={10} />
             </ThemeIcon>
             <Box style={{ flex: 1, minWidth: 0 }}>
               <Text size="xs" c={r.approved_by_manager ? 'green' : 'dimmed'} fw={500} truncate>
@@ -223,18 +293,15 @@ export default function LeaveRequestsPage() {
               )}
             </Box>
           </Group>
-
           <Divider />
-
-          {/* Admin row */}
           <Group gap={6} wrap="nowrap">
             <ThemeIcon
-              size={20}
+              size={18}
               radius="xl"
               variant="light"
               color={r.approved_by_admin ? 'green' : 'gray'}
             >
-              <IconShieldCheck size={11} />
+              <IconShieldCheck size={10} />
             </ThemeIcon>
             <Box style={{ flex: 1, minWidth: 0 }}>
               <Text size="xs" c={r.approved_by_admin ? 'green' : 'dimmed'} fw={500} truncate>
@@ -267,7 +334,6 @@ export default function LeaveRequestsPage() {
       render: (r) => {
         const isSelf = currentEmployeeId === r.employee_id;
         const isPending = r.status === LEAVE_STATUS.PENDING;
-
         const adminCanAct = isAdmin && isPending && !r.approved_by_admin && !isSelf;
         const managerCanAct =
           isManager &&
@@ -276,9 +342,7 @@ export default function LeaveRequestsPage() {
           !r.approved_by_manager &&
           !r.approved_by_admin &&
           !isSelf;
-
         const canAct = adminCanAct || managerCanAct;
-
         return (
           <Group gap={4} justify="center">
             {canAct && (
@@ -339,25 +403,30 @@ export default function LeaveRequestsPage() {
         description="Manage employee leave requests"
         right={
           <Group>
-            <Select
-              checkIconPosition="right"
-              placeholder="Filter employee"
-              clearable
-              searchable
-              w={200}
-              data={employeeOptions}
-              value={filterEmployee}
-              onChange={setFilterEmployee}
-            />
-            <Select
-              checkIconPosition="right"
-              placeholder="Filter status"
-              clearable
-              w={130}
-              data={LEAVE_STATUS_OPTIONS}
-              value={filterStatus}
-              onChange={setFilterStatus}
-            />
+            {someSelected && (
+              <Group gap={6}>
+                <Text size="sm" c="dimmed">
+                  {selectedIndices.size} selected
+                </Text>
+                <Button
+                  size="xs"
+                  color="green"
+                  leftSection={<IconChecks size={14} />}
+                  onClick={() => handleBulkAction(LEAVE_STATUS.APPROVED)}
+                >
+                  Approve all
+                </Button>
+                <Button
+                  size="xs"
+                  color="red"
+                  variant="light"
+                  leftSection={<IconX size={14} />}
+                  onClick={() => handleBulkAction(LEAVE_STATUS.REJECTED)}
+                >
+                  Reject all
+                </Button>
+              </Group>
+            )}
             <Button leftSection={<IconPlus size={18} />} onClick={handleOpen}>
               New Request
             </Button>
@@ -365,11 +434,47 @@ export default function LeaveRequestsPage() {
         }
       />
 
+      <Group gap="sm" wrap="wrap" justify="flex-end">
+        <FilterTreeSelect
+          value={filterSelect}
+          onChange={(value) => {
+            setFilterSelect(value);
+            setPage(1);
+          }}
+          w={320}
+          employeeOptions={employeeOptions}
+          departments={deptData?.data ?? []}
+          statusOptions={LEAVE_STATUS_OPTIONS}
+          isLoading={_loading || isDeptLoading}
+        />
+        <MonthNavigator value={selectedMonth} onChange={setSelectedMonth} />
+      </Group>
+
       {isLoading ? (
-        <TableSkeleton colWidths={[160, 100, 110, 110, 200, 90, 100]} />
+        <TableSkeleton colWidths={[160, 100, 160, 200, 180, 90, 100]} />
       ) : (
-        <BaseTable data={requests} columns={columns} height={520} withCheckbox={true} />
+        <BaseTable
+          data={requests}
+          columns={columns}
+          height={480}
+          withCheckbox
+          selectedRows={selectedIndices}
+          onSelectionChange={(indices) => {
+            const filtered = new Set(
+              Array.from(indices).filter((i) => selectableIndices.includes(i)),
+            );
+            setSelectedIndices(filtered);
+          }}
+        />
       )}
+
+      <TablePagination
+        page={page}
+        pageSize={10}
+        total={total}
+        onPageChange={setPage}
+        onPageSizeChange={() => {}}
+      />
 
       <LeaveRequestFormModal
         opened={opened}
@@ -398,9 +503,10 @@ export default function LeaveRequestsPage() {
               )}
             </ThemeIcon>
             <Text fw={700} size="md">
-              {actionModal?.status === LEAVE_STATUS.APPROVED
-                ? 'Approve Leave Request'
-                : 'Reject Leave Request'}
+              {actionModal?.status === LEAVE_STATUS.APPROVED ? 'Approve' : 'Reject'}{' '}
+              {(actionModal?.ids.length ?? 0) > 1
+                ? `${actionModal?.ids.length} Requests`
+                : 'Leave Request'}
             </Text>
           </Group>
         }
@@ -412,15 +518,15 @@ export default function LeaveRequestsPage() {
         <Stack gap="md">
           <Text size="sm" c="dimmed">
             {actionModal?.status === LEAVE_STATUS.APPROVED
-              ? 'You can optionally leave a note for the employee.'
-              : 'Please provide a reason so the employee knows what to improve.'}
+              ? 'Optionally leave a note for the employee(s).'
+              : 'Please provide a reason for rejection.'}
           </Text>
           <Textarea
             label="Comment"
             placeholder={
               actionModal?.status === LEAVE_STATUS.APPROVED
-                ? 'e.g. Approved, enjoy your leave!'
-                : 'e.g. Insufficient notice period...'
+                ? 'e.g. Approved!'
+                : 'e.g. Insufficient notice...'
             }
             autosize
             minRows={3}
@@ -440,7 +546,7 @@ export default function LeaveRequestsPage() {
                   <IconX size={15} />
                 )
               }
-              loading={updateMutation.isPending}
+              loading={updateMutation.isPending || bulkMutation.isPending}
               onClick={handleConfirmAction}
             >
               {actionModal?.status === LEAVE_STATUS.APPROVED ? 'Approve' : 'Reject'}

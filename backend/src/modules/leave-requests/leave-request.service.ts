@@ -61,20 +61,63 @@ export class LeaveRequestService {
 
   async findAll(query: QueryLeaveRequestDto) {
     const where: any = {};
-    if (query.employee_id) where.employee_id = query.employee_id;
-    if (query.status) where.status = query.status;
-    if (query.department_id) {
+    if (query.employee_id?.length) {
+      where.employee_id =
+        query.employee_id.length === 1
+          ? query.employee_id[0]
+          : { in: query.employee_id };
+    }
+    if (query.status?.length) {
+      where.status =
+        query.status.length === 1 ? query.status[0] : { in: query.status };
+    }
+    if (query.department_id?.length) {
       where.employee = {
-        position: { department_id: query.department_id },
+        position: {
+          department_id:
+            query.department_id.length === 1
+              ? query.department_id[0]
+              : { in: query.department_id },
+        },
+      };
+    }
+    if (query.month && query.year) {
+      const startOfMonth = new Date(query.year, query.month - 1, 1);
+      const endOfMonth = new Date(query.year, query.month, 1);
+      where.start_date = {
+        gte: startOfMonth,
+        lt: endOfMonth,
+      };
+    } else if (query.year) {
+      const startOfYear = new Date(query.year, 0, 1);
+      const endOfYear = new Date(query.year + 1, 0, 1);
+      where.start_date = {
+        gte: startOfYear,
+        lt: endOfYear,
       };
     }
 
-    const requests = await this.prisma.leaveRequests.findMany({
-      where,
-      include: this.leaveInclude,
-      orderBy: { created_at: 'desc' },
+    const pageIndex = query.pageIndex ?? 1;
+    const pageSize = query.pageSize ?? 20;
+    const skip = (pageIndex - 1) * pageSize;
+
+    const [requests, count] = await this.prisma.$transaction([
+      this.prisma.leaveRequests.findMany({
+        where,
+        include: this.leaveInclude,
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: pageSize,
+      }),
+      this.prisma.leaveRequests.count({ where }),
+    ]);
+
+    return ResponseHelper.success({
+      data: requests,
+      count,
+      pageIndex,
+      pageSize,
     });
-    return ResponseHelper.success(requests);
   }
 
   async findOne(id: string) {
@@ -327,6 +370,30 @@ export class LeaveRequestService {
     return ResponseHelper.success(
       updated,
       `Leave request ${data.status ?? 'reviewed'}`,
+    );
+  }
+
+  async bulkUpdateStatus(
+    ids: string[],
+    dto: { status: LeaveStatus; comment?: string },
+    actorAuthId: string,
+    actorRoles: string[],
+  ) {
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        this.updateStatus(
+          id,
+          { status: dto.status, comment: dto.comment },
+          actorAuthId,
+          actorRoles,
+        ),
+      ),
+    );
+    const succeeded = results.filter((r) => r.status === 'fulfilled').length;
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    return ResponseHelper.success(
+      { succeeded, failed },
+      `Bulk ${dto.status}: ${succeeded} succeeded, ${failed} failed`,
     );
   }
 

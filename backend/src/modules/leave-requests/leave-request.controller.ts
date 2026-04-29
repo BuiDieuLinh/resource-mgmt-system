@@ -15,6 +15,7 @@ import {
   UpdateLeaveStatusDto,
   UpdateLeaveRequestDto,
   QueryLeaveRequestDto,
+  BulkUpdateLeaveStatusDto,
 } from './dto/leave-request.dto';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
@@ -61,6 +62,21 @@ export class LeaveRequestController {
   @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
   create(@Body() dto: CreateLeaveRequestDto) {
     return this.leaveRequestService.create(dto);
+  }
+
+  @Patch('bulk-status')
+  @Roles(Role.ADMIN, Role.MANAGER)
+  bulkUpdateStatus(
+    @Body() dto: BulkUpdateLeaveStatusDto,
+    @CurrentUser() user: { userId: string; roles: string[] },
+  ) {
+    dto.actorRoles = user.roles;
+    return this.leaveRequestService.bulkUpdateStatus(
+      dto.ids,
+      { status: dto.status, comment: dto.comment },
+      user.userId,
+      user.roles ?? [],
+    );
   }
 
   @Patch(':id/status')

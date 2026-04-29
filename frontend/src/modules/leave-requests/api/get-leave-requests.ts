@@ -4,31 +4,42 @@ import { URL_API_LEAVE_REQUESTS } from '@/constant/config';
 import type { ILeaveRequest } from '../types';
 import { leaveRequestKeys } from './keys';
 
-interface LeaveRequestsResponse {
-  data: ILeaveRequest[];
-  error: boolean;
-  message: string;
-  timestamp: string;
-}
-
 interface GetLeaveRequestsParams {
   employee_id?: string;
   status?: string;
+  department_id?: string;
+  pageIndex?: number;
+  pageSize?: number;
+  month?: number;
+  year?: number;
 }
 
-const getLeaveRequests = async (params: GetLeaveRequestsParams): Promise<LeaveRequestsResponse> => {
-  const res = await apiClient.get(URL_API_LEAVE_REQUESTS, { params });
-  return res.data;
+interface LeaveRequestsPagedResponse {
+  data: { data: ILeaveRequest[]; count: number; pageIndex: number; pageSize: number };
+  error: boolean;
+  message: string;
+}
+
+const getLeaveRequests = async (
+  params: GetLeaveRequestsParams,
+): Promise<{ data: ILeaveRequest[]; count: number; pageIndex: number; pageSize: number }> => {
+  const res = await apiClient.get<LeaveRequestsPagedResponse>(URL_API_LEAVE_REQUESTS, { params });
+  return res.data?.data;
 };
 
 export const useGetLeaveRequests = (
   params?: GetLeaveRequestsParams,
   config?: Omit<
-    UseQueryOptions<LeaveRequestsResponse, Error, LeaveRequestsResponse, readonly unknown[]>,
+    UseQueryOptions<
+      { data: ILeaveRequest[]; count: number; pageIndex: number; pageSize: number },
+      Error,
+      { data: ILeaveRequest[]; count: number; pageIndex: number; pageSize: number },
+      readonly unknown[]
+    >,
     'queryKey' | 'queryFn'
   >,
 ) => {
-  return useQuery<LeaveRequestsResponse, Error, LeaveRequestsResponse, readonly unknown[]>({
+  return useQuery({
     queryKey: leaveRequestKeys.list(params),
     queryFn: () => getLeaveRequests(params ?? {}),
     ...config,
