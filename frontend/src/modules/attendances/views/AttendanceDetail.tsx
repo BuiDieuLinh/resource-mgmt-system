@@ -14,7 +14,12 @@ import { getDaysInMonth, getWeeksInMonth } from '../utils/format';
 import { attendanceUrl } from '@/routes/url';
 import { TimesheetSkeleton } from '@/components/Skeleton/TimesheetSkeleton';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useUpdateLeaveStatus } from '@/modules/leave-requests/api/update-leave-status';
+import { notify } from '@/components/Notification';
+import { useHasRole } from '@/hooks/useHasRole';
+import { EMPLOYEE_ROLE } from '@/constant';
 import type { IAttendance, ILeaveRequest } from '../types';
+import type { ILeaveRequest as ILeaveRequestFull } from '@/modules/leave-requests/types';
 
 export default function AttendanceDetailPage() {
   const { employeeId } = useParams<{ employeeId: string }>();
@@ -28,9 +33,12 @@ export default function AttendanceDetailPage() {
   const month = selectedMonth ? selectedMonth.getMonth() + 1 : now.getMonth() + 1;
   const year = selectedMonth ? selectedMonth.getFullYear() : now.getFullYear();
 
-  const { data, isLoading: _loading } = useGetEmployeeAttendance(employeeId!, month, year);
+  const { data, isLoading: _loading, refetch } = useGetEmployeeAttendance(employeeId!, month, year);
   const isLoading = useDelayedLoading(_loading);
   const { mutate: approve, isPending: approving } = useApproveTimesheet();
+  const updateLeaveStatus = useUpdateLeaveStatus();
+  const isAdmin = useHasRole(EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.SUPER_ADMIN);
+  const isManager = useHasRole(EMPLOYEE_ROLE.MANAGER);
 
   const allDays = useMemo(() => getDaysInMonth(year, month), [year, month]);
   const weeks = useMemo(() => getWeeksInMonth(year, month), [year, month]);
@@ -76,6 +84,54 @@ export default function AttendanceDetailPage() {
     setViewTab(v);
     setWeekIdx(0);
   };
+
+  const handleLeaveApprove = async (id: string, comment: string) => {
+    const notiId = notify.loading('Approving...');
+    try {
+      await updateLeaveStatus.mutateAsync({
+        id,
+        status: 'approved',
+        comment: comment || undefined,
+      });
+      notify.success(notiId, { message: 'Leave request approved' });
+      setLeaveModal(null);
+      refetch();
+    } catch (e: any) {
+      notify.error(notiId, { message: e?.response?.data?.message || 'Failed' });
+    }
+  };
+
+  const handleLeaveReject = async (id: string, comment: string) => {
+    const notiId = notify.loading('Rejecting...');
+    try {
+      await updateLeaveStatus.mutateAsync({
+        id,
+        status: 'rejected',
+        comment: comment || undefined,
+      });
+      notify.success(notiId, { message: 'Leave request rejected' });
+      setLeaveModal(null);
+      refetch();
+    } catch (e: any) {
+      notify.error(notiId, { message: e?.response?.data?.message || 'Failed' });
+    }
+  };
+
+  const leaveModalFull = leaveModal as unknown as ILeaveRequestFull | null;
+
+  const leaveModalMode: 'view' | 'review' = (() => {
+    if (!leaveModalFull) return 'view';
+    if (leaveModalFull.status !== 'pending') return 'view';
+    if (isAdmin && !leaveModalFull.approved_by_admin) return 'review';
+    if (
+      isManager &&
+      !isAdmin &&
+      !leaveModalFull.approved_by_manager &&
+      !leaveModalFull.approved_by_admin
+    )
+      return 'review';
+    return 'view';
+  })();
 
   const employee = data?.employee;
 
@@ -187,10 +243,12 @@ export default function AttendanceDetailPage() {
       <LeaveRequestFormModal
         opened={!!leaveModal}
         onClose={() => setLeaveModal(null)}
-        initialValues={leaveModal}
-        mode="view"
-        loading={false}
+        initialValues={leaveModalFull}
+        mode={leaveModalMode}
+        loading={updateLeaveStatus.isPending}
         onSubmit={() => {}}
+        onApprove={handleLeaveApprove}
+        onReject={handleLeaveReject}
       />
     </Stack>
   );

@@ -51,7 +51,7 @@
   position: sticky !important;
   right: 0;
   z-index: 2;
-  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-7)) !important;
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-7)) !important;
   box-shadow: -2px 0 6px rgba(0, 0, 0, 0.06);
 }
 

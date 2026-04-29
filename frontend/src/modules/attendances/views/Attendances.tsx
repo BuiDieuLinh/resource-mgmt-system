@@ -105,6 +105,7 @@ export default function AttendancesPage() {
     {
       key: 'employee_id',
       title: 'Employee',
+      fixed: 'left',
       render: (r) => {
         const pending = (r as any).pending_leave_count ?? 0;
         const emp = r.employee as any;
@@ -259,6 +260,7 @@ export default function AttendancesPage() {
       key: 'export_detail',
       title: 'Actions',
       align: 'center',
+      fixed: 'right',
       render: (r) => (
         <Group gap={4} justify="center" wrap="nowrap">
           <Tooltip label="View detail" withArrow>
