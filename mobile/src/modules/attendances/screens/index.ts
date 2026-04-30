@@ -1,0 +1,1 @@
+export { AttendancesScreen } from './AttendancesScreen';
