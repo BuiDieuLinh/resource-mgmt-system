@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Text, Button } from 'react-native-paper';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { colors, spacing, radius } from '../../theme';
 
 interface EmptyStateProps {
   message: string;
@@ -20,9 +20,9 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       <Text style={styles.icon}>{icon}</Text>
       <Text style={styles.message}>{message}</Text>
       {onAction && actionLabel && (
-        <Button mode="outlined" onPress={onAction} style={styles.button}>
-          {actionLabel}
-        </Button>
+        <TouchableOpacity style={styles.button} onPress={onAction}>
+          <Text style={styles.buttonText}>{actionLabel}</Text>
+        </TouchableOpacity>
       )}
     </View>
   );
@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    padding: spacing.lg,
   },
   icon: {
     fontSize: 48,
@@ -41,11 +41,21 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: 16,
-    color: '#999',
+    color: colors.gray400,
     textAlign: 'center',
     marginBottom: 20,
   },
   button: {
     marginTop: 16,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: radius.md,
+  },
+  buttonText: {
+    color: colors.primary,
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

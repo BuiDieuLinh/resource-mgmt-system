@@ -2,19 +2,8 @@
  * Employee Models
  */
 
-export interface Position {
-  id: string;
-  name: string;
-  description?: string;
-  level?: string;
-}
-
-export interface Department {
-  id: string;
-  name: string;
-  description?: string;
-  parent_id?: string;
-}
+import type { Department } from './departments';
+import type { Position } from './positions';
 
 export interface Employee {
   id: string;

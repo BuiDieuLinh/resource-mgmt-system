@@ -1,7 +1,10 @@
 /**
  * API Configuration
  */
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3000/';
+export const AUTH_API_URL =
+  process.env.EXPO_PUBLIC_AUTH_API_URL || 'https://api-auth-staging-80f1.up.railway.app';
+export const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_BASE_URL || 'https://api-staging-ed1d.up.railway.app';
 
 /**
  * API Endpoints

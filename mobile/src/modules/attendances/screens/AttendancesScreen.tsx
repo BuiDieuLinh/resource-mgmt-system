@@ -5,12 +5,14 @@ import { apiClient } from '../../../lib/api';
 import { Loading, ErrorState } from '../../../components';
 import { formatDate, formatTime } from '../../../utils';
 import { Attendance, CheckInResponse, CheckOutResponse } from '../../../models';
+import { useAuth } from '../../../hooks';
 
 interface AttendancesScreenProps {
   navigation: any;
 }
 
 export const AttendancesScreen: React.FC<AttendancesScreenProps> = ({ navigation }) => {
+  const { user } = useAuth();
   const [todayAttendance, setTodayAttendance] = useState<Attendance | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -25,12 +27,12 @@ export const AttendancesScreen: React.FC<AttendancesScreenProps> = ({ navigation
       setLoading(true);
       setError(null);
       const today = new Date().toISOString().split('T')[0];
-      const response = await apiClient.get(`/attendances?date=${today}`);
-      if (response.data.length > 0) {
-        setTodayAttendance(response.data[0]);
-      } else {
-        setTodayAttendance(null);
-      }
+      const response = await apiClient.get('/attendances/my', {
+        params: { month: new Date().getMonth() + 1, year: new Date().getFullYear() },
+      });
+      const records = response.data?.data?.records ?? response.data?.records ?? [];
+      const todayRecord = records.find((r: any) => r.work_date?.startsWith(today));
+      setTodayAttendance(todayRecord ?? null);
     } catch (err: any) {
       const message = err.response?.data?.message || 'Failed to fetch attendance';
       setError(message);
@@ -43,7 +45,7 @@ export const AttendancesScreen: React.FC<AttendancesScreenProps> = ({ navigation
   const handleCheckIn = async () => {
     try {
       setActionLoading(true);
-      await apiClient.post('/attendances/check-in');
+      await apiClient.post('/attendances/check-in', { employee_id: user?.id });
       Alert.alert('Success', 'Checked in successfully!');
       await fetchTodayAttendance();
     } catch (error: any) {
@@ -57,7 +59,7 @@ export const AttendancesScreen: React.FC<AttendancesScreenProps> = ({ navigation
   const handleCheckOut = async () => {
     try {
       setActionLoading(true);
-      await apiClient.post('/attendances/check-out');
+      await apiClient.post('/attendances/check-out', { employee_id: user?.id });
       Alert.alert('Success', 'Checked out successfully!');
       await fetchTodayAttendance();
     } catch (error: any) {

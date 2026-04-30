@@ -3,63 +3,57 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
-import { Provider as PaperProvider } from 'react-native-paper';
-import { View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { View, ActivityIndicator } from 'react-native';
 
-// Import theme
-import { theme } from './src/theme';
-
-// Import components
-import { Loading } from './src/components';
-
-// Import screens from modules
-import { LoginScreen } from './src/modules/auth';
-import { HomeScreen } from './src/modules/home';
-import { EmployeesScreen } from './src/modules/employees';
-import { AttendancesScreen } from './src/modules/attendances';
-import { LeaveRequestsScreen } from './src/modules/leave-requests';
-
-// Import hooks
-import { useAuth } from './src/hooks';
+import { useAuth } from './src/hooks/useAuth';
+import { LoginScreen } from './src/modules/auth/screens/LoginScreen';
+import { TabNavigator } from './src/navigation/TabNavigator-simple';
+import { TimesheetScreen } from './src/modules/attendances/screens/TimesheetScreen';
+import { EmployeesScreen } from './src/modules/employees/screens/EmployeesScreen';
 
 const Stack = createNativeStackNavigator();
 
-export default function App() {
+function AppNavigator() {
   const { isLoading, isLoggedIn } = useAuth();
-  console.log('isLoggedIn:', isLoggedIn, typeof isLoggedIn);
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Loading message="Initializing app..." />
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: '#F8F7FF',
+        }}
+      >
+        <ActivityIndicator size="large" color="#4C3B8F" />
       </View>
     );
   }
 
   return (
-    <PaperProvider theme={theme}>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {!isLoggedIn ? (
+        <Stack.Screen name="Login" component={LoginScreen} />
+      ) : (
+        <>
+          <Stack.Screen name="Main" component={TabNavigator} />
+          <Stack.Screen name="Timesheet" component={TimesheetScreen} />
+          <Stack.Screen name="Employees" component={EmployeesScreen} />
+        </>
+      )}
+    </Stack.Navigator>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
       <NavigationContainer>
-        <Stack.Navigator initialRouteName={isLoggedIn ? 'Home' : 'Login'}>
-          <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Dashboard' }} />
-          <Stack.Screen
-            name="Employees"
-            component={EmployeesScreen}
-            options={{ title: 'Employees' }}
-          />
-          <Stack.Screen
-            name="Attendances"
-            component={AttendancesScreen}
-            options={{ title: 'Attendances' }}
-          />
-          <Stack.Screen
-            name="LeaveRequests"
-            component={LeaveRequestsScreen}
-            options={{ title: 'Leave Requests' }}
-          />
-        </Stack.Navigator>
-        <StatusBar style="auto" />
+        <AppNavigator />
+        <StatusBar style="light" />
       </NavigationContainer>
-    </PaperProvider>
+    </SafeAreaProvider>
   );
 }

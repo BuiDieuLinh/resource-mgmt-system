@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Text, Button } from 'react-native-paper';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { colors, spacing, radius } from '../../theme';
 
 interface ErrorStateProps {
   message: string;
@@ -14,9 +14,9 @@ export const ErrorState: React.FC<ErrorStateProps> = ({ message, onRetry, showRe
       <Text style={styles.icon}>⚠️</Text>
       <Text style={styles.message}>{message}</Text>
       {showRetry && onRetry && (
-        <Button mode="contained" onPress={onRetry} style={styles.button}>
-          Retry
-        </Button>
+        <TouchableOpacity style={styles.button} onPress={onRetry}>
+          <Text style={styles.buttonText}>Retry</Text>
+        </TouchableOpacity>
       )}
     </View>
   );
@@ -27,7 +27,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    padding: spacing.lg,
   },
   icon: {
     fontSize: 48,
@@ -35,11 +35,20 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 20,
   },
   button: {
     marginTop: 16,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: radius.md,
+  },
+  buttonText: {
+    color: colors.white,
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

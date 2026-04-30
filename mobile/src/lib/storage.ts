@@ -34,7 +34,10 @@ class StorageService {
         return value || null;
       } else {
         // Fallback for web platform - use sessionStorage
-        const value = typeof window !== 'undefined' ? sessionStorage.getItem(key) : null;
+        const value =
+          typeof globalThis !== 'undefined' && 'sessionStorage' in globalThis
+            ? (globalThis as any).sessionStorage.getItem(key)
+            : null;
         return value;
       }
     } catch (error) {
@@ -53,8 +56,8 @@ class StorageService {
         await SecureStore.setItemAsync(key, value);
       } else {
         // Fallback for web platform - use sessionStorage
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem(key, value);
+        if (typeof globalThis !== 'undefined' && 'sessionStorage' in globalThis) {
+          (globalThis as any).sessionStorage.setItem(key, value);
         }
       }
     } catch (error) {
@@ -72,8 +75,8 @@ class StorageService {
         await SecureStore.deleteItemAsync(key);
       } else {
         // Fallback for web platform - use sessionStorage
-        if (typeof window !== 'undefined') {
-          sessionStorage.removeItem(key);
+        if (typeof globalThis !== 'undefined' && 'sessionStorage' in globalThis) {
+          (globalThis as any).sessionStorage.removeItem(key);
         }
       }
     } catch (error) {
@@ -86,8 +89,8 @@ class StorageService {
    */
   async clear(): Promise<void> {
     try {
-      if (typeof window !== 'undefined') {
-        sessionStorage.clear();
+      if (typeof globalThis !== 'undefined' && 'sessionStorage' in globalThis) {
+        (globalThis as any).sessionStorage.clear();
       }
     } catch (error) {
       console.error('Error clearing storage:', error);

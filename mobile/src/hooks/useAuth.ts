@@ -1,137 +1,98 @@
 import { useEffect, useState } from 'react';
-import { storageService } from '../lib/storage';
+import * as SecureStore from 'expo-secure-store';
+import { authClient } from '../lib/api';
 import { STORAGE_KEYS } from '../constant/config';
-import { apiClient } from '../lib/api';
-import { LoginRequest, User } from '../models';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  roles: string[];
+}
 
 export const useAuth = () => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    checkLoginStatus();
-  }, []);
 
   const checkLoginStatus = async () => {
     try {
-      setIsLoading(true);
-
-      const token = await storageService.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-      setIsLoggedIn(!!token);
-      const userData = await storageService.getItem(STORAGE_KEYS.USER_DATA);
-
-      if (token) {
-        setIsLoggedIn(true);
-
-        if (userData) {
-          try {
-            setUser(JSON.parse(userData));
-          } catch (err) {
-            console.error('Parse user error:', err);
-            setUser(null);
-          }
-        }
-      } else {
+      const token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
+      if (!token) {
         setIsLoggedIn(false);
         setUser(null);
+        return;
       }
-    } catch (err) {
-      console.error('Check login error:', err);
+      // Verify token by calling /auth/me
+      const res = await authClient.get<{ data: AuthUser }>('/auth/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUser(res.data?.data ?? null);
+      setIsLoggedIn(true);
+    } catch {
+      // Token invalid or expired
+      await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN).catch(() => {});
       setIsLoggedIn(false);
       setUser(null);
     } finally {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    checkLoginStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const loginRequest: LoginRequest = { email, password };
-      const response = await apiClient.post('/auth/login', loginRequest);
+      console.log('[Auth] Logging in to:', authClient.defaults.baseURL, 'email:', email);
 
-      const { access_token, refresh_token, user: userData } = response.data;
+      const res = await authClient.post<{ data: { access_token: string; user: AuthUser } }>(
+        '/auth/login',
+        { email, password },
+      );
+      console.log('[Auth] Login response:', res.status, JSON.stringify(res.data).slice(0, 200));
 
-      // ✅ Lưu đúng token (string)
-      await storageService.setItem(STORAGE_KEYS.ACCESS_TOKEN, access_token);
+      const payload = res.data?.data ?? (res.data as any);
+      const access_token: string = payload?.access_token;
+      const userData = payload?.user;
 
-      if (refresh_token) {
-        await storageService.setItem(STORAGE_KEYS.REFRESH_TOKEN, refresh_token);
+      if (!access_token) {
+        console.error('[Auth] No access_token in response');
+        setError('No token received');
+        setIsLoading(false);
+        return false;
       }
 
-      if (userData) {
-        await storageService.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
-        setUser(userData);
-      }
-
+      await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, access_token);
+      setUser(userData ?? null);
       setIsLoggedIn(true);
+      setIsLoading(false);
+      console.log('[Auth] Login successful, isLoggedIn set to true');
       return true;
     } catch (err: any) {
+      const status = err.response?.status;
       const message = err.response?.data?.message || err.message || 'Login failed';
-
+      console.error('[Auth] Login error:', status, message);
       setError(message);
-      console.error('Login error:', err);
       setIsLoggedIn(false);
-      return false;
-    } finally {
       setIsLoading(false);
+      return false;
     }
   };
 
   const logout = async (): Promise<void> => {
     try {
-      setIsLoading(true);
-
-      await storageService.deleteItem(STORAGE_KEYS.ACCESS_TOKEN);
-      await storageService.deleteItem(STORAGE_KEYS.REFRESH_TOKEN);
-      await storageService.deleteItem(STORAGE_KEYS.USER_DATA);
-
-      setIsLoggedIn(false);
-      setUser(null);
-      setError(null);
-    } catch (err) {
-      console.error('Logout error:', err);
-    } finally {
-      setIsLoading(false);
-    }
+      await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
+    } catch {}
+    setIsLoggedIn(false);
+    setUser(null);
+    setError(null);
   };
 
-  const refreshToken = async (): Promise<void> => {
-    try {
-      const refreshTokenValue = await storageService.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-
-      if (!refreshTokenValue) {
-        throw new Error('No refresh token');
-      }
-
-      const response = await apiClient.post('/auth/refresh', {
-        refresh_token: refreshTokenValue,
-      });
-
-      const { access_token } = response.data;
-
-      await storageService.setItem(STORAGE_KEYS.ACCESS_TOKEN, access_token);
-    } catch (err) {
-      console.error('Refresh token error:', err);
-
-      // ❗ logout nếu fail
-      await logout();
-      throw err;
-    }
-  };
-
-  return {
-    isLoading,
-    isLoggedIn,
-    user,
-    error,
-    login,
-    logout,
-    refreshToken,
-    checkLoginStatus,
-  };
+  return { isLoading, isLoggedIn, user, error, login, logout, checkLoginStatus };
 };
