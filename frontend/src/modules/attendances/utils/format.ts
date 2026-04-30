@@ -31,6 +31,16 @@ export const formatHours = (val: number | string | undefined | null): string => 
   return `${integerPart}h ${decimalPart}`;
 };
 
+/** Format minutes → "1h 30m" or "45m" */
+export const formatMinutes = (minutes: number | undefined | null): string => {
+  if (!minutes || minutes === 0) return '—';
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+};
+
 export function fmtTime(iso?: string | null): string {
   if (!iso) return '--:--';
   return new Date(iso).toLocaleTimeString(DEFAULT_LOCALE, {

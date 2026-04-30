@@ -95,7 +95,7 @@ export function DayRow({
           </Text>
           {holiday && (
             <Tooltip label={holiday.name} withArrow>
-              <IconStarFilled size={12} color="var(--mantine-color-orange-5)" />
+              <IconStarFilled size={14} color="var(--mantine-color-orange-5)" />
             </Tooltip>
           )}
         </Group>
@@ -148,7 +148,7 @@ export function DayRow({
                 color={LEAVE_STATUS_COLOR[lr.status] ?? 'gray'}
                 variant="filled"
                 style={{ cursor: 'pointer' }}
-                leftSection={<IconAlertCircle size={9} />}
+                leftSection={<IconAlertCircle size={11} />}
                 onClick={() => onLeaveClick(lr)}
               >
                 {lr.leave_type}

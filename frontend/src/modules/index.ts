@@ -20,16 +20,6 @@ export const Attendance = lazyLoad(
   (m) => m.default,
 );
 
-export const Timesheet = lazyLoad(
-  () => import('./attendances/views/Timesheet'),
-  (m) => m.default,
-);
-
-// export const AttendanceFlow = lazyLoad(
-//   () => import("./attendances/views/Flow"),
-//   (m) => m.default
-// );
-
 export const LeaveRequests = lazyLoad(
   () => import('./leave-requests/views/LeaveRequests'),
   (m) => m.default,

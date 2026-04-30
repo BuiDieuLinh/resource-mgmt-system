@@ -45,7 +45,7 @@ export function AppBreadcrumbs() {
                   color: 'var(--mantine-color-dimmed)',
                 }}
               >
-                <IconHome size={14} />
+                <IconHome size={16} />
               </UnstyledButton>
             ) : isLast ? (
               <Text size="sm" fw={600} c="dark">

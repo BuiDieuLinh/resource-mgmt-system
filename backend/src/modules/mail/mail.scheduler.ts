@@ -28,9 +28,7 @@ export class MailScheduler {
     const startOfDay = dayjs.utc(todayStr).startOf('day').toDate();
     const endOfDay = dayjs.utc(todayStr).endOf('day').toDate();
 
-    this.logger.log(
-      `[Cron] Scanning employees with hire_date = ${todayStr} (UTC)`,
-    );
+    this.logger.log(`[Cron] Scanning employees with hire_date = ${todayStr}`);
 
     const employees = await this.prisma.employees.findMany({
       where: { hire_date: { gte: startOfDay, lte: endOfDay } },
@@ -45,7 +43,6 @@ export class MailScheduler {
     this.logger.log(
       `[Cron] Found ${employees.length} employee(s). Sending emails...`,
     );
-
     const loginUrl =
       this.config.get<string>('AUTH_LOGIN_URL') ??
       'http://localhost:5173/login';

@@ -14,15 +14,17 @@ interface UpdateLeaveStatusResponse {
 const updateLeaveStatus = async (
   id: string,
   status: string,
+  comment?: string,
 ): Promise<UpdateLeaveStatusResponse> => {
-  const res = await apiClient.patch(`${URL_API_LEAVE_REQUESTS}/${id}/status`, { status });
+  const res = await apiClient.patch(`${URL_API_LEAVE_REQUESTS}/${id}/status`, { status, comment });
   return res.data;
 };
 
 export const useUpdateLeaveStatus = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) => updateLeaveStatus(id, status),
+    mutationFn: ({ id, status, comment }: { id: string; status: string; comment?: string }) =>
+      updateLeaveStatus(id, status, comment),
     onSuccess: () => qc.invalidateQueries({ queryKey: leaveRequestKeys.all }),
   });
 };

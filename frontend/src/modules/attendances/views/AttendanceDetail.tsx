@@ -4,7 +4,7 @@ import { IconCheck, IconCalendar, IconCalendarWeek } from '@tabler/icons-react';
 import { useParams } from 'react-router-dom';
 import { useGetEmployeeAttendance } from '../api/get-employee-attendance';
 import { useApproveTimesheet } from '../api/approve-timesheet';
-import { LeaveRequestModal } from '../components/LeaveRequestModal';
+import { LeaveRequestFormModal } from '@/modules/leave-requests/components/LeaveRequestFormModal';
 import { AttendanceSummaryCards } from '../components/AttendanceSummaryCards';
 import { TimelineHeader } from '../components/AttendanceTimeline/TimelineHeader';
 import { DayRow } from '../components/AttendanceTimeline/DayRow';
@@ -14,7 +14,12 @@ import { getDaysInMonth, getWeeksInMonth } from '../utils/format';
 import { attendanceUrl } from '@/routes/url';
 import { TimesheetSkeleton } from '@/components/Skeleton/TimesheetSkeleton';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useUpdateLeaveStatus } from '@/modules/leave-requests/api/update-leave-status';
+import { notify } from '@/components/Notification';
+import { useHasRole } from '@/hooks/useHasRole';
+import { EMPLOYEE_ROLE } from '@/constant';
 import type { IAttendance, ILeaveRequest } from '../types';
+import type { ILeaveRequest as ILeaveRequestFull } from '@/modules/leave-requests/types';
 
 export default function AttendanceDetailPage() {
   const { employeeId } = useParams<{ employeeId: string }>();
@@ -28,9 +33,12 @@ export default function AttendanceDetailPage() {
   const month = selectedMonth ? selectedMonth.getMonth() + 1 : now.getMonth() + 1;
   const year = selectedMonth ? selectedMonth.getFullYear() : now.getFullYear();
 
-  const { data, isLoading: _loading } = useGetEmployeeAttendance(employeeId!, month, year);
+  const { data, isLoading: _loading, refetch } = useGetEmployeeAttendance(employeeId!, month, year);
   const isLoading = useDelayedLoading(_loading);
   const { mutate: approve, isPending: approving } = useApproveTimesheet();
+  const updateLeaveStatus = useUpdateLeaveStatus();
+  const isAdmin = useHasRole(EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.SUPER_ADMIN);
+  const isManager = useHasRole(EMPLOYEE_ROLE.MANAGER);
 
   const allDays = useMemo(() => getDaysInMonth(year, month), [year, month]);
   const weeks = useMemo(() => getWeeksInMonth(year, month), [year, month]);
@@ -77,6 +85,54 @@ export default function AttendanceDetailPage() {
     setWeekIdx(0);
   };
 
+  const handleLeaveApprove = async (id: string, comment: string) => {
+    const notiId = notify.loading('Approving...');
+    try {
+      await updateLeaveStatus.mutateAsync({
+        id,
+        status: 'approved',
+        comment: comment || undefined,
+      });
+      notify.success(notiId, { message: 'Leave request approved' });
+      setLeaveModal(null);
+      refetch();
+    } catch (e: any) {
+      notify.error(notiId, { message: e?.response?.data?.message || 'Failed' });
+    }
+  };
+
+  const handleLeaveReject = async (id: string, comment: string) => {
+    const notiId = notify.loading('Rejecting...');
+    try {
+      await updateLeaveStatus.mutateAsync({
+        id,
+        status: 'rejected',
+        comment: comment || undefined,
+      });
+      notify.success(notiId, { message: 'Leave request rejected' });
+      setLeaveModal(null);
+      refetch();
+    } catch (e: any) {
+      notify.error(notiId, { message: e?.response?.data?.message || 'Failed' });
+    }
+  };
+
+  const leaveModalFull = leaveModal as unknown as ILeaveRequestFull | null;
+
+  const leaveModalMode: 'view' | 'review' = (() => {
+    if (!leaveModalFull) return 'view';
+    if (leaveModalFull.status !== 'pending') return 'view';
+    if (isAdmin && !leaveModalFull.approved_by_admin) return 'review';
+    if (
+      isManager &&
+      !isAdmin &&
+      !leaveModalFull.approved_by_manager &&
+      !leaveModalFull.approved_by_admin
+    )
+      return 'review';
+    return 'view';
+  })();
+
   const employee = data?.employee;
 
   if (isLoading) return <TimesheetSkeleton />;
@@ -103,7 +159,8 @@ export default function AttendanceDetailPage() {
           <Stack gap={0}>
             <Title order={3}>{employee?.full_name ?? '—'}</Title>
             <Text size="xs" c="dimmed">
-              {employee?.department?.department_name} · {employee?.position?.position_name}
+              {employee?.position?.department?.department_name} ·{' '}
+              {employee?.position?.position_name}
             </Text>
           </Stack>
         </Group>
@@ -111,7 +168,7 @@ export default function AttendanceDetailPage() {
         <Group gap="sm">
           <MonthNavigator value={selectedMonth} onChange={handleMonthChange} />
           <Button
-            leftSection={<IconCheck size={16} />}
+            leftSection={<IconCheck size={18} />}
             color="green"
             loading={approving}
             onClick={() => employeeId && approve({ employeeId, month, year })}
@@ -135,7 +192,7 @@ export default function AttendanceDetailPage() {
               value: 'month',
               label: (
                 <Group gap={6} w={70}>
-                  <IconCalendar size={14} />
+                  <IconCalendar size={16} />
                   Month
                 </Group>
               ),
@@ -144,7 +201,7 @@ export default function AttendanceDetailPage() {
               value: 'week',
               label: (
                 <Group gap={6} w={70}>
-                  <IconCalendarWeek size={14} />
+                  <IconCalendarWeek size={16} />
                   Week
                 </Group>
               ),
@@ -183,11 +240,15 @@ export default function AttendanceDetailPage() {
         ))}
       </Stack>
 
-      <LeaveRequestModal
+      <LeaveRequestFormModal
         opened={!!leaveModal}
         onClose={() => setLeaveModal(null)}
-        leaveRequest={leaveModal}
-        employeeName={employee?.full_name ?? ''}
+        initialValues={leaveModalFull}
+        mode={leaveModalMode}
+        loading={updateLeaveStatus.isPending}
+        onSubmit={() => {}}
+        onApprove={handleLeaveApprove}
+        onReject={handleLeaveReject}
       />
     </Stack>
   );

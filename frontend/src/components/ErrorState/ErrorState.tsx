@@ -21,7 +21,7 @@ export default function ErrorState({
       {onRetry && (
         <Button
           onClick={onRetry}
-          leftSection={<IconRefresh size={16} />}
+          leftSection={<IconRefresh size={18} />}
           variant="light"
           color="red.8"
         >

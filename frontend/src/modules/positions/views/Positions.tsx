@@ -155,7 +155,7 @@ export default function PositionsPage() {
       width: 100,
       render: (row) => (
         <ActionIcon variant="subtle" color="gray" onClick={() => handleEdit(row)} title="Edit">
-          <IconEdit size={16} />
+          <IconEdit size={18} />
         </ActionIcon>
       ),
     },
@@ -172,12 +172,12 @@ export default function PositionsPage() {
         description="Define roles and levels across departments"
         right={
           <Group gap="md" justify="space-between">
-            <Button leftSection={<IconPlus size={16} />} onClick={handleAdd}>
+            <Button leftSection={<IconPlus size={18} />} onClick={handleAdd}>
               Add Position
             </Button>
             <TextInput
               placeholder="Search positions..."
-              leftSection={<IconSearch size={16} />}
+              leftSection={<IconSearch size={18} />}
               value={search}
               onChange={(e) => handleSearch(e.currentTarget.value)}
             />

@@ -4,7 +4,7 @@ import { URL_API_GET_ATTENDANCES } from '@/constant/config';
 import type { IEmployeeAttendanceDetail } from '../types';
 import { attendancesKeys } from './keys';
 
-const getEmployeeAttendance = async (
+export const getEmployeeAttendance = async (
   employeeId: string,
   month: number,
   year: number,

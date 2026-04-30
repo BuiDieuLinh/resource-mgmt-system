@@ -44,3 +44,28 @@
 .thSorted .sortIcon {
   opacity: 1;
 }
+
+/* ── Fixed columns ─────────────────────────────────────────────────────────── */
+
+.fixedRight {
+  position: sticky !important;
+  right: 0;
+  z-index: 2;
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-7)) !important;
+  box-shadow: -2px 0 6px rgba(0, 0, 0, 0.06);
+}
+
+.fixedLeft {
+  position: sticky !important;
+  left: 0;
+  z-index: 2;
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-7)) !important;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.06);
+}
+
+/* Header fixed cells need higher z-index */
+.header .fixedRight,
+.header .fixedLeft {
+  z-index: 3;
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6)) !important;
+}

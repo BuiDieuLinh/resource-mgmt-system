@@ -9,6 +9,7 @@ export type TableColumn<T> = {
   title: ReactNode;
   width?: number | string;
   align?: 'left' | 'center' | 'right';
+  fixed?: 'right' | 'left';
 
   render?: (row: T, index: number) => ReactNode;
 
@@ -133,12 +134,11 @@ export function BaseTable<T extends Record<string, any>>({
     <Table.ScrollContainer minWidth={600} mah={height} type="native">
       <Table
         highlightOnHover={highlightOnHover}
-        // withTableBorder={withTableBorder}
-        // withColumnBorders={withColumnBorders}
         stickyHeader={stickyHeader}
         verticalSpacing="xs"
         horizontalSpacing="md"
         miw="100%"
+        style={{ tableLayout: 'auto' }}
       >
         <Table.Thead
           className={cx(classes.header, {
@@ -147,7 +147,10 @@ export function BaseTable<T extends Record<string, any>>({
         >
           <Table.Tr>
             {withCheckbox && (
-              <Table.Th className={classes.th} style={{ width: 50, textAlign: 'center' }}>
+              <Table.Th
+                className={classes.th}
+                style={{ width: 50, textAlign: 'center', whiteSpace: 'nowrap' }}
+              >
                 <Checkbox
                   checked={isAllSelected}
                   indeterminate={isIndeterminate}
@@ -174,16 +177,18 @@ export function BaseTable<T extends Record<string, any>>({
                     classes.th,
                     col.sortable && classes.thSortable,
                     isSorted && classes.thSorted,
+                    col.fixed === 'right' && classes.fixedRight,
+                    col.fixed === 'left' && classes.fixedLeft,
                   )}
                   style={{
                     width: col.width,
                     textAlign: col.align ?? 'left',
                     cursor: col.sortable ? 'pointer' : 'default',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   <div className={classes.thInner}>
                     <span>{col.title}</span>
-
                     {col.sortable && <SortIcon size={14} className={classes.sortIcon} />}
                   </div>
                 </Table.Th>
@@ -214,12 +219,10 @@ export function BaseTable<T extends Record<string, any>>({
               <Table.Tr
                 key={index}
                 onClick={() => onRowClick?.(row)}
-                style={{
-                  cursor: onRowClick ? 'pointer' : 'default',
-                }}
+                style={{ cursor: onRowClick ? 'pointer' : 'default' }}
               >
                 {withCheckbox && (
-                  <Table.Td style={{ textAlign: 'center' }}>
+                  <Table.Td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                     <Checkbox
                       checked={selectedRows.has(index)}
                       onChange={() => handleSelectRow(index)}
@@ -228,7 +231,17 @@ export function BaseTable<T extends Record<string, any>>({
                   </Table.Td>
                 )}
                 {columns.map((col) => (
-                  <Table.Td key={String(col.key)} style={{ textAlign: col.align ?? 'left' }}>
+                  <Table.Td
+                    key={String(col.key)}
+                    className={cx(
+                      col.fixed === 'right' && classes.fixedRight,
+                      col.fixed === 'left' && classes.fixedLeft,
+                    )}
+                    style={{
+                      textAlign: col.align ?? 'left',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
                     {col.render ? col.render(row, index) : row[col.key as keyof T]}
                   </Table.Td>
                 ))}

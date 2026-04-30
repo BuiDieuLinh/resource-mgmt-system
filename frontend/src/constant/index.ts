@@ -42,6 +42,11 @@ export const LEAVE_STATUS_LABEL: Record<LeaveStatus, string> = {
   rejected: 'Rejected',
 };
 
+export const LEAVE_STATUS_OPTIONS = Object.entries(LEAVE_STATUS_LABEL).map(([value, label]) => ({
+  value,
+  label,
+}));
+
 export const ATTENDANCE_STATUS = {
   PENDING: 'pending',
   APPROVED: 'approved',
@@ -49,6 +54,13 @@ export const ATTENDANCE_STATUS = {
 } as const;
 
 export type AttendanceStatus = (typeof ATTENDANCE_STATUS)[keyof typeof ATTENDANCE_STATUS];
+
+export const ATTENDANCE_ACTION = {
+  CHECKIN: 'check_in',
+  CHECKOUT: 'check_out',
+} as const;
+
+export type AttendanceAction = (typeof ATTENDANCE_ACTION)[keyof typeof ATTENDANCE_ACTION];
 
 export const DAY_LIST = [
   { dow: 0, label: 'Monday', isWeekend: false },

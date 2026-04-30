@@ -5,7 +5,7 @@ import timezone from 'dayjs/plugin/timezone';
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-const APP_TZ = 'Asia/Ho_Chi_Minh';
+const APP_TZ = process.env.APP_TIMEZONE;
 
 export function toLocalWorkDate(ts: Date): Date {
   const local = dayjs(ts).tz(APP_TZ);
@@ -13,19 +13,46 @@ export function toLocalWorkDate(ts: Date): Date {
 }
 
 export function getMonthRange(month: number, year: number) {
+  const mm = String(month).padStart(2, '0');
   return {
-    gte: dayjs(`${year}-${month}-01`).startOf('month').toDate(),
-    lte: dayjs(`${year}-${month}-01`).endOf('month').toDate(),
+    gte: dayjs(`${year}-${mm}-01`).startOf('month').toDate(),
+    lte: dayjs(`${year}-${mm}-01`).endOf('month').toDate(),
   };
 }
 
-export function getWorkingDaysInMonth(month: number, year: number): number {
+export function getWorkingDaysInMonth(
+  month: number,
+  year: number,
+  holidayDates: Set<string> = new Set(),
+): number {
   const start = dayjs(`${year}-${month}-01`).startOf('month');
   const daysInMonth = start.daysInMonth();
   let count = 0;
   for (let d = 0; d < daysInMonth; d++) {
-    const day = start.add(d, 'day').day();
-    if (day !== 0 && day !== 6) count++;
+    const cur = start.add(d, 'day');
+    const dow = cur.day();
+    const iso = cur.format('YYYY-MM-DD');
+    if (dow !== 0 && dow !== 6 && !holidayDates.has(iso)) count++;
+  }
+  return count;
+}
+
+export function getWorkingDaysUpToToday(
+  month: number,
+  year: number,
+  holidayDates: Set<string> = new Set(),
+): number {
+  const yesterday = dayjs().tz(APP_TZ).subtract(1, 'day').startOf('day');
+  const start = dayjs
+    .tz(`${year}-${String(month).padStart(2, '0')}-01`, APP_TZ)
+    .startOf('month');
+  const end = start.endOf('month');
+  const cutoff = yesterday.isBefore(end) ? yesterday : end;
+  if (cutoff.isBefore(start)) return 0;
+  let count = 0;
+  for (let d = start; !d.isAfter(cutoff); d = d.add(1, 'day')) {
+    const iso = d.format('YYYY-MM-DD');
+    if (d.day() !== 0 && d.day() !== 6 && !holidayDates.has(iso)) count++;
   }
   return count;
 }
@@ -63,4 +90,15 @@ export function overlapMinutes(
   const start = Math.max(aStart, bStart);
   const end = Math.min(aEnd, bEnd);
   return Math.max(0, end - start);
+}
+
+export function fmtDate(value: string | Date): string {
+  const d = new Date(value);
+  return d
+    .toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+    .replace(/ /g, ' ');
 }

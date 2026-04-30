@@ -14,7 +14,6 @@ export interface PreviewEmployee {
   hire_date: string;
   department_name: string;
   position_name: string;
-  status: string;
 }
 
 interface PreviewResponse {

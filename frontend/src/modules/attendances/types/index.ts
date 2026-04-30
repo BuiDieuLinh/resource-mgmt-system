@@ -1,9 +1,9 @@
-import type { AttendanceStatus, LeaveStatus, LeaveType } from '@/constant';
+import type { AttendanceAction, AttendanceStatus, LeaveStatus, LeaveType } from '@/constant';
 
 export interface IAttendance {
   id: string;
   employee_id: string;
-  work_date?: string;
+  work_date: string;
   scheduled_start?: number;
   scheduled_end?: number;
   break_start?: number | null;
@@ -33,6 +33,18 @@ export interface IAttendance {
   annual_leave?: number;
   unpaid_leave?: number;
   over_time?: number;
+  logs: IAttendanceLogs[];
+}
+
+export interface IAttendanceLogs {
+  id: string;
+  timestamp: Date;
+  attendance_id: string;
+  action: AttendanceAction;
+  latitude: number;
+  longitude: number;
+  ip_address: string | null;
+  user_agent: string | null;
 }
 
 export interface ILeaveRequest {
@@ -90,8 +102,12 @@ export interface IEmployeeAttendanceDetail {
     full_name: string;
     display_name?: string;
     employee_code: string;
-    department: { department_name: string };
-    position: { position_name: string };
+    position: {
+      position_name: string;
+      department: {
+        department_name: string;
+      };
+    };
   };
   records: IAttendance[];
   leave_requests: ILeaveRequest[];

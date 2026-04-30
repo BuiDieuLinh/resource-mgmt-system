@@ -20,7 +20,7 @@ import {
   IconDotsVertical,
   IconPlus,
 } from '@tabler/icons-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { BaseTable, type TableColumn } from '../../../components/BaseTable/BaseTable';
@@ -30,7 +30,7 @@ import ErrorState from '../../../components/ErrorState/ErrorState';
 
 import type { IEmployee, EmployeeFormValues } from '../types';
 import { EmployeeFormModal } from '../components/EmployeeFormModal';
-import { ImportPreviewModal } from '../components/ImportPreviewModal';
+import { ImportPreviewModal } from '../components/import-preview/ImportPreviewModal';
 import { useGetEmployees } from '../api/get-employees';
 import { useCreateEmployee } from '../api/create-employee';
 import { useUpdateEmployee } from '../api/update-employee';
@@ -39,12 +39,15 @@ import { usePreviewImport, type PreviewEmployee } from '../api/preview-import';
 import { exportEmployees } from '../api/export-employees';
 import { notify } from '../../../components/Notification';
 import { mapEmployeeToFormValues } from '../utils/employee-mapper';
-import { formatDate } from '../../../constant';
+import { EMPLOYEE_ROLE, formatDate } from '../../../constant';
 import { TableSkeleton } from '../../../components/Skeleton/TableSkeleton';
 import { useDelayedLoading } from '../../../hooks/useDelayedLoading';
+import { normalizeString } from '../utils/search';
+import { useHasRole } from '@/hooks/useHasRole';
 
 export default function EmployeesPage() {
   const navigate = useNavigate();
+  const [input, setInput] = useState('');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<string | null>(null);
 
@@ -59,6 +62,7 @@ export default function EmployeesPage() {
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
 
   const isEdit = Boolean(editEmployee);
+  const isAdmin = useHasRole(EMPLOYEE_ROLE.ADMIN);
 
   const {
     data,
@@ -142,9 +146,18 @@ export default function EmployeesPage() {
   };
 
   const handleSearch = (value: string) => {
-    setSearch(value);
-    setPage(1);
+    setInput(value);
   };
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      const cleaned = normalizeString(input);
+      setSearch(cleaned);
+      setPage(1);
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [input]);
 
   const handleFilterChange = (value: string | null) => {
     setFilter(value);
@@ -188,10 +201,10 @@ export default function EmployeesPage() {
     }
   };
 
-  const handleConfirmImport = async () => {
-    const notiId = notify.loading('Importing employees...');
+  const handleConfirmImport = async (selectedRows: PreviewEmployee[]) => {
+    const notiId = notify.loading(`Importing ${selectedRows.length} employees...`);
     try {
-      const result = await importMutation.mutateAsync(previewData);
+      const result = await importMutation.mutateAsync(selectedRows);
       notify.success(notiId, {
         message: `Imported: ${result.data.imported}, Failed: ${result.data.failed}`,
       });
@@ -271,18 +284,20 @@ export default function EmployeesPage() {
       title: 'Actions',
       align: 'center',
       render: (row) => (
-        <Group gap="xs" justify="center">
+        <Group gap="xs" justify="center" wrap="nowrap">
           <ActionIcon
             variant="subtle"
             color="blue"
             onClick={() => navigate(`/employees/${row.id}/profile`)}
             title="View Profile"
           >
-            <IconEye size={16} />
+            <IconEye size={18} />
           </ActionIcon>
-          <ActionIcon variant="subtle" color="gray" onClick={() => handleEdit(row)} title="Edit">
-            <IconEdit size={16} />
-          </ActionIcon>
+          {isAdmin && (
+            <ActionIcon variant="subtle" color="gray" onClick={() => handleEdit(row)} title="Edit">
+              <IconEdit size={18} />
+            </ActionIcon>
+          )}
         </Group>
       ),
     },
@@ -299,12 +314,14 @@ export default function EmployeesPage() {
         description="Manage your workforce — add, edit, and organize employees"
         right={
           <Group>
-            <Button leftSection={<IconPlus size={16} />} onClick={handleAdd}>
-              Add employee
-            </Button>
+            {isAdmin && (
+              <Button leftSection={<IconPlus size={18} />} onClick={handleAdd}>
+                Add employee
+              </Button>
+            )}
             <Menu shadow="md" width={200} position="bottom-start">
               <Menu.Target>
-                <Button variant="light" leftSection={<IconDotsVertical size={16} />}>
+                <Button variant="light" leftSection={<IconDotsVertical size={18} />}>
                   Actions
                 </Button>
               </Menu.Target>
@@ -312,31 +329,37 @@ export default function EmployeesPage() {
               <Menu.Dropdown>
                 <Menu.Item
                   variant="light"
-                  leftSection={<IconSitemap size={16} />}
+                  leftSection={<IconSitemap size={18} />}
                   onClick={() => navigate('/employees/org-chart')}
                 >
                   View Org Chart
                 </Menu.Item>
-                <Menu.Item leftSection={<IconFileExport size={16} />} onClick={handleExport}>
-                  Export to Excel
-                </Menu.Item>
-                <FileButton onChange={handleImportFile} accept=".xlsx,.xls">
-                  {(props) => (
-                    <Menu.Item
-                      {...props}
-                      leftSection={<IconFileImport size={16} />}
-                      closeMenuOnClick={false}
-                    >
-                      Import from Excel
+                {isAdmin && (
+                  <>
+                    <Menu.Item leftSection={<IconFileExport size={18} />} onClick={handleExport}>
+                      Export to Excel
                     </Menu.Item>
-                  )}
-                </FileButton>
+                  </>
+                )}
+                {isAdmin && (
+                  <FileButton onChange={handleImportFile} accept=".xlsx,.xls">
+                    {(props) => (
+                      <Menu.Item
+                        {...props}
+                        leftSection={<IconFileImport size={18} />}
+                        closeMenuOnClick={false}
+                      >
+                        Import from Excel
+                      </Menu.Item>
+                    )}
+                  </FileButton>
+                )}
               </Menu.Dropdown>
             </Menu>
             <TextInput
               placeholder="Search by name, email or code"
-              leftSection={<IconSearch size={16} />}
-              value={search}
+              leftSection={<IconSearch size={18} />}
+              value={input}
               onChange={(e) => handleSearch(e.currentTarget.value)}
             />
 

@@ -15,7 +15,6 @@ import {
   ScrollArea,
   Stack,
   useMantineColorScheme,
-  SegmentedControl,
 } from '@mantine/core';
 import {
   IconChevronRight,
@@ -29,7 +28,6 @@ import {
   IconSettings,
   IconLogout,
   IconChevronDown,
-  IconLanguage,
   IconHome,
 } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -39,29 +37,10 @@ import classes from './Navbar.module.css';
 import { useAuth } from '@/modules/auth/context/AuthContext';
 import { AUTH_URL } from '@/constant/config';
 import { myProfileUrl, settingsUrl } from '@/routes/url';
-const MOCK_NOTIS = [
-  {
-    id: '1',
-    title: 'New leave request',
-    desc: 'Nguyen Van A submitted a leave request',
-    time: '2m ago',
-    read: false,
-  },
-  {
-    id: '2',
-    title: 'Attendance approved',
-    desc: 'Your timesheet for March has been approved',
-    time: '1h ago',
-    read: false,
-  },
-  {
-    id: '3',
-    title: 'Policy updated',
-    desc: 'Work policy effective from April 1st',
-    time: '3h ago',
-    read: true,
-  },
-];
+import { useGetNotifications, useMarkRead, useMarkAllRead } from '@/modules/notifications/api';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+dayjs.extend(relativeTime);
 
 interface NavbarProps {
   collapsed: boolean;
@@ -72,11 +51,15 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
-  const [lang, setLang] = useState('vi');
-  const [notis, setNotis] = useState(MOCK_NOTIS);
-  const unread = notis.filter((n) => !n.read).length;
   const { user, logout } = useAuth();
   const AUTH_APP_URL = `${AUTH_URL}apps` || new URL(AUTH_URL).origin;
+
+  const { data: notiData } = useGetNotifications();
+  const markReadMutation = useMarkRead();
+  const markAllReadMutation = useMarkAllRead();
+
+  const notifications = notiData?.notifications ?? [];
+  const unread = notiData?.unread_count ?? 0;
 
   const userRoles = user?.roles ?? [];
   const canSee = (roles?: string[]) => !roles?.length || roles.some((r) => userRoles.includes(r));
@@ -126,14 +109,14 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
           {collapsed ? (
             <Tooltip label="Expand" position="right" withArrow>
               <ActionIcon variant="subtle" color="gray" size="sm" onClick={onToggle}>
-                <IconLayoutSidebarLeftExpand size={16} />
+                <IconLayoutSidebarLeftExpand size={18} />
               </ActionIcon>
             </Tooltip>
           ) : (
             <Group gap="sm" justify="space-between" wrap="nowrap" style={{ width: '100%' }}>
               <Group gap="sm" wrap="nowrap">
                 <ThemeIcon size={34} radius="md" color="deepPurple" variant="filled">
-                  <IconHierarchy size={18} />
+                  <IconHierarchy size={20} />
                 </ThemeIcon>
                 <Text fw={700} size="md" style={{ letterSpacing: '-0.3px' }}>
                   RMS Core
@@ -141,7 +124,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
               </Group>
               <Tooltip label="Collapse" position="right" withArrow>
                 <ActionIcon variant="subtle" color="gray" size="sm" onClick={onToggle}>
-                  <IconLayoutSidebarLeftCollapse size={16} />
+                  <IconLayoutSidebarLeftCollapse size={18} />
                 </ActionIcon>
               </Tooltip>
             </Group>
@@ -272,36 +255,14 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
 
       <div className={classes.footer}>
         {footerRow(
-          <IconLanguage size={16} color="var(--mantine-color-dimmed)" />,
-          'Language',
-          <SegmentedControl
-            size="xs"
-            value={lang}
-            onChange={setLang}
-            data={[
-              { label: 'VI', value: 'vi' },
-              { label: 'EN', value: 'en' },
-            ]}
-            styles={{
-              root: {
-                background: 'transparent',
-                border: '1px solid var(--mantine-color-default-border)',
-                padding: 2,
-              },
-              label: { paddingInline: 7, paddingBlock: 1, fontSize: 10, fontWeight: 700 },
-            }}
-          />,
-        )}
-
-        {footerRow(
           colorScheme === 'dark' ? (
-            <IconSun size={16} color="var(--mantine-color-dimmed)" />
+            <IconSun size={18} color="var(--mantine-color-dimmed)" />
           ) : (
-            <IconMoon size={16} color="var(--mantine-color-dimmed)" />
+            <IconMoon size={18} color="var(--mantine-color-dimmed)" />
           ),
           colorScheme === 'dark' ? 'Light mode' : 'Dark mode',
           <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => toggleColorScheme()}>
-            {colorScheme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
+            {colorScheme === 'dark' ? <IconSun size={17} /> : <IconMoon size={17} />}
           </ActionIcon>,
           () => toggleColorScheme(),
         )}
@@ -311,7 +272,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
             <div>
               {footerRow(
                 <Indicator label={unread} size={15} disabled={unread === 0} color="red" offset={2}>
-                  <IconBell size={16} color="var(--mantine-color-dimmed)" />
+                  <IconBell size={18} color="var(--mantine-color-dimmed)" />
                 </Indicator>,
                 'Notifications',
                 unread > 0 ? (
@@ -334,9 +295,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
                 Notifications
               </Text>
               {unread > 0 && (
-                <UnstyledButton
-                  onClick={() => setNotis((p) => p.map((n) => ({ ...n, read: true })))}
-                >
+                <UnstyledButton onClick={() => markAllReadMutation.mutate()}>
                   <Text size="xs" c="deepPurple" fw={500}>
                     Mark all read
                   </Text>
@@ -346,40 +305,47 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
             <Divider />
             <ScrollArea.Autosize mah={320}>
               <Stack gap={0}>
-                {notis.map((n) => (
-                  <UnstyledButton
-                    key={n.id}
-                    px="sm"
-                    py={10}
-                    style={{
-                      background: n.read ? 'transparent' : 'var(--mantine-color-deepPurple-0)',
-                      borderBottom: '1px solid var(--mantine-color-default-border)',
-                      width: '100%',
-                    }}
-                    onClick={() =>
-                      setNotis((p) => p.map((x) => (x.id === n.id ? { ...x, read: true } : x)))
-                    }
-                  >
-                    <Group gap="sm" wrap="nowrap" align="flex-start">
-                      <Indicator color="deepPurple" size={7} disabled={n.read} mt={6}>
-                        <Avatar size={28} radius="xl" color="deepPurple" variant="light">
-                          <IconBell size={13} />
-                        </Avatar>
-                      </Indicator>
-                      <Box style={{ flex: 1, minWidth: 0 }}>
-                        <Text size="xs" fw={600} truncate>
-                          {n.title}
-                        </Text>
-                        <Text size="xs" c="dimmed" lineClamp={2}>
-                          {n.desc}
-                        </Text>
-                        <Text size="xs" c="dimmed" mt={2}>
-                          {n.time}
-                        </Text>
-                      </Box>
-                    </Group>
-                  </UnstyledButton>
-                ))}
+                {notifications.length === 0 ? (
+                  <Text size="xs" c="dimmed" ta="center" py="md" px="sm">
+                    No notifications yet
+                  </Text>
+                ) : (
+                  notifications.map((n) => (
+                    <UnstyledButton
+                      key={n.id}
+                      px="sm"
+                      py={10}
+                      style={{
+                        background: n.is_read ? 'transparent' : 'var(--mantine-color-deepPurple-0)',
+                        borderBottom: '1px solid var(--mantine-color-default-border)',
+                        width: '100%',
+                      }}
+                      onClick={() => {
+                        if (!n.is_read) markReadMutation.mutate(n.id);
+                        if (n.link) navigate(n.link);
+                      }}
+                    >
+                      <Group gap="sm" wrap="nowrap" align="flex-start">
+                        <Indicator color="deepPurple" size={7} disabled={n.is_read} mt={6}>
+                          <Avatar size={28} radius="xl" color="deepPurple" variant="light">
+                            <IconBell size={15} />
+                          </Avatar>
+                        </Indicator>
+                        <Box style={{ flex: 1, minWidth: 0 }}>
+                          <Text size="xs" fw={600} truncate>
+                            {n.title}
+                          </Text>
+                          <Text size="xs" c="dimmed" lineClamp={2}>
+                            {n.body}
+                          </Text>
+                          <Text size="xs" c="dimmed" mt={2}>
+                            {dayjs(n.created_at).fromNow()}
+                          </Text>
+                        </Box>
+                      </Group>
+                    </UnstyledButton>
+                  ))
+                )}
               </Stack>
             </ScrollArea.Autosize>
           </Menu.Dropdown>
@@ -392,10 +358,10 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
             <div>
               {footerRow(
                 <Avatar size={22} radius="xl" color="deepPurple" src={null}>
-                  <IconUser size={12} />
+                  <IconUser size={14} />
                 </Avatar>,
                 user?.email ?? '',
-                <IconChevronDown size={12} color="var(--mantine-color-dimmed)" />,
+                <IconChevronDown size={14} color="var(--mantine-color-dimmed)" />,
               )}
             </div>
           </Menu.Target>

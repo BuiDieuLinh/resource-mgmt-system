@@ -245,7 +245,7 @@ export default function OrgChartPage() {
             >
               <Group gap="sm" wrap="nowrap">
                 <Avatar size={40} radius="md" color="white" variant="transparent">
-                  <IconBuilding size={22} color="white" />
+                  <IconBuilding size={24} color="white" />
                 </Avatar>
                 <Stack gap={0}>
                   <Text fw={700} size="md" c="white">
@@ -290,7 +290,7 @@ export default function OrgChartPage() {
                   >
                     <Group gap="xs" wrap="nowrap">
                       <Avatar size={32} radius="sm" color="blue" variant="light">
-                        <IconBuilding size={16} />
+                        <IconBuilding size={18} />
                       </Avatar>
                       <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
                         <Text fw={700} size="sm" lineClamp={1}>
@@ -403,7 +403,7 @@ export default function OrgChartPage() {
                                     radius="xl"
                                     color={PRIMARY_COLOR}
                                   >
-                                    <IconUser size={14} />
+                                    <IconUser size={16} />
                                   </Avatar>
                                   <Stack gap={1} style={{ flex: 1, minWidth: 0 }}>
                                     <Group gap={4} wrap="nowrap">
@@ -452,7 +452,7 @@ export default function OrgChartPage() {
                                   radius="xl"
                                   color={PRIMARY_COLOR}
                                 >
-                                  <IconUser size={20} />
+                                  <IconUser size={22} />
                                 </Avatar>
                                 <Stack gap={2}>
                                   <Group gap={6} wrap="nowrap">

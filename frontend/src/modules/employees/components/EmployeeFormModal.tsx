@@ -235,7 +235,7 @@ export function EmployeeFormModal({
           <Divider
             label={
               <Group gap={6} align="center">
-                <IconUser size={14} />
+                <IconUser size={16} />
                 <Text size="sm" fw={700}>
                   General Information
                 </Text>
@@ -382,7 +382,7 @@ export function EmployeeFormModal({
             mt="xs"
             label={
               <Group gap={6} align="center">
-                <IconCalendar size={14} />
+                <IconCalendar size={16} />
                 <Text size="sm" fw={700}>
                   Work Schedule
                 </Text>
@@ -416,7 +416,7 @@ export function EmployeeFormModal({
                 }}
               >
                 <Group gap={6} align="center">
-                  <IconClockHour8 size={14} color="#868e96" />
+                  <IconClockHour8 size={16} color="#868e96" />
                   <Text size="xs" c="dimmed" fw={500}>
                     From
                   </Text>
@@ -443,7 +443,7 @@ export function EmployeeFormModal({
                 }}
               >
                 <Group gap={6} align="center">
-                  <IconClockHour5 size={14} color="#868e96" />
+                  <IconClockHour5 size={16} color="#868e96" />
                   <Text size="xs" c="dimmed" fw={500}>
                     To
                   </Text>

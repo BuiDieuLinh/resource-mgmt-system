@@ -110,7 +110,7 @@ export function WorkPolicyFormModal({
           <Divider
             label={
               <Group gap={6}>
-                <IconCoffee size={14} />
+                <IconCoffee size={16} />
                 <Text size="sm" fw={700}>
                   Break Time
                 </Text>
@@ -128,7 +128,7 @@ export function WorkPolicyFormModal({
                 label="Break Start"
                 data={TIME_OPTIONS}
                 searchable
-                leftSection={<IconClock size={14} />}
+                leftSection={<IconClock size={16} />}
                 {...form.getInputProps('break_start')}
               />
             </Grid.Col>
@@ -138,7 +138,7 @@ export function WorkPolicyFormModal({
                 label="Break End"
                 data={TIME_OPTIONS}
                 searchable
-                leftSection={<IconClock size={14} />}
+                leftSection={<IconClock size={16} />}
                 {...form.getInputProps('break_end')}
               />
             </Grid.Col>
@@ -148,7 +148,7 @@ export function WorkPolicyFormModal({
           <Divider
             label={
               <Group gap={6}>
-                <IconClock size={14} />
+                <IconClock size={16} />
                 <Text size="sm" fw={700}>
                   Flexible Time
                 </Text>
@@ -191,7 +191,7 @@ export function WorkPolicyFormModal({
           <Divider
             label={
               <Group gap={6}>
-                <IconCalendar size={14} />
+                <IconCalendar size={16} />
                 <Text size="sm" fw={700}>
                   Effective Period
                 </Text>

@@ -1,10 +1,5 @@
 import { notifications } from '@mantine/notifications';
-import {
-  IconCheck,
-  IconX,
-  IconInfoCircle,
-  IconAlertTriangle,
-} from '@tabler/icons-react';
+import { IconCheck, IconX, IconInfoCircle, IconAlertTriangle } from '@tabler/icons-react';
 
 type NotifyOptions = {
   title?: string;
@@ -28,7 +23,7 @@ export const notify = {
       title,
       message,
       color: 'green',
-      icon: <IconCheck size={18} />,
+      icon: <IconCheck size={20} />,
       autoClose: 3000,
     });
   },
@@ -39,7 +34,7 @@ export const notify = {
       title,
       message,
       color: 'red',
-      icon: <IconX size={18} />,
+      icon: <IconX size={20} />,
       autoClose: 4000,
     });
   },
@@ -49,7 +44,7 @@ export const notify = {
       title,
       message,
       color: 'blue',
-      icon: <IconInfoCircle size={18} />,
+      icon: <IconInfoCircle size={20} />,
       autoClose: 3000,
     });
   },
@@ -59,7 +54,7 @@ export const notify = {
       title,
       message,
       color: 'yellow',
-      icon: <IconAlertTriangle size={18} />,
+      icon: <IconAlertTriangle size={20} />,
       autoClose: 3500,
     });
   },

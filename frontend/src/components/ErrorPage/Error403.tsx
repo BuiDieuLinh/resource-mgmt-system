@@ -8,7 +8,7 @@ export default function Error403() {
   return (
     <Stack align="center" justify="center" h="100vh" gap="md">
       <ThemeIcon size={64} radius="xl" color="red" variant="light">
-        <IconShieldOff size={32} />
+        <IconShieldOff size={34} />
       </ThemeIcon>
       <Title order={2}>403 — Forbidden</Title>
       <Text c="dimmed" ta="center" maw={400}>

@@ -33,6 +33,7 @@ model Employees {
   avatar_url    String?        @db.Text
   hire_date     DateTime       @db.Date
   status        EmployeeStatus @default(active)
+  annual_leave_days Int        @default(12)
 
   position_id String    @db.Uuid
   created_at  DateTime  @default(now())
@@ -41,6 +42,8 @@ model Employees {
   work_schedules     EmployeeWorkSchedules[]
   attendances        Attendances[]
   leave_requests     LeaveRequests[]
+  manager_approvals  LeaveRequests[] @relation("ManagerApprover")
+  admin_approvals    LeaveRequests[] @relation("AdminApprover")
   reviews_received   PerformanceReviews[] @relation("ReviewedEmployee")
   reviews_given      PerformanceReviews[] @relation("ReviewerEmployee")
   awards             Awards[]
@@ -209,11 +212,15 @@ model LeaveRequests {
   status              LeaveStatus @default(pending)
   approved_by_manager String?     @db.Uuid
   manager_approved_at DateTime?   @db.Timestamptz
+  manager_comment     String?     @db.Text
   approved_by_admin   String?     @db.Uuid
   admin_approved_at   DateTime?   @db.Timestamptz
+  admin_comment       String?     @db.Text
   created_at          DateTime    @default(now())
 
-  employee Employees @relation(fields: [employee_id], references: [id])
+  employee         Employees  @relation(fields: [employee_id], references: [id])
+  approver_manager Employees? @relation("ManagerApprover", fields: [approved_by_manager], references: [id])
+  approver_admin   Employees? @relation("AdminApprover", fields: [approved_by_admin], references: [id])
 
   @@index([employee_id, start_date, end_date])
   @@map("leave_requests")
@@ -305,4 +312,30 @@ model AwardReveals {
 
   @@unique([award_id, employee_id])
   @@map("award_reveals")
+}
+
+enum NotificationType {
+  leave_submitted
+  leave_approved
+  leave_rejected
+  eval_cycle_started
+  eval_deadline_reminder
+  eval_submission_rejected
+  eval_result_published
+  timesheet_approved
+}
+
+model Notifications {
+  id          String           @id @default(uuid()) @db.Uuid
+  user_id     String           @db.Uuid   
+  type        NotificationType
+  title       String           @db.VarChar(200)
+  body        String           @db.Text
+  link        String?          @db.VarChar(500)
+  is_read     Boolean          @default(false)
+  created_at  DateTime         @default(now())
+
+  @@index([user_id, is_read])
+  @@index([user_id, created_at])
+  @@map("notifications")
 }

@@ -44,7 +44,7 @@ export function SettingRow({
       </Group>
       <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
         {right}
-        {onClick && <IconChevronRight size={14} color="var(--mantine-color-dimmed)" />}
+        {onClick && <IconChevronRight size={16} color="var(--mantine-color-dimmed)" />}
       </Group>
     </Group>
   );

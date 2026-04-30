@@ -8,6 +8,7 @@ import { QueryAttendanceDto } from './dto/query-attendance.dto';
 import {
   getMonthRange,
   getWorkingDaysInMonth,
+  getWorkingDaysUpToToday,
   dateToMinutes,
   overlapMinutes,
   toLocalWorkDate,
@@ -22,9 +23,13 @@ import { CheckInDto } from './dto/check-in.dto';
 import { CheckOutDto } from './dto/check-out.dto';
 import { CreateAttendanceDto } from './dto/create-attendance.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
-import { AttendanceAction, AttendanceStatus } from '@prisma/client';
+import {
+  AttendanceAction,
+  AttendanceStatus,
+  LeaveStatus,
+  LeaveType,
+} from '@prisma/client';
 
-/** Haversine formula — returns distance in meters between two GPS coords */
 function haversineMeters(
   lat1: number,
   lon1: number,
@@ -138,14 +143,7 @@ export class AttendancesService {
     });
 
     const checkInMinutes = dateToMinutes(timestamp);
-    // Grace window: check-in within flexible_start_minutes after scheduled_start = on time
-    const graceLate = policy?.is_flexible_enabled
-      ? (policy.flexible_start_minutes ?? 0)
-      : 0;
-    const late = Math.max(
-      0,
-      checkInMinutes - (schedule.start_time + graceLate),
-    );
+    const late = Math.max(0, checkInMinutes - schedule.start_time);
 
     await this.prisma.attendances.update({
       where: { id: attendance.id },
@@ -201,9 +199,6 @@ export class AttendancesService {
     }
     const workMinutes = Math.max(0, gross - breakDeduction);
     const earlyLeave = Math.max(0, attendance.scheduled_end - checkOutMin);
-    // Grace window: check-out within flexible_end_minutes before scheduled_end = full day
-    const graceEarly = attendance.flexible_end ?? 0;
-    const earlyLeaveAdjusted = Math.max(0, earlyLeave - graceEarly);
     const overtime = Math.max(0, checkOutMin - attendance.scheduled_end);
 
     const updated = await this.prisma.attendances.update({
@@ -211,7 +206,7 @@ export class AttendancesService {
       data: {
         check_out_time: timestamp,
         work_minutes: workMinutes,
-        early_leave: earlyLeaveAdjusted,
+        early_leave: earlyLeave,
         overtime,
       },
     });
@@ -247,22 +242,67 @@ export class AttendancesService {
     );
   }
 
-  async findSummaries(month: number, year: number) {
-    const [attendances, employees] = await this.prisma.$transaction([
-      this.prisma.attendances.findMany({
-        where: { work_date: getMonthRange(month, year) },
-        include: {
-          employee: {
-            include: { position: { include: { department: true } } },
-          },
-        },
-      }),
-      this.prisma.employees.findMany({
-        include: { position: { include: { department: true } } },
-      }),
-    ]);
+  async findSummaries(month: number, year: number, departmentId?: string) {
+    const deptFilter = departmentId
+      ? { position: { department_id: departmentId } }
+      : undefined;
 
-    const planDay = getWorkingDaysInMonth(month, year);
+    const monthRange = getMonthRange(month, year);
+
+    const [attendances, employees, leaveRequests, holidays, pendingLeaves] =
+      await this.prisma.$transaction([
+        this.prisma.attendances.findMany({
+          where: {
+            work_date: monthRange,
+            ...(departmentId && {
+              employee: { position: { department_id: departmentId } },
+            }),
+          },
+          include: {
+            employee: {
+              include: { position: { include: { department: true } } },
+            },
+          },
+        }),
+        this.prisma.employees.findMany({
+          where: deptFilter,
+          include: { position: { include: { department: true } } },
+        }),
+        this.prisma.leaveRequests.findMany({
+          where: {
+            status: LeaveStatus.approved,
+            start_date: { lte: monthRange.lte },
+            end_date: { gte: monthRange.gte },
+            ...(departmentId && {
+              employee: { position: { department_id: departmentId } },
+            }),
+          },
+        }),
+        this.prisma.holidays.findMany({
+          where: { holiday_date: { gte: monthRange.gte, lte: monthRange.lte } },
+        }),
+        this.prisma.leaveRequests.findMany({
+          where: {
+            status: LeaveStatus.pending,
+            approved_by_admin: null,
+            ...(departmentId && {
+              employee: { position: { department_id: departmentId } },
+            }),
+          },
+          select: { employee_id: true },
+        }),
+      ]);
+
+    const holidayDates = new Set(
+      holidays.map((h) => h.holiday_date.toISOString().slice(0, 10)),
+    );
+    const holidayCount = holidays.filter((h) => {
+      const dow = h.holiday_date.getDay();
+      return dow !== 0 && dow !== 6;
+    }).length;
+
+    const planDay = getWorkingDaysInMonth(month, year, holidayDates);
+    const elapsedWorkDays = getWorkingDaysUpToToday(month, year, holidayDates);
     const summaryMap = new Map<string, any>();
 
     employees.forEach((emp) => {
@@ -271,26 +311,78 @@ export class AttendancesService {
         employee: emp,
         plan_day: planDay,
         actual_day: 0,
-        late: 0,
+        late_minutes: 0,
         absent: 0,
+        annual_leave: 0,
+        unpaid_leave: 0,
+        holiday_days: holidayCount,
         over_time: 0,
         work_minutes: 0,
-        records: [],
+        pending_leave_count: 0,
       });
     });
+
+    pendingLeaves.forEach(({ employee_id }) => {
+      const stats = summaryMap.get(employee_id);
+      if (stats) stats.pending_leave_count += 1;
+    });
+
+    const todayBoundary = toLocalWorkDate(new Date());
+    const todayStr = todayBoundary.toISOString().slice(0, 10);
+    const monthStartStr = `${year}-${String(month).padStart(2, '0')}-01`;
+    const monthEndStr = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate().toString().padStart(2, '0')}`;
 
     attendances.forEach((att) => {
       const stats = summaryMap.get(att.employee_id);
       if (!stats) return;
-      stats.records.push(att);
-      if (att.status === AttendanceStatus.approved) stats.actual_day += 1;
-      if (att.late > 0) stats.late += 1;
+      const wd =
+        att.work_date instanceof Date ? att.work_date : new Date(att.work_date);
+      const wdStr = `${wd.getUTCFullYear()}-${String(wd.getUTCMonth() + 1).padStart(2, '0')}-${String(wd.getUTCDate()).padStart(2, '0')}`;
+      if (
+        att.check_in_time &&
+        wdStr < todayStr &&
+        wdStr >= monthStartStr &&
+        wdStr <= monthEndStr
+      ) {
+        stats.actual_day += 1;
+      }
+      if (att.late > 0) stats.late_minutes += att.late;
       stats.over_time += att.overtime ?? 0;
       stats.work_minutes += att.work_minutes ?? 0;
     });
 
+    leaveRequests.forEach((lr) => {
+      const stats = summaryMap.get(lr.employee_id);
+      if (!stats) return;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const rangeEnd =
+        lr.end_date < monthRange.lte ? lr.end_date : monthRange.lte;
+      const effectiveEnd =
+        rangeEnd < today ? rangeEnd : new Date(today.getTime() - 1);
+      const start =
+        lr.start_date > monthRange.gte ? lr.start_date : monthRange.gte;
+      let days = 0;
+      for (
+        const d = new Date(start);
+        d <= effectiveEnd;
+        d.setDate(d.getDate() + 1)
+      ) {
+        const dow = d.getDay();
+        const iso = d.toISOString().slice(0, 10);
+        if (dow !== 0 && dow !== 6 && !holidayDates.has(iso)) days++;
+      }
+
+      if (lr.leave_type === LeaveType.annual) stats.annual_leave += days;
+      else if (lr.leave_type === LeaveType.unpaid) stats.unpaid_leave += days;
+    });
+
     summaryMap.forEach((s) => {
-      s.absent = Math.max(0, s.plan_day - s.actual_day);
+      s.absent = Math.max(
+        0,
+        elapsedWorkDays - s.actual_day - s.annual_leave - s.unpaid_leave,
+      );
     });
 
     return ResponseHelper.success(Array.from(summaryMap.values()));
@@ -341,9 +433,7 @@ export class AttendancesService {
     const work_policy = await this.workPolicyService.getActive(monthRange.gte);
 
     const planDay = getWorkingDaysInMonth(month, year);
-    const actualDay = records.filter(
-      (r) => r.status === AttendanceStatus.approved,
-    ).length;
+    const actualDay = records.filter((r) => r.check_in_time).length;
 
     return ResponseHelper.success({
       employee,
@@ -355,8 +445,8 @@ export class AttendancesService {
       summary: {
         plan_day: planDay,
         actual_day: actualDay,
-        late: records.filter((r) => r.late > 0).length,
-        absent: Math.max(0, planDay - actualDay),
+        late: records.reduce((s, r) => s + (r.late ?? 0), 0),
+        absent: Math.max(0, getWorkingDaysUpToToday(month, year) - actualDay),
         over_time: records.reduce((s, r) => s + (r.overtime ?? 0), 0),
         work_minutes: records.reduce((s, r) => s + (r.work_minutes ?? 0), 0),
       },

@@ -9,12 +9,10 @@ import {
   employeeOrgChartUrl,
   employeeProfileUrl,
   attendanceUrl,
-  timesheetUrl,
   attendanceDetailUrl,
   leaveRequestUrl,
   settingsUrl,
   checkInOutUrl,
-  myLeaveRequestUrl,
   myTimesheetUrl,
   myProfileUrl,
 } from './url';
@@ -27,11 +25,9 @@ import Departments from '@/modules/departments/views/Departments';
 import Positions from '@/modules/positions/views/Positions';
 import EmployeeProfile from '@/modules/employees/views/EmployeeProfile';
 import Attendance from '@/modules/attendances/views/Attendances';
-import Timesheet from '@/modules/attendances/views/Timesheet';
 import AttendanceDetail from '@/modules/attendances/views/AttendanceDetail';
 import CheckInOut from '@/modules/attendances/views/CheckInOut';
 import LeaveRequests from '@/modules/leave-requests/views/LeaveRequests';
-import MyLeaveRequests from '@/modules/leave-requests/views/MyLeaveRequests';
 import MyTimesheet from '@/modules/attendances/views/MyTimesheet';
 import MyProfile from '@/modules/employees/views/MyProfile';
 import Settings from '@/modules/settings/views/Settings';
@@ -50,45 +46,16 @@ export const router = createBrowserRouter([
         path: '/',
         element: <Layout />,
         children: [
-          {
-            path: '',
-            element: <Home />,
-          },
-          {
-            path: employeeListUrl,
-            element: <Employee />,
-          },
-          {
-            path: employeeDepartmentsUrl,
-            element: <Departments />,
-          },
-          {
-            path: employeePositionsUrl,
-            element: <Positions />,
-          },
-          {
-            path: employeeOrgChartUrl,
-            element: <OrgChart />,
-          },
-          {
-            path: employeeProfileUrl,
-            element: <EmployeeProfile />,
-          },
-          {
-            path: attendanceUrl,
-            element: <Attendance />,
-          },
-          {
-            path: timesheetUrl,
-            element: <Timesheet />,
-          },
-          {
-            path: attendanceDetailUrl,
-            element: <AttendanceDetail />,
-          },
+          { path: '', element: <Home /> },
+          { path: employeeListUrl, element: <Employee /> },
+          { path: employeeDepartmentsUrl, element: <Departments /> },
+          { path: employeePositionsUrl, element: <Positions /> },
+          { path: employeeOrgChartUrl, element: <OrgChart /> },
+          { path: employeeProfileUrl, element: <EmployeeProfile /> },
+          { path: attendanceUrl, element: <Attendance /> },
+          { path: attendanceDetailUrl, element: <AttendanceDetail /> },
           { path: leaveRequestUrl, element: <LeaveRequests /> },
           { path: checkInOutUrl, element: <CheckInOut /> },
-          { path: myLeaveRequestUrl, element: <MyLeaveRequests /> },
           { path: myTimesheetUrl, element: <MyTimesheet /> },
           { path: myProfileUrl, element: <MyProfile /> },
           { path: settingsUrl, element: <Settings /> },
@@ -99,10 +66,7 @@ export const router = createBrowserRouter([
       },
     ],
   },
-  {
-    path: '*',
-    element: <Error404 />,
-  },
+  { path: '*', element: <Error404 /> },
   { path: '/401', element: <Error401 /> },
   { path: '/403', element: <Error403 /> },
   { path: '/session-expired', element: <ErrorTokenExpired /> },

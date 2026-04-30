@@ -1,9 +1,15 @@
-import { Modal, Stack, Select, Group, Button, Textarea, Text } from '@mantine/core';
+import { Modal, Stack, Select, Group, Button, Textarea, Text, Badge, Divider } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { useForm } from '@mantine/form';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { PRIMARY_COLOR } from '@/theme';
-import { DATE_FORMAT, LEAVE_TYPE_OPTIONS } from '@/constant';
+import {
+  DATE_FORMAT,
+  LEAVE_TYPE_OPTIONS,
+  LEAVE_TYPE_LABEL,
+  formatDate,
+  minutesToTime,
+} from '@/constant';
 import { useGetEmployee } from '@/modules/employees/api/get-employee';
 import { useGetEmployeeByUserId } from '@/modules/employees/api/get-employee-by-user';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -14,9 +20,11 @@ import { TIME_OPTIONS } from '@/modules/employees/utils/time-option';
 interface LeaveRequestFormModalProps {
   opened: boolean;
   onClose: () => void;
-  mode: 'add' | 'edit';
+  mode: 'add' | 'edit' | 'view' | 'review';
   initialValues?: ILeaveRequest | null;
   onSubmit: (payload: ILeaveRequestPayload, id?: string) => void | Promise<void>;
+  onApprove?: (id: string, comment: string) => void | Promise<void>;
+  onReject?: (id: string, comment: string) => void | Promise<void>;
   loading?: boolean;
 }
 
@@ -53,11 +61,14 @@ export function LeaveRequestFormModal({
   mode,
   initialValues,
   onSubmit,
+  onApprove,
+  onReject,
   loading = false,
 }: LeaveRequestFormModalProps) {
   const { user } = useAuthStore();
   const { data: currentEmployeeData } = useGetEmployeeByUserId(user?.id);
   const currentEmployee = currentEmployeeData?.data;
+  const [reviewComment, setReviewComment] = useState('');
 
   const form = useForm<FormValues>({
     initialValues: EMPTY,
@@ -95,6 +106,7 @@ export function LeaveRequestFormModal({
 
   useEffect(() => {
     if (opened) {
+      setReviewComment('');
       if (initialValues) {
         form.setValues({
           employee_id: initialValues.employee_id,
@@ -120,6 +132,149 @@ export function LeaveRequestFormModal({
     }
   }, [opened]);
 
+  const STATUS_COLOR: Record<string, string> = {
+    pending: 'yellow',
+    approved: 'green',
+    rejected: 'red',
+  };
+
+  if (mode === 'review' || mode === 'view') {
+    const lr = initialValues;
+    if (!lr) return null;
+    const isFinalized = lr.status !== 'pending';
+    const canReview = mode === 'review' && !isFinalized;
+
+    const InfoRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
+      <Group justify="space-between" wrap="nowrap">
+        <Text size="sm" c="dimmed" w={120} style={{ flexShrink: 0 }}>
+          {label}
+        </Text>
+        <Text size="sm" fw={500} ta="right">
+          {value}
+        </Text>
+      </Group>
+    );
+
+    return (
+      <Modal
+        opened={opened}
+        onClose={onClose}
+        title={
+          <Group gap="xs">
+            <Text size="lg" fw={700} c={PRIMARY_COLOR}>
+              Leave Request
+            </Text>
+            <Badge color={STATUS_COLOR[lr.status] ?? 'gray'} variant="light" size="sm">
+              {lr.status}
+            </Badge>
+          </Group>
+        }
+        centered
+        size="sm"
+        styles={{ header: { padding: '5px 15px' }, body: { paddingTop: 10 } }}
+      >
+        <Stack gap="sm">
+          <InfoRow label="Type" value={LEAVE_TYPE_LABEL[lr.leave_type] ?? lr.leave_type} />
+          <InfoRow
+            label="Period"
+            value={`${formatDate(lr.start_date)} – ${formatDate(lr.end_date)}`}
+          />
+          {(lr.leave_start_minutes != null || lr.leave_end_minutes != null) && (
+            <InfoRow
+              label="Time"
+              value={`${lr.leave_start_minutes != null ? minutesToTime(lr.leave_start_minutes) : '—'} – ${lr.leave_end_minutes != null ? minutesToTime(lr.leave_end_minutes) : '—'}`}
+            />
+          )}
+          {lr.reason && <InfoRow label="Reason" value={lr.reason} />}
+
+          {/* Approval history */}
+          {(lr.approved_by_manager || lr.approved_by_admin) && (
+            <>
+              <Divider label="Review history" labelPosition="left" />
+              {lr.approved_by_manager && (
+                <Stack gap={2}>
+                  <Group gap={4}>
+                    <Text size="xs" c="dimmed">
+                      Manager:
+                    </Text>
+                    <Text size="xs" fw={500}>
+                      {lr.approver_manager?.full_name ?? '—'}
+                    </Text>
+                  </Group>
+                  {lr.manager_comment && (
+                    <Text size="xs" c="dimmed" fs="italic">
+                      "{lr.manager_comment}"
+                    </Text>
+                  )}
+                </Stack>
+              )}
+              {lr.approved_by_admin && (
+                <Stack gap={2}>
+                  <Group gap={4}>
+                    <Text size="xs" c="dimmed">
+                      Admin:
+                    </Text>
+                    <Text size="xs" fw={500}>
+                      {lr.approver_admin?.full_name ?? '—'}
+                    </Text>
+                  </Group>
+                  {lr.admin_comment && (
+                    <Text size="xs" c="dimmed" fs="italic">
+                      "{lr.admin_comment}"
+                    </Text>
+                  )}
+                </Stack>
+              )}
+            </>
+          )}
+
+          {/* Review actions */}
+          {canReview && (
+            <>
+              <Divider label="Review" labelPosition="left" />
+              <Textarea
+                placeholder="Comment (optional)"
+                autosize
+                minRows={2}
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.currentTarget.value)}
+              />
+              <Group justify="flex-end" gap="xs">
+                <Button variant="subtle" color="gray" onClick={onClose}>
+                  Cancel
+                </Button>
+                <Button
+                  color="red"
+                  variant="light"
+                  loading={loading}
+                  onClick={() => onReject?.(lr.id, reviewComment)}
+                >
+                  Reject
+                </Button>
+                <Button
+                  color="green"
+                  loading={loading}
+                  onClick={() => onApprove?.(lr.id, reviewComment)}
+                >
+                  Approve
+                </Button>
+              </Group>
+            </>
+          )}
+
+          {!canReview && (
+            <Group justify="flex-end">
+              <Button variant="subtle" onClick={onClose}>
+                Close
+              </Button>
+            </Group>
+          )}
+        </Stack>
+      </Modal>
+    );
+  }
+
+  // ── Add / Edit mode ───────────────────────────────────────────────────────
   const handleSubmit = async (values: FormValues) => {
     const payload: ILeaveRequestPayload = {
       employee_id: values.employee_id,

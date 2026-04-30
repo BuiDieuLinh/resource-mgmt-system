@@ -120,7 +120,7 @@ export default function DepartmentsPage() {
       width: 100,
       render: (row) => (
         <ActionIcon variant="subtle" color="gray" onClick={() => handleEdit(row)} title="Edit">
-          <IconEdit size={16} />
+          <IconEdit size={18} />
         </ActionIcon>
       ),
     },
@@ -137,12 +137,12 @@ export default function DepartmentsPage() {
         description="Manage your organization's departments"
         right={
           <Group>
-            <Button leftSection={<IconPlus size={16} />} onClick={handleAdd}>
+            <Button leftSection={<IconPlus size={18} />} onClick={handleAdd}>
               Add Department
             </Button>
             <TextInput
               placeholder="Search departments..."
-              leftSection={<IconSearch size={16} />}
+              leftSection={<IconSearch size={18} />}
               value={search}
               onChange={(e) => handleSearch(e.currentTarget.value)}
             />
