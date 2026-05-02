@@ -2,13 +2,13 @@ import { IsOptional, IsEnum, IsBoolean } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum AlertType {
-  LATE_SPIKE = 'late_spike', // AL-01: Tỷ lệ đi trễ tăng đột biến
-  SHIFT_UNDERSTAFFED = 'shift_understaffed', // AL-02: Ca thiếu người
-  HIGH_TURNOVER = 'high_turnover', // AL-03: Turnover rate cao
-  CONSECUTIVE_ABSENT = 'consecutive_absent', // AL-04: Nhân viên vắng liên tiếp
-  EXCESSIVE_OT = 'excessive_ot', // AL-05: OT bất thường
-  FAIRNESS_IMBALANCE = 'fairness_imbalance', // AL-06: Fairness mất cân bằng
-  KPI_DROP = 'kpi_drop', // AL-07: KPI giảm mạnh
+  LATE_SPIKE = 'late_spike',
+  SHIFT_UNDERSTAFFED = 'shift_understaffed',
+  HIGH_TURNOVER = 'high_turnover',
+  CONSECUTIVE_ABSENT = 'consecutive_absent',
+  EXCESSIVE_OT = 'excessive_ot',
+  FAIRNESS_IMBALANCE = 'fairness_imbalance',
+  KPI_DROP = 'kpi_drop',
 }
 
 export enum AlertSeverity {
@@ -55,7 +55,7 @@ export interface AlertData {
   title: string;
   message: string;
   metadata: Record<string, any>;
-  targetUsers: string[]; // User IDs
+  targetUsers: string[];
   createdAt: Date;
   acknowledgedAt?: Date;
   acknowledgedBy?: string;
@@ -67,7 +67,7 @@ export interface AlertInsight {
   type: string;
   title: string;
   description: string;
-  correlation: number; // 0-1
+  correlation: number;
   affectedEmployees?: number;
   recommendation?: string;
 }

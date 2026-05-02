@@ -10,7 +10,6 @@ export class AnalyticsService {
     const startOfYear = new Date(year, 0, 1);
     const endOfYear = new Date(year, 11, 31, 23, 59, 59);
 
-    // ── 1. Headcount snapshot per month (cumulative hires by hire_date) ──
     const allEmployees = await this.prisma.employees.findMany({
       select: {
         id: true,
@@ -26,7 +25,7 @@ export class AnalyticsService {
     });
 
     const headcountByMonth = Array.from({ length: 12 }, (_, i) => {
-      const monthEnd = new Date(year, i + 1, 0, 23, 59, 59); // last day of month
+      const monthEnd = new Date(year, i + 1, 0, 23, 59, 59);
       const active = allEmployees.filter(
         (e) => new Date(e.hire_date) <= monthEnd && e.status === 'active',
       ).length;
@@ -42,7 +41,6 @@ export class AnalyticsService {
       };
     });
 
-    // ── 2. Department breakdown with level distribution ──
     const deptMap = new Map<
       string,
       {
@@ -67,7 +65,6 @@ export class AnalyticsService {
       if (e.status === 'active') entry.active++;
     });
 
-    // get level distribution per dept
     const empWithLevel = await this.prisma.employees.findMany({
       select: {
         status: true,
@@ -96,7 +93,6 @@ export class AnalyticsService {
       }),
     );
 
-    // ── 3. Attendance trend per month (avg rate, late rate, overtime) ──
     const attendanceByMonth = await Promise.all(
       Array.from({ length: 12 }, async (_, i) => {
         const monthStart = new Date(year, i, 1);
@@ -135,7 +131,6 @@ export class AnalyticsService {
       }),
     );
 
-    // ── 4. Leave request trend per month ──
     const leaveByMonth = await Promise.all(
       Array.from({ length: 12 }, async (_, i) => {
         const monthStart = new Date(year, i, 1);
@@ -160,7 +155,6 @@ export class AnalyticsService {
       }),
     );
 
-    // ── 5. Quarterly summary ──
     const quarters = [
       { label: 'Q1', months: [1, 2, 3] },
       { label: 'Q2', months: [4, 5, 6] },
@@ -190,7 +184,6 @@ export class AnalyticsService {
       };
     });
 
-    // ── 6. Top metrics ──
     const totalActive = allEmployees.filter(
       (e) => e.status === 'active',
     ).length;
