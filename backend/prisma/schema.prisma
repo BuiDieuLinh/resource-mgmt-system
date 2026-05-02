@@ -31,9 +31,10 @@ model Employees {
   date_of_birth DateTime       @db.Date
   address       String         @db.Text
   avatar_url    String?        @db.Text
-  hire_date     DateTime       @db.Date
-  status        EmployeeStatus @default(active)
-  annual_leave_days Int        @default(12)
+  hire_date       DateTime       @db.Date
+  terminated_at   DateTime?      @db.Date
+  status          EmployeeStatus @default(active)
+  annual_leave_days Int          @default(12)
 
   position_id String    @db.Uuid
   created_at  DateTime  @default(now())

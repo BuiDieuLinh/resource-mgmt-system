@@ -10,6 +10,9 @@ import {
   myTimesheetUrl,
   performanceCyclesUrl,
   performanceReviewUrl,
+  reportsHrStructureUrl,
+  reportsTurnoverUrl,
+  reportsInsightsUrl,
 } from '@/routes/url';
 import {
   IconGauge,
@@ -23,6 +26,9 @@ import {
   IconClock,
   IconTrophy,
   IconStar,
+  IconChartBar,
+  IconChartLine,
+  IconBulb,
 } from '@tabler/icons-react';
 
 export type AppMenu = {
@@ -34,7 +40,12 @@ export type AppMenu = {
 };
 
 export const MENUS: AppMenu[] = [
-  { label: 'Dashboard', icon: IconGauge, path: '/' },
+  {
+    label: 'Dashboard',
+    icon: IconGauge,
+    path: '/',
+    roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN],
+  },
   {
     label: 'Employees',
     icon: IconUsers,
@@ -108,6 +119,30 @@ export const MENUS: AppMenu[] = [
         path: performanceReviewUrl,
         icon: IconStar,
         roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.MANAGER],
+      },
+    ],
+  },
+  {
+    label: 'Reports',
+    icon: IconChartBar,
+    children: [
+      {
+        label: 'HR Structure',
+        path: reportsHrStructureUrl,
+        icon: IconChartBar,
+        roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.MANAGER],
+      },
+      {
+        label: 'Turnover Report',
+        path: reportsTurnoverUrl,
+        icon: IconChartLine,
+        roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN],
+      },
+      {
+        label: 'Insights',
+        path: reportsInsightsUrl,
+        icon: IconBulb,
+        roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN],
       },
     ],
   },
