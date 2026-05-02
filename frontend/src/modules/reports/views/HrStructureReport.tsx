@@ -140,7 +140,7 @@ export default function HrStructureReport() {
                   fill="#8884d8"
                   dataKey="employeeCount"
                 >
-                  {data.byAge.map((entry, index) => (
+                  {data.byAge.map((_entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -173,7 +173,7 @@ export default function HrStructureReport() {
                   fill="#8884d8"
                   dataKey="employeeCount"
                 >
-                  {data.byGender.map((entry, index) => (
+                  {data.byGender.map((_entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -228,7 +228,7 @@ export default function HrStructureReport() {
                   fill="#8884d8"
                   dataKey="employeeCount"
                 >
-                  {data.byContract.map((entry, index) => (
+                  {data.byContract.map((_entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>

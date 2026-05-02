@@ -248,7 +248,7 @@ function AdminDashboard() {
                   fill="#8884d8"
                   dataKey="employeeCount"
                 >
-                  {(hrStructure?.byAge || []).map((entry, index) => (
+                  {(hrStructure?.byAge || []).map((_entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -367,7 +367,7 @@ function AdminDashboard() {
 // ─── EMPLOYEE dashboard ───────────────────────────────────────────────────────
 
 function EmployeeDashboard() {
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const { colorScheme } = useMantineColorScheme();
   const dark = colorScheme === 'dark';
   const gridColor = dark ? '#373A40' : '#e9ecef';
