@@ -87,15 +87,6 @@ export class PerformanceController {
     return this.svc.getPendingReveal(user.userId);
   }
 
-  @Post('awards/:id/mark-revealed')
-  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
-  markRevealed(
-    @Param('id') id: string,
-    @CurrentUser() user: { userId: string },
-  ) {
-    return this.svc.markRevealed(id, user.userId);
-  }
-
   @Post('awards')
   @Roles(Role.ADMIN)
   createAward(@Body() dto: CreateAwardDto) {

@@ -45,10 +45,10 @@ export class InsightsService {
     }
 
     const avgKPIFrequentLate =
-      frequentLateEmployees.reduce((sum, r) => sum + r.score, 0) /
+      frequentLateEmployees.reduce((sum, r) => sum + r.total_score!, 0) /
       frequentLateEmployees.length;
     const avgKPINormal =
-      normalEmployees.reduce((sum, r) => sum + r.score, 0) /
+      normalEmployees.reduce((sum, r) => sum + r.total_score!, 0) /
       normalEmployees.length;
 
     const kpiDifference = avgKPINormal - avgKPIFrequentLate;
@@ -128,7 +128,7 @@ export class InsightsService {
 
         const avgKPI =
           deptReviews.length > 0
-            ? deptReviews.reduce((sum, r) => sum + r.score, 0) /
+            ? deptReviews.reduce((sum, r) => sum + r.total_score!, 0) /
               deptReviews.length
             : 0;
 

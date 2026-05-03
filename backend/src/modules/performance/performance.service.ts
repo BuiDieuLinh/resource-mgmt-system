@@ -48,7 +48,9 @@ export class PerformanceService {
             employee: {
               include: { position: { include: { department: true } } },
             },
-            reviewer: { select: { id: true, full_name: true } },
+            assignment: {
+              include: { reviewer: { select: { id: true, full_name: true } } },
+            },
           },
         },
         awards: {
@@ -94,8 +96,7 @@ export class PerformanceService {
       create: {
         cycle_id: dto.cycle_id,
         employee_id: dto.employee_id,
-        reviewer_id: dto.reviewer_id,
-        score: dto.score,
+        total_score: dto.total_score,
         comment: dto.comment,
         achievements: dto.achievements,
         attendance_days,
@@ -105,7 +106,7 @@ export class PerformanceService {
         status: ReviewStatus.draft,
       },
       update: {
-        score: dto.score,
+        total_score: dto.total_score,
         comment: dto.comment,
         achievements: dto.achievements,
         attendance_days,
@@ -126,7 +127,7 @@ export class PerformanceService {
     const updated = await this.prisma.performanceReviews.update({
       where: { id },
       data: {
-        ...(dto.score !== undefined && { score: dto.score }),
+        ...(dto.total_score !== undefined && { total_score: dto.total_score }),
         ...(dto.comment !== undefined && { comment: dto.comment }),
         ...(dto.achievements !== undefined && {
           achievements: dto.achievements,
@@ -155,12 +156,16 @@ export class PerformanceService {
       where: {
         cycle_id_employee_id: { cycle_id: cycleId, employee_id: employee.id },
       },
-      include: { reviewer: { select: { id: true, full_name: true } } },
+      include: {
+        assignment: {
+          include: { reviewer: { select: { id: true, full_name: true } } },
+        },
+      },
     });
     if (!review || review.status !== ReviewStatus.published)
       return ResponseHelper.success(null);
 
-    const { score: _score, ...safeReview } = review;
+    const { total_score: _total_score, ...safeReview } = review;
     return ResponseHelper.success(safeReview);
   }
 
@@ -169,9 +174,11 @@ export class PerformanceService {
       where: { cycle_id: cycleId },
       include: {
         employee: { include: { position: { include: { department: true } } } },
-        reviewer: { select: { id: true, full_name: true } },
+        assignment: {
+          include: { reviewer: { select: { id: true, full_name: true } } },
+        },
       },
-      orderBy: { score: 'desc' },
+      orderBy: { total_score: 'desc' },
     });
     return ResponseHelper.success(reviews);
   }
@@ -239,7 +246,6 @@ export class PerformanceService {
       where: {
         employee_id: employee.id,
         cycle: { announce_date: { gte: today, lt: tomorrow } },
-        reveals: { none: { employee_id: employee.id } },
       },
       include: {
         cycle: true,
@@ -248,22 +254,6 @@ export class PerformanceService {
     });
 
     return ResponseHelper.success(awards);
-  }
-
-  async markRevealed(awardId: string, authUserId: string) {
-    const employee = await this.prisma.employees.findUnique({
-      where: { auth_user_id: authUserId },
-    });
-    if (!employee) throw new NotFoundException('Employee not found');
-
-    await this.prisma.awardReveals.upsert({
-      where: {
-        award_id_employee_id: { award_id: awardId, employee_id: employee.id },
-      },
-      create: { award_id: awardId, employee_id: employee.id },
-      update: { seen_at: new Date() },
-    });
-    return ResponseHelper.success(null, 'Marked as seen');
   }
 
   /** Lịch sử award của employee — dùng trong profile */
@@ -277,7 +267,6 @@ export class PerformanceService {
       where: { employee_id: employee.id },
       include: {
         cycle: true,
-        reveals: { where: { employee_id: employee.id } },
       },
       orderBy: { created_at: 'desc' },
     });

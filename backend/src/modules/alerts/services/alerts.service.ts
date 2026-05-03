@@ -303,7 +303,8 @@ export class AlertsService {
       );
 
       if (previousReview) {
-        const scoreDrop = previousReview.score - currentReview.score;
+        const scoreDrop =
+          previousReview.total_score! - currentReview.total_score!;
 
         if (scoreDrop > 15) {
           const managers = await this.getManagersByDepartment(
@@ -320,8 +321,8 @@ export class AlertsService {
               employeeId: currentReview.employee_id,
               employeeName: currentReview.employee.full_name,
               employeeCode: currentReview.employee.employee_code,
-              currentScore: currentReview.score,
-              previousScore: previousReview.score,
+              currentScore: currentReview.total_score,
+              previousScore: previousReview.total_score,
               scoreDrop,
             },
             targetUsers: managers,
