@@ -15,7 +15,9 @@ export interface IEmployee {
   address: string;
   avatar_url?: string;
 
+  contract_type?: string;
   hire_date: string;
+  terminated_at?: string | null;
   status: EmployeeStatus;
   annual_leave_days: number;
 
@@ -31,8 +33,46 @@ export interface IEmployee {
     };
   };
 
+  manager_id?: string | null;
+  manager?: {
+    id: string;
+    full_name: string;
+    employee_code: string;
+    email: string;
+    position: {
+      position_name: string;
+    };
+  } | null;
+
   work_schedules?: IWorkSchedule[];
+  employment_histories?: IEmploymentHistory[];
   created_at: string;
+}
+
+export interface IEmploymentHistory {
+  id: string;
+  event_type:
+    | 'hired'
+    | 'contract_changed'
+    | 'promoted'
+    | 'transferred'
+    | 'resigned'
+    | 'terminated'
+    | 'rehired';
+  from_position_id?: string | null;
+  to_position_id?: string | null;
+  department_id?: string | null;
+  contract_type?: string | null;
+  start_date: string;
+  end_date?: string | null;
+  comment?: string | null;
+  created_at: string;
+  from_pos?: {
+    position_name: string;
+  } | null;
+  to_pos?: {
+    position_name: string;
+  } | null;
 }
 
 export interface IWorkSchedule {
@@ -55,6 +95,9 @@ export interface IEmployeePayload {
   hire_date: Date | string | null;
   position_id: string;
   status: string;
+  contract_type?: string;
+  manager_id?: string | null;
+  terminated_at?: Date | string | null;
   avatar?: File | null;
   work_schedules?: IWorkSchedule[];
 }

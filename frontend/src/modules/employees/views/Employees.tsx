@@ -39,7 +39,13 @@ import { usePreviewImport, type PreviewEmployee } from '../api/preview-import';
 import { exportEmployees } from '../api/export-employees';
 import { notify } from '../../../components/Notification';
 import { mapEmployeeToFormValues } from '../utils/employee-mapper';
-import { EMPLOYEE_ROLE, formatDate } from '../../../constant';
+import {
+  EMPLOYEE_ROLE,
+  formatDate,
+  CONTRACT_TYPE_COLOR,
+  CONTRACT_TYPE_LABEL,
+  type ContractType,
+} from '../../../constant';
 import { TableSkeleton } from '../../../components/Skeleton/TableSkeleton';
 import { useDelayedLoading } from '../../../hooks/useDelayedLoading';
 import { normalizeString } from '../utils/search';
@@ -117,6 +123,9 @@ export default function EmployeesPage() {
             ? values.hire_date.toISOString()
             : values.hire_date || new Date().toISOString(),
         position_id: values.position_id,
+        contract_type: values.contract_type,
+        manager_id: values.manager_id,
+        terminated_at: values.terminated_at,
         status: values.status,
         work_schedules: values.work_schedules,
       };
@@ -251,9 +260,10 @@ export default function EmployeesPage() {
     {
       key: 'position.position_name',
       title: 'Position',
+      align: 'center',
       render: (row) =>
         row.position ? (
-          <Badge variant="light" color="cyan" fw={400}>
+          <Badge variant="light" color="cyan" fw={400} size="sm">
             {row.position.position_name}
           </Badge>
         ) : (
@@ -261,6 +271,22 @@ export default function EmployeesPage() {
             Unknown
           </Badge>
         ),
+      sortable: true,
+    },
+    {
+      key: 'contract_type',
+      title: 'Contract Type',
+      align: 'center',
+      render: (row) => (
+        <Badge
+          variant="light"
+          color={CONTRACT_TYPE_COLOR[row.contract_type as ContractType] || 'gray'}
+          fw={400}
+          size="sm"
+        >
+          {CONTRACT_TYPE_LABEL[row.contract_type as ContractType] || row.contract_type}
+        </Badge>
+      ),
       sortable: true,
     },
     {
@@ -274,7 +300,12 @@ export default function EmployeesPage() {
       title: 'Status',
       align: 'center',
       render: (row) => (
-        <Badge variant="light" color={row.status === 'active' ? 'green' : 'gray'} fw={400}>
+        <Badge
+          variant="light"
+          color={row.status === 'active' ? 'green' : 'gray'}
+          fw={400}
+          size="sm"
+        >
           {row.status}
         </Badge>
       ),
@@ -380,7 +411,7 @@ export default function EmployeesPage() {
       />
 
       {isLoading ? (
-        <TableSkeleton colWidths={[120, 160, 200, 100, 130, 100, 80, 80]} />
+        <TableSkeleton colWidths={[120, 160, 200, 100, 130, 90, 100, 100, 80, 80]} />
       ) : (
         <>
           <BaseTable

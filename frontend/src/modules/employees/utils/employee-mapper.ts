@@ -18,6 +18,9 @@ export const mapEmployeeToFormValues = (
     hire_date: employee.hire_date ? new Date(employee.hire_date) : null,
     position_id: employee.position.id ?? employee.position?.id ?? '',
     status: employee.status,
+    contract_type: employee.contract_type ?? 'probation',
+    manager_id: employee.manager_id ?? '',
+    terminated_at: employee.terminated_at ? new Date(employee.terminated_at) : null,
     work_schedules: employee.work_schedules ?? undefined,
   };
 };

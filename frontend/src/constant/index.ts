@@ -5,6 +5,34 @@ export const EmployeeStatus = {
 
 export type EmployeeStatus = (typeof EmployeeStatus)[keyof typeof EmployeeStatus];
 
+export const CONTRACT_TYPE = {
+  INTERN: 'intern',
+  PROBATION: 'probation',
+  OFFICIAL: 'official',
+  PARTTIME: 'parttime',
+} as const;
+
+export type ContractType = (typeof CONTRACT_TYPE)[keyof typeof CONTRACT_TYPE];
+
+export const CONTRACT_TYPE_LABEL: Record<ContractType, string> = {
+  intern: 'Intern',
+  probation: 'Probation',
+  official: 'Official',
+  parttime: 'Part-time',
+};
+
+export const CONTRACT_TYPE_COLOR: Record<ContractType, string> = {
+  intern: 'blue',
+  probation: 'yellow',
+  official: 'green',
+  parttime: 'gray',
+};
+
+export const CONTRACT_TYPE_OPTIONS = Object.entries(CONTRACT_TYPE_LABEL).map(([value, label]) => ({
+  value,
+  label,
+}));
+
 export const LEAVE_TYPE = {
   ANNUAL: 'annual',
   SICK: 'sick',

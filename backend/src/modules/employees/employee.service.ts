@@ -25,6 +25,7 @@ import { AuthCoreService } from 'src/modules/auth-core/auth-core.service';
 import { MailService } from 'src/modules/mail/mail.service';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
+import { EmployeeStatus, EmploymentEventType } from '@prisma/client';
 
 dayjs.extend(utc);
 
@@ -171,6 +172,18 @@ export class EmployeeService {
               department: true,
             },
           },
+          manager: {
+            select: {
+              id: true,
+              full_name: true,
+              employee_code: true,
+              position: {
+                select: {
+                  position_name: true,
+                },
+              },
+            },
+          },
           work_schedules: true,
         },
       }),
@@ -183,7 +196,7 @@ export class EmployeeService {
   }
 
   async findOne(id: string) {
-    const position = await this.prisma.employees.findUnique({
+    const employee = await this.prisma.employees.findUnique({
       where: { id },
       include: {
         position: {
@@ -191,11 +204,31 @@ export class EmployeeService {
             department: true,
           },
         },
+        manager: {
+          select: {
+            id: true,
+            full_name: true,
+            employee_code: true,
+            email: true,
+            position: {
+              select: {
+                position_name: true,
+              },
+            },
+          },
+        },
         work_schedules: true,
+        employment_histories: {
+          include: {
+            from_pos: { select: { position_name: true } },
+            to_pos: { select: { position_name: true } },
+          },
+          orderBy: { start_date: 'desc' },
+        },
       },
     });
-    if (!position) throw new NotFoundException('Position not found');
-    return ResponseHelper.success(position);
+    if (!employee) throw new NotFoundException('Employee not found');
+    return ResponseHelper.success(employee);
   }
 
   async findByUserId(userId: string) {
@@ -220,7 +253,16 @@ export class EmployeeService {
   }
 
   async update(id: string, dto: UpdateEmployeeDto) {
-    const existing = await this.prisma.employees.findUnique({ where: { id } });
+    const existing = await this.prisma.employees.findUnique({
+      where: { id },
+      include: {
+        position: {
+          include: {
+            department: true,
+          },
+        },
+      },
+    });
     if (!existing) throw new NotFoundException('Employee not found');
 
     const checks: Promise<any>[] = [];
@@ -256,6 +298,12 @@ export class EmployeeService {
       );
       checkKeys.push('position_id');
     }
+    if (dto.manager_id) {
+      checks.push(
+        this.prisma.employees.findUnique({ where: { id: dto.manager_id } }),
+      );
+      checkKeys.push('manager_id');
+    }
 
     if (checks.length > 0) {
       const results = await Promise.all(checks);
@@ -264,6 +312,10 @@ export class EmployeeService {
         if (key === 'position_id' && !result)
           throw new BadRequestException(
             `Position with id "${dto.position_id}" not found`,
+          );
+        if (key === 'manager_id' && !result)
+          throw new BadRequestException(
+            `Manager with id "${dto.manager_id}" not found`,
           );
         if (key === 'employee_code' && result)
           throw new BadRequestException(
@@ -280,7 +332,14 @@ export class EmployeeService {
       });
     }
 
-    const { date_of_birth, hire_date, gender, work_schedules, ...rest } = dto;
+    const {
+      date_of_birth,
+      hire_date,
+      gender,
+      work_schedules,
+      terminated_at,
+      ...rest
+    } = dto;
     const schedules: WorkScheduleDto[] = Array.isArray(work_schedules)
       ? work_schedules
       : [];
@@ -290,6 +349,9 @@ export class EmployeeService {
       ...(hire_date ? { hire_date: new Date(hire_date) } : {}),
       ...(date_of_birth ? { date_of_birth: new Date(date_of_birth) } : {}),
       ...(gender !== undefined ? { gender: gender?.trim() || undefined } : {}),
+      ...(terminated_at !== undefined
+        ? { terminated_at: terminated_at ? new Date(terminated_at) : null }
+        : {}),
     };
 
     const updated = await this.prisma.employees.update({ where: { id }, data });
@@ -303,6 +365,90 @@ export class EmployeeService {
         existing.auth_user_id,
         dto.status,
       );
+    }
+
+    const historyRecords: any[] = [];
+
+    if (dto.position_id && dto.position_id !== existing.position_id) {
+      const oldPosition = await this.prisma.positions.findUnique({
+        where: { id: existing.position_id },
+        include: { department: true },
+      });
+      const newPosition = await this.prisma.positions.findUnique({
+        where: { id: dto.position_id },
+        include: { department: true },
+      });
+
+      const eventType =
+        oldPosition?.department_id === newPosition?.department_id
+          ? EmploymentEventType.promoted
+          : EmploymentEventType.transferred;
+
+      historyRecords.push({
+        employee_id: id,
+        event_type: eventType,
+        from_position_id: existing.position_id,
+        to_position_id: dto.position_id,
+        department_id: newPosition?.department_id,
+        contract_type: dto.contract_type || existing.contract_type,
+        start_date: new Date(),
+        comment: `${eventType === EmploymentEventType.promoted ? 'Promoted' : 'Transferred'} from ${oldPosition?.position_name} to ${newPosition?.position_name}`,
+      });
+    }
+
+    if (
+      dto.contract_type &&
+      dto.contract_type !== existing.contract_type &&
+      dto.position_id === existing.position_id
+    ) {
+      historyRecords.push({
+        employee_id: id,
+        event_type: EmploymentEventType.contract_changed,
+        to_position_id: existing.position_id,
+        department_id: existing.position?.department_id,
+        contract_type: dto.contract_type,
+        start_date: new Date(),
+        comment: `Contract changed from ${existing.contract_type} to ${dto.contract_type}`,
+      });
+    }
+
+    if (
+      dto.status === EmployeeStatus.inactive &&
+      existing.status === EmployeeStatus.active &&
+      dto.terminated_at
+    ) {
+      historyRecords.push({
+        employee_id: id,
+        event_type: EmploymentEventType.resigned,
+        from_position_id: existing.position_id,
+        to_position_id: existing.position_id,
+        department_id: existing.position?.department_id,
+        contract_type: existing.contract_type,
+        start_date: new Date(dto.terminated_at),
+        end_date: new Date(dto.terminated_at),
+        comment: 'Employee resigned',
+      });
+    }
+
+    if (
+      dto.status === EmployeeStatus.active &&
+      existing.status === EmployeeStatus.inactive
+    ) {
+      historyRecords.push({
+        employee_id: id,
+        event_type: EmploymentEventType.rehired,
+        to_position_id: dto.position_id || existing.position_id,
+        department_id: existing.position?.department_id,
+        contract_type: dto.contract_type || existing.contract_type,
+        start_date: new Date(),
+        comment: 'Employee rehired',
+      });
+    }
+
+    if (historyRecords.length > 0) {
+      await this.prisma.employmentHistories.createMany({
+        data: historyRecords,
+      });
     }
 
     return ResponseHelper.success(updated, 'Employee updated successfully');

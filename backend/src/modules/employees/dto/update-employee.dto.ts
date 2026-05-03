@@ -10,10 +10,11 @@ import {
   IsInt,
   Min,
   Max,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { WorkScheduleDto } from 'src/modules/work-schedules/dto/work-schedule.dto';
-import { EmployeeStatus } from '@prisma/client';
+import { EmployeeStatus, ContractType } from '@prisma/client';
 
 export class UpdateEmployeeDto {
   @IsOptional()
@@ -63,6 +64,20 @@ export class UpdateEmployeeDto {
   @IsOptional()
   @IsEnum(EmployeeStatus)
   status?: EmployeeStatus;
+
+  @IsOptional()
+  @IsEnum(ContractType)
+  contract_type?: ContractType;
+
+  @IsOptional()
+  @ValidateIf((o) => o.manager_id !== null)
+  @IsUUID()
+  manager_id?: string | null;
+
+  @IsOptional()
+  @ValidateIf((o) => o.terminated_at !== null)
+  @IsDateString()
+  terminated_at?: string | null;
 
   @IsOptional()
   @IsInt()

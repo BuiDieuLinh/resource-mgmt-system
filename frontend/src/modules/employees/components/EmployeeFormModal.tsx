@@ -21,6 +21,7 @@ import {
 } from '../rule-form/employee-validation';
 import type { EmployeeFormValues } from '../types';
 import { useGetAllPositions } from '../../positions/api/get-positions';
+import { useGetEmployees } from '../api/get-employees';
 import { checkEmployeeExists, type CheckExistsField } from '../api/check-employee-exists';
 import { PRIMARY_COLOR } from '../../../theme';
 import {
@@ -29,6 +30,7 @@ import {
   DEFAULT_END_TIME,
   DATE_FORMAT,
   LEVEL_LABEL,
+  CONTRACT_TYPE_OPTIONS,
   type LevelPosition,
 } from '../../../constant';
 import { WorkDayBadges } from './WorkDayBadges';
@@ -60,6 +62,9 @@ const EMPTY_VALUES: EmployeeFormValues = {
   hire_date: new Date(),
   position_id: '',
   status: 'active',
+  contract_type: 'probation',
+  manager_id: '',
+  terminated_at: null,
   avatar: null,
   work_schedules: buildSchedules(DEFAULT_WORK_DAYS, DEFAULT_START_TIME, DEFAULT_END_TIME),
 };
@@ -74,6 +79,10 @@ export function EmployeeFormModal({
   loading = false,
 }: EmployeeFormModalProps) {
   const { data: positionsData, isLoading: isPositionsLoading } = useGetAllPositions();
+  const { data: employeesData, isLoading: isEmployeesLoading } = useGetEmployees({
+    pageIndex: 1,
+    pageSize: 1000,
+  });
 
   const [existsErrors, setExistsErrors] = useState<Partial<Record<CheckExistsField, string>>>({});
   const [checkingFields, setCheckingFields] = useState<Partial<Record<CheckExistsField, boolean>>>(
@@ -101,6 +110,7 @@ export function EmployeeFormModal({
       address: employeeValidationRules.address,
       position_id: employeeValidationRules.position_id,
       status: employeeValidationRules.status,
+      contract_type: employeeValidationRules.contract_type,
     },
   });
 
@@ -175,6 +185,17 @@ export function EmployeeFormModal({
         label: `${pos.position_name}${LEVEL_LABEL[pos.level as LevelPosition] ? ` (${LEVEL_LABEL[pos.level as LevelPosition]})` : ''}`,
       })) ?? [],
     [positionsData],
+  );
+
+  const managerOptions = useMemo(
+    () =>
+      employeesData?.data
+        ?.filter((emp) => emp.id !== employeeId && emp.status === 'active')
+        ?.map((emp) => ({
+          value: emp.id,
+          label: `${emp.full_name} (${emp.employee_code}) - ${emp.position.position_name}`,
+        })) ?? [],
+    [employeesData, employeeId],
   );
 
   const uniqueFieldProps = (field: CheckExistsField) => {
@@ -376,6 +397,43 @@ export function EmployeeFormModal({
                 {...form.getInputProps('status')}
               />
             </Grid.Col>
+            <Grid.Col span={4}>
+              <Select
+                checkIconPosition="right"
+                label="Contract Type"
+                placeholder="Select contract type"
+                required
+                data={CONTRACT_TYPE_OPTIONS}
+                {...form.getInputProps('contract_type')}
+              />
+            </Grid.Col>
+          </Grid>
+
+          <Grid gutter="sm">
+            <Grid.Col span={6}>
+              <Select
+                checkIconPosition="right"
+                label="Manager"
+                placeholder="Select manager (optional)"
+                clearable
+                searchable
+                data={managerOptions}
+                disabled={isEmployeesLoading}
+                {...form.getInputProps('manager_id')}
+              />
+            </Grid.Col>
+            {form.values.status === 'inactive' && (
+              <Grid.Col span={6}>
+                <DateInput
+                  label="Terminated Date"
+                  placeholder={DATE_FORMAT}
+                  valueFormat={DATE_FORMAT}
+                  clearable
+                  maxDate={new Date()}
+                  {...form.getInputProps('terminated_at')}
+                />
+              </Grid.Col>
+            )}
           </Grid>
 
           <Divider

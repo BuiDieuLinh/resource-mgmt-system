@@ -1,4 +1,5 @@
 import type { CheckExistsField } from '../api/check-employee-exists';
+import { CONTRACT_TYPE } from '../../../constant';
 
 export const employeeValidationRules = {
   employee_code: (value: string) => {
@@ -89,6 +90,30 @@ export const employeeValidationRules = {
 
   address: (value: string) => {
     if (!value || value.trim() === '') return 'Address is required';
+    return null;
+  },
+
+  contract_type: (value: string | undefined) => {
+    if (!value || value.trim() === '') return 'Contract type is required';
+    const validTypes = Object.values(CONTRACT_TYPE);
+    if (!validTypes.includes(value as any)) return 'Invalid contract type';
+    return null;
+  },
+
+  manager_id: (_value: string | undefined | null) => {
+    // Manager is optional, so empty or null is valid
+    return null;
+  },
+
+  terminated_at: (value: Date | string | null | undefined) => {
+    if (!value) return null;
+
+    const date = new Date(value);
+    const today = new Date();
+
+    if (isNaN(date.getTime())) return 'Invalid date format';
+    if (date > today) return 'Terminated date cannot be in the future';
+
     return null;
   },
 

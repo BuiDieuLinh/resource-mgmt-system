@@ -9,6 +9,7 @@ import {
   Divider,
   ThemeIcon,
   Button,
+  Timeline,
 } from '@mantine/core';
 import {
   IconMail,
@@ -24,6 +25,14 @@ import {
   IconMapPin,
   IconTrophy,
   IconEye,
+  IconUserPlus,
+  IconUserMinus,
+  IconArrowUpRight,
+  IconSwitchHorizontal,
+  IconFileText,
+  IconUserCheck,
+  IconEdit,
+  IconArrowLeft,
 } from '@tabler/icons-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGetEmployee } from '../api/get-employee';
@@ -34,14 +43,26 @@ import { employeeListUrl } from '../../../routes/url';
 import { Skeleton } from '@mantine/core';
 import { useDelayedLoading } from '../../../hooks/useDelayedLoading';
 
-import type { IWorkSchedule } from '../types';
+import type { IWorkSchedule, EmployeeFormValues } from '../types';
 import type { IWorkPolicy } from '../../work-policies/types';
 import { WorkDayBadges } from '../components/WorkDayBadges';
-import { minutesToTime, formatDate } from '../../../constant';
+import {
+  minutesToTime,
+  formatDate,
+  EMPLOYEE_ROLE,
+  CONTRACT_TYPE_COLOR,
+  CONTRACT_TYPE_LABEL,
+  type ContractType,
+} from '../../../constant';
 import { useGetMyAwards } from '../../performance/api';
 import { AwardRevealPage } from '../../performance/components/AwardRevealPage';
 import { useState } from 'react';
 import type { IAward } from '../../performance/types';
+import { EmployeeFormModal } from '../components/EmployeeFormModal';
+import { mapEmployeeToFormValues } from '../utils/employee-mapper';
+import { useUpdateEmployee } from '../api/update-employee';
+import { notify } from '../../../components/Notification';
+import { useHasRole } from '@/hooks/useHasRole';
 
 function InfoRow({
   icon,
@@ -115,14 +136,19 @@ function WorkScheduleSection({
   return (
     <Stack gap="md">
       <Group gap="xs">
-        <Badge variant="light" color="deepPurple" size="sm">
+        <Badge variant="light" color="deepPurple" tt="capitalize">
           {schedules.length} days/week
         </Badge>
-        <Badge variant="light" color="violet" size="sm">
+        <Badge variant="light" color="violet" tt="capitalize">
           {Math.round(totalNetHours * 10) / 10}h/week
         </Badge>
         {breakMinutes > 0 && (
-          <Badge variant="light" color="gray" size="sm" leftSection={<IconCoffee size={12} />}>
+          <Badge
+            variant="light"
+            color="gray"
+            tt="capitalize"
+            leftSection={<IconCoffee size={12} />}
+          >
             {breakMinutes}min break
           </Badge>
         )}
@@ -152,17 +178,76 @@ function WorkScheduleSection({
 export default function EmployeeProfile() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const isAdmin = useHasRole(EMPLOYEE_ROLE.ADMIN);
 
   const { data, isLoading: _loading, error, refetch } = useGetEmployee(id!);
   const isLoading = useDelayedLoading(_loading);
   const { data: policyData } = useGetActivePolicy();
   const { data: myAwards = [] } = useGetMyAwards();
   const [previewAward, setPreviewAward] = useState<IAward | null>(null);
+  const [editModalOpened, setEditModalOpened] = useState(false);
+
+  const updateMutation = useUpdateEmployee();
 
   const RANK_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'] as const;
   const CATEGORY_LABEL: Record<string, string> = {
     top_employee: 'Nhân Viên Xuất Sắc',
     top_manager: 'Quản Lý Xuất Sắc',
+  };
+
+  const handleEdit = () => {
+    setEditModalOpened(true);
+  };
+
+  const handleSubmit = async (values: EmployeeFormValues) => {
+    const notiId = notify.loading('Updating employee...');
+
+    try {
+      const payload = {
+        employee_code: values.employee_code,
+        full_name: values.full_name,
+        display_name: values.display_name,
+        email: values.email,
+        phone: values.phone,
+        identify_card: values.identify_card,
+        gender: values.gender,
+        date_of_birth:
+          values.date_of_birth instanceof Date
+            ? values.date_of_birth.toISOString()
+            : values.date_of_birth,
+        address: values.address,
+        hire_date:
+          values.hire_date instanceof Date
+            ? values.hire_date.toISOString()
+            : values.hire_date || new Date().toISOString(),
+        position_id: values.position_id,
+        status: values.status,
+        contract_type: values.contract_type,
+        manager_id: values.manager_id && values.manager_id.trim() !== '' ? values.manager_id : null,
+        terminated_at: values.terminated_at
+          ? values.terminated_at instanceof Date
+            ? values.terminated_at.toISOString()
+            : values.terminated_at
+          : null,
+        work_schedules: values.work_schedules,
+      };
+
+      await updateMutation.mutateAsync({
+        id: id!,
+        payload,
+      });
+
+      notify.success(notiId, {
+        message: 'Employee updated successfully',
+      });
+
+      setEditModalOpened(false);
+      refetch();
+    } catch (e: any) {
+      notify.error(notiId, {
+        message: e?.response?.data?.message || 'Update employee failed',
+      });
+    }
   };
 
   if (isLoading)
@@ -222,6 +307,22 @@ export default function EmployeeProfile() {
       <PageHeader
         breadcrumbOnly
         breadcrumbs={[{ label: 'Employees', path: '/employees' }, { label: employee.full_name }]}
+        right={
+          <Group>
+            <Button
+              variant="subtle"
+              leftSection={<IconArrowLeft size={18} />}
+              onClick={() => navigate(employeeListUrl)}
+            >
+              Back to List
+            </Button>
+            {isAdmin && (
+              <Button leftSection={<IconEdit size={18} />} onClick={handleEdit}>
+                Edit Employee
+              </Button>
+            )}
+          </Group>
+        }
       />
 
       <Grid gutter="lg" align="flex-start">
@@ -301,6 +402,21 @@ export default function EmployeeProfile() {
                       value={formatDate(employee.hire_date)}
                     />
                   </Grid.Col>
+                  {employee.terminated_at && (
+                    <Grid.Col span={6}>
+                      <InfoRow
+                        icon={<IconCalendar size={14} />}
+                        label="Terminated Date"
+                        value={
+                          <Group gap="xs">
+                            <Text size="sm" fw={500} c="red">
+                              {formatDate(employee.terminated_at)}
+                            </Text>
+                          </Group>
+                        }
+                      />
+                    </Grid.Col>
+                  )}
                   <Grid.Col span={6}>
                     <InfoRow
                       icon={<IconMapPin size={14} />}
@@ -345,11 +461,48 @@ export default function EmployeeProfile() {
                   )}
                   <Grid.Col span={6}>
                     <InfoRow
+                      icon={<IconFileText size={14} />}
+                      label="Contract Type"
+                      value={
+                        <Badge
+                          variant="light"
+                          color={
+                            CONTRACT_TYPE_COLOR[employee.contract_type as ContractType] || 'gray'
+                          }
+                          size="sm"
+                          radius="sm"
+                        >
+                          {CONTRACT_TYPE_LABEL[employee.contract_type as ContractType] ||
+                            employee.contract_type}
+                        </Badge>
+                      }
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={6}>
+                    <InfoRow
                       icon={<IconCalendar size={14} />}
                       label="Annual Leave"
                       value={`${employee.annual_leave_days} days/year`}
                     />
                   </Grid.Col>
+                  {employee.manager && (
+                    <Grid.Col span={6}>
+                      <InfoRow
+                        icon={<IconUser size={14} />}
+                        label="Manager"
+                        value={
+                          <Stack gap={2}>
+                            <Text size="sm" fw={500}>
+                              {employee.manager.full_name}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              {employee.manager.position.position_name}
+                            </Text>
+                          </Stack>
+                        }
+                      />
+                    </Grid.Col>
+                  )}
                 </Grid>
               </div>
 
@@ -362,6 +515,116 @@ export default function EmployeeProfile() {
                   policy={policyData?.data}
                 />
               </div>
+
+              {employee.employment_histories && employee.employment_histories.length > 0 && (
+                <>
+                  <Divider />
+                  <div>
+                    <SectionTitle>Employment History</SectionTitle>
+                    <Timeline
+                      active={employee.employment_histories.length}
+                      bulletSize={32}
+                      lineWidth={2}
+                    >
+                      {employee.employment_histories.map((history) => {
+                        const eventConfig = {
+                          hired: { icon: IconUserPlus, color: 'indigo', label: 'Hired' },
+                          contract_changed: {
+                            icon: IconFileText,
+                            color: 'violet',
+                            label: 'Contract Changed',
+                          },
+                          promoted: { icon: IconArrowUpRight, color: 'grape', label: 'Promoted' },
+                          transferred: {
+                            icon: IconSwitchHorizontal,
+                            color: 'blue',
+                            label: 'Transferred',
+                          },
+                          resigned: { icon: IconUserMinus, color: 'orange', label: 'Resigned' },
+                          terminated: { icon: IconUserMinus, color: 'red', label: 'Terminated' },
+                          rehired: { icon: IconUserCheck, color: 'green', label: 'Rehired' },
+                        };
+
+                        const config = eventConfig[history.event_type] || {
+                          icon: IconFileText,
+                          color: 'gray',
+                          label: history.event_type,
+                        };
+                        const Icon = config.icon;
+
+                        return (
+                          <Timeline.Item
+                            key={history.id}
+                            bullet={<Icon size={16} />}
+                            color={config.color}
+                            title={
+                              <Group gap="xs">
+                                <Text size="sm" fw={600}>
+                                  {config.label}
+                                </Text>
+                                <Text size="xs" c="dimmed">
+                                  •
+                                </Text>
+                                <Text size="xs" c="dimmed">
+                                  {formatDate(history.start_date)}
+                                </Text>
+                              </Group>
+                            }
+                          >
+                            <Stack gap={6} mt={4}>
+                              {/* Position info */}
+                              {history.from_pos && history.to_pos ? (
+                                <Group gap={6}>
+                                  <Text size="xs" c="dimmed">
+                                    {history.from_pos.position_name}
+                                  </Text>
+                                  <Text size="xs" c="dimmed">
+                                    →
+                                  </Text>
+                                  <Text size="xs" fw={500}>
+                                    {history.to_pos.position_name}
+                                  </Text>
+                                </Group>
+                              ) : history.to_pos ? (
+                                <Text size="xs" fw={500}>
+                                  {history.to_pos.position_name}
+                                </Text>
+                              ) : null}
+
+                              {/* Contract type */}
+                              {history.contract_type && (
+                                <Group gap={6}>
+                                  <Text size="xs" c="dimmed">
+                                    Contract:
+                                  </Text>
+                                  <Badge
+                                    size="xs"
+                                    variant="light"
+                                    color={
+                                      CONTRACT_TYPE_COLOR[history.contract_type as ContractType] ||
+                                      'gray'
+                                    }
+                                  >
+                                    {CONTRACT_TYPE_LABEL[history.contract_type as ContractType] ||
+                                      history.contract_type}
+                                  </Badge>
+                                </Group>
+                              )}
+
+                              {/* Comment */}
+                              {history.comment && (
+                                <Text size="xs" c="dimmed" fs="italic">
+                                  {history.comment}
+                                </Text>
+                              )}
+                            </Stack>
+                          </Timeline.Item>
+                        );
+                      })}
+                    </Timeline>
+                  </div>
+                </>
+              )}
 
               {(employee.position?.description || employee.position?.department?.description) && (
                 <>
@@ -447,6 +710,18 @@ export default function EmployeeProfile() {
           awards={[previewAward]}
           onClose={() => setPreviewAward(null)}
           previewMode
+        />
+      )}
+
+      {isAdmin && (
+        <EmployeeFormModal
+          opened={editModalOpened}
+          onClose={() => setEditModalOpened(false)}
+          mode="edit"
+          initialValues={mapEmployeeToFormValues(employee)}
+          employeeId={employee.id}
+          onSubmit={handleSubmit}
+          loading={updateMutation.isPending}
         />
       )}
     </Stack>
