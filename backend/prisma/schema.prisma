@@ -18,39 +18,86 @@ enum EmployeeStatus {
   inactive
 }
 
+enum ContractType {
+  intern
+  probation
+  official
+  parttime
+}
+
+enum EmploymentEventType {
+  hired
+  contract_changed
+  promoted
+  transferred
+  resigned
+  terminated
+  rehired
+}
+
 model Employees {
-  id            String         @id @default(uuid()) @db.Uuid
-  auth_user_id  String?        @unique @db.Uuid 
-  employee_code String         @db.VarChar(20)
-  full_name     String         @db.VarChar(100)
-  display_name  String?        @db.VarChar(100)
-  email         String         @unique @db.VarChar(100)
-  phone         String         @db.VarChar(20)
-  identify_card String         @unique @db.VarChar(20)
-  gender        String         @db.VarChar(10)
-  date_of_birth DateTime       @db.Date
-  address       String         @db.Text
-  avatar_url    String?        @db.Text
-  hire_date       DateTime       @db.Date
-  terminated_at   DateTime?      @db.Date
-  status          EmployeeStatus @default(active)
-  annual_leave_days Int          @default(12)
+  id                String         @id @default(uuid()) @db.Uuid
+  auth_user_id      String?        @unique @db.Uuid
+  employee_code     String         @db.VarChar(20)
+  full_name         String         @db.VarChar(100)
+  display_name      String?        @db.VarChar(100)
+  email             String         @unique @db.VarChar(100)
+  phone             String         @db.VarChar(20)
+  identify_card     String         @unique @db.VarChar(20)
+  gender            String         @db.VarChar(10)
+  date_of_birth     DateTime       @db.Date
+  address           String         @db.Text
+  avatar_url        String?        @db.Text
+  hire_date         DateTime       @db.Date
+  contract_type     ContractType   @default(probation)
+  terminated_at     DateTime?      @db.Date
+  status            EmployeeStatus @default(active)
+  annual_leave_days Int            @default(12)
 
   position_id String    @db.Uuid
   created_at  DateTime  @default(now())
   position    Positions @relation(fields: [position_id], references: [id])
 
-  work_schedules     EmployeeWorkSchedules[]
-  attendances        Attendances[]
-  leave_requests     LeaveRequests[]
-  manager_approvals  LeaveRequests[] @relation("ManagerApprover")
-  admin_approvals    LeaveRequests[] @relation("AdminApprover")
-  reviews_received   PerformanceReviews[] @relation("ReviewedEmployee")
-  reviews_given      PerformanceReviews[] @relation("ReviewerEmployee")
-  awards             Awards[]
-  award_reveals      AwardReveals[]
+  manager_id   String?     @db.Uuid
+  manager      Employees?  @relation("EmployeeManager", fields: [manager_id], references: [id])
+  subordinates Employees[] @relation("EmployeeManager")
+
+  employment_histories        EmploymentHistories[]
+  work_schedules              EmployeeWorkSchedules[]
+  attendances                 Attendances[]
+  leave_requests              LeaveRequests[]
+  manager_approvals           LeaveRequests[]         @relation("ManagerApprover")
+  admin_approvals             LeaveRequests[]         @relation("AdminApprover")
+  reviews_received            PerformanceReviews[]    @relation("ReviewedEmployee")
+  review_assignments          ReviewAssignments[]
+  review_assignments_reviewed ReviewAssignments[]     @relation("AssignmentReviewer")
+  awards                      Awards[]
 
   @@map("employees")
+}
+
+model EmploymentHistories {
+  id          String              @id @default(uuid()) @db.Uuid
+  employee_id String              @db.Uuid
+  event_type  EmploymentEventType
+
+  from_position_id String? @db.Uuid
+  to_position_id   String? @db.Uuid
+  department_id    String? @db.Uuid
+
+  contract_type ContractType?
+  start_date    DateTime      @db.Date
+  end_date      DateTime?     @db.Date
+
+  comment    String?  @db.Text
+  created_at DateTime @default(now())
+
+  employee Employees  @relation(fields: [employee_id], references: [id])
+  from_pos Positions? @relation("FromPosition", fields: [from_position_id], references: [id])
+  to_pos   Positions? @relation("ToPosition", fields: [to_position_id], references: [id])
+
+  @@index([employee_id, start_date])
+  @@map("employment_histories")
 }
 
 model Departments {
@@ -80,7 +127,9 @@ model Positions {
   department_id String      @db.Uuid
   department    Departments @relation(fields: [department_id], references: [id])
 
-  employees Employees[]
+  employees               Employees[]
+  employment_history_from EmploymentHistories[] @relation("FromPosition")
+  employment_history_to   EmploymentHistories[] @relation("ToPosition")
 
   @@map("positions")
 }
@@ -88,9 +137,9 @@ model Positions {
 model WorkPolicies {
   id String @id @default(uuid()) @db.Uuid
 
-  is_flexible_enabled    Boolean @default(false)
-  flexible_start Int?   
-  flexible_end   Int?   
+  is_flexible_enabled Boolean @default(false)
+  flexible_start      Int?
+  flexible_end        Int?
 
   break_start Int?
   break_end   Int?
@@ -105,11 +154,11 @@ model WorkPolicies {
 }
 
 model EmployeeWorkSchedules {
-  id           String @id @default(uuid()) @db.Uuid
-  employee_id  String @db.Uuid
-  day_of_week  Int                    
-  start_time   Int                    
-  end_time     Int                    
+  id          String @id @default(uuid()) @db.Uuid
+  employee_id String @db.Uuid
+  day_of_week Int
+  start_time  Int
+  end_time    Int
 
   employee Employees @relation(fields: [employee_id], references: [id])
 
@@ -134,8 +183,8 @@ model Attendances {
   break_start Int?
   break_end   Int?
 
-  flexible_start Int?  
-  flexible_end   Int?  
+  flexible_start Int?
+  flexible_end   Int?
 
   check_in_time  DateTime? @db.Timestamptz
   check_out_time DateTime? @db.Timestamptz
@@ -152,6 +201,7 @@ model Attendances {
   logs     AttendanceLogs[]
 
   @@unique([employee_id, work_date])
+  @@index([employee_id, work_date])
   @@map("attendances")
 }
 
@@ -243,45 +293,144 @@ enum AwardCategory {
   top_manager
 }
 
-model ReviewCycles {
-  id          String           @id @default(uuid()) @db.Uuid
-  title       String           @db.VarChar(100)   
-  period_type ReviewPeriodType
-  period_year Int
-  period_seq  Int              
-  announce_date DateTime       @db.Date            
-  created_by  String           @db.Uuid            
-  created_at  DateTime         @default(now())
+enum ScoreType {
+  rating
+  binary
+}
+
+enum TargetType {
+  department
+  position
+  employee
+  group
+  all
+}
+
+model EvaluationTemplates {
+  id          String        @id @default(uuid()) @db.Uuid
+  title       String        @db.VarChar(100)
+  description String?       @db.Text
+  apply_to    ContractType?
+  is_active   Boolean       @default(true)
+  created_at  DateTime      @default(now())
+
+  criteria EvaluationCriteria[]
+  cycles   ReviewCycles[]
+
+  @@map("evaluation_templates")
+}
+
+model EvaluationCriteria {
+  id          String    @id @default(uuid()) @db.Uuid
+  template_id String    @db.Uuid
+  criterion   String    @db.VarChar(200)
+  weight      Int
+  max_score   Int
+  score_type  ScoreType @default(rating)
+
+  score_details ScoreDetails[]
+  template      EvaluationTemplates @relation(fields: [template_id], references: [id])
+
+  @@map("evaluation_criteria")
+}
+
+model ReviewCycleTargets {
+  id       String @id @default(uuid()) @db.Uuid
+  cycle_id String @db.Uuid
+
+  type  TargetType
+  value String?    @db.Uuid
+
+  cycle ReviewCycles @relation(fields: [cycle_id], references: [id])
+
+  @@index([cycle_id, type])
+  @@map("review_cycle_targets")
+}
+
+model ReviewAssignments {
+  id          String @id @default(uuid()) @db.Uuid
+  cycle_id    String @db.Uuid
+  employee_id String @db.Uuid
+
+  reviewer_id String @db.Uuid
 
   reviews PerformanceReviews[]
-  awards  Awards[]
+
+  cycle    ReviewCycles @relation(fields: [cycle_id], references: [id])
+  employee Employees    @relation(fields: [employee_id], references: [id])
+  reviewer Employees    @relation("AssignmentReviewer", fields: [reviewer_id], references: [id])
+
+  @@unique([cycle_id, employee_id])
+  @@map("review_assignments")
+}
+
+model ReviewCycles {
+  id            String           @id @default(uuid()) @db.Uuid
+  title         String           @db.VarChar(100)
+  period_type   ReviewPeriodType
+  period_year   Int
+  period_seq    Int
+  announce_date DateTime         @db.Date
+
+  template_id String?              @db.Uuid
+  template    EvaluationTemplates? @relation(fields: [template_id], references: [id])
+  created_by  String               @db.Uuid
+  created_at  DateTime             @default(now())
+
+  targets     ReviewCycleTargets[]
+  assignments ReviewAssignments[]
+  reviews     PerformanceReviews[]
+  awards      Awards[]
 
   @@unique([period_type, period_year, period_seq])
   @@map("review_cycles")
 }
 
 model PerformanceReviews {
-  id           String       @id @default(uuid()) @db.Uuid
-  cycle_id     String       @db.Uuid
-  employee_id  String       @db.Uuid
-  reviewer_id  String       @db.Uuid              
-  score        Int                                 
-  comment      String?      @db.Text             
-  achievements String?      @db.Text              
-  status       ReviewStatus @default(draft)
-  attendance_days    Int?
-  late_count         Int?
-  absent_count       Int?
-  overtime_minutes   Int?
-  created_at   DateTime     @default(now())
-  updated_at   DateTime     @updatedAt
+  id               String       @id @default(uuid()) @db.Uuid
+  cycle_id         String       @db.Uuid
+  employee_id      String       @db.Uuid
+  assignment_id    String?      @db.Uuid
+  total_score      Int?
+  comment          String?      @db.Text
+  achievements     String?      @db.Text
+  status           ReviewStatus @default(draft)
+  attendance_days  Int?
+  late_count       Int?
+  absent_count     Int?
+  overtime_minutes Int?
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
 
-  cycle    ReviewCycles @relation(fields: [cycle_id], references: [id])
-  employee Employees    @relation("ReviewedEmployee", fields: [employee_id], references: [id])
-  reviewer Employees    @relation("ReviewerEmployee", fields: [reviewer_id], references: [id])
+  score_details ScoreDetails[]
+  assignment    ReviewAssignments? @relation(fields: [assignment_id], references: [id])
+  cycle         ReviewCycles       @relation(fields: [cycle_id], references: [id])
+  employee      Employees          @relation("ReviewedEmployee", fields: [employee_id], references: [id])
 
   @@unique([cycle_id, employee_id])
+  @@index([assignment_id])
   @@map("performance_reviews")
+}
+
+model ScoreDetails {
+  id String @id @default(uuid()) @db.Uuid
+
+  review_id   String @db.Uuid
+  criteria_id String @db.Uuid
+
+  criteria_name String @db.VarChar(200)
+  weight        Int
+  max_score     Int
+
+  score Int
+  note  String? @db.Text
+
+  review   PerformanceReviews @relation(fields: [review_id], references: [id])
+  criteria EvaluationCriteria @relation(fields: [criteria_id], references: [id])
+
+  @@unique([review_id, criteria_id])
+  @@index([review_id])
+  @@map("score_details")
 }
 
 model Awards {
@@ -289,30 +438,17 @@ model Awards {
   cycle_id    String        @db.Uuid
   employee_id String        @db.Uuid
   category    AwardCategory
-  rank        Int           
-  title       String        @db.VarChar(200)      
-  description String?       @db.Text              
+  rank        Int
+  title       String        @db.VarChar(200)
+  description String?       @db.Text
+  is_seen     Boolean       @default(false)
   created_at  DateTime      @default(now())
 
   cycle    ReviewCycles @relation(fields: [cycle_id], references: [id])
   employee Employees    @relation(fields: [employee_id], references: [id])
-  reveals  AwardReveals[]
 
   @@unique([cycle_id, employee_id, category])
   @@map("awards")
-}
-
-model AwardReveals {
-  id          String   @id @default(uuid()) @db.Uuid
-  award_id    String   @db.Uuid
-  employee_id String   @db.Uuid
-  seen_at     DateTime @default(now())
-
-  award    Awards    @relation(fields: [award_id], references: [id])
-  employee Employees @relation(fields: [employee_id], references: [id])
-
-  @@unique([award_id, employee_id])
-  @@map("award_reveals")
 }
 
 enum NotificationType {
@@ -327,14 +463,14 @@ enum NotificationType {
 }
 
 model Notifications {
-  id          String           @id @default(uuid()) @db.Uuid
-  user_id     String           @db.Uuid   
-  type        NotificationType
-  title       String           @db.VarChar(200)
-  body        String           @db.Text
-  link        String?          @db.VarChar(500)
-  is_read     Boolean          @default(false)
-  created_at  DateTime         @default(now())
+  id         String           @id @default(uuid()) @db.Uuid
+  user_id    String           @db.Uuid
+  type       NotificationType
+  title      String           @db.VarChar(200)
+  body       String           @db.Text
+  link       String?          @db.VarChar(500)
+  is_read    Boolean          @default(false)
+  created_at DateTime         @default(now())
 
   @@index([user_id, is_read])
   @@index([user_id, created_at])
