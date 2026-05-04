@@ -87,7 +87,7 @@ export function CreateCycleModal({
   });
 
   const handleTemplateChange = (templateId: string | null) => {
-    form.setFieldValue('template_id', templateId);
+    form.setFieldValue('template_id', templateId ?? undefined);
     if (templateId) {
       const template = templates.find((t) => t.id === templateId);
       if (template?.criteria) {
