@@ -3,6 +3,8 @@ import {
   IsEnum,
   IsInt,
   IsDateString,
+  IsOptional,
+  IsUUID,
   Min,
   Max,
 } from 'class-validator';
@@ -15,4 +17,5 @@ export class CreateCycleDto {
   @Type(() => Number) @IsInt() period_year: number;
   @Type(() => Number) @IsInt() @Min(1) @Max(12) period_seq: number;
   @IsDateString() announce_date: string;
+  @IsOptional() @IsUUID() template_id?: string;
 }

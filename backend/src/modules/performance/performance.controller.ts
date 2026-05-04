@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { PerformanceService } from './performance.service';
+import { TemplateService } from './services/template.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -17,11 +18,64 @@ import { Role } from '../../common/constant/roles';
 import { CreateCycleDto } from './dto/create-cycle.dto';
 import { CreateReviewDto, SubmitReviewDto } from './dto/create-review.dto';
 import { CreateAwardDto } from './dto/create-award.dto';
+import { CreateTemplateDto, UpdateTemplateDto } from './dto/template.dto';
+import { CreateCriteriaDto, UpdateCriteriaDto } from './dto/criteria.dto';
 
 @Controller('performance')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PerformanceController {
-  constructor(private readonly svc: PerformanceService) {}
+  constructor(
+    private readonly svc: PerformanceService,
+    private readonly templateSvc: TemplateService,
+  ) {}
+
+  @Get('templates')
+  @Roles(Role.ADMIN, Role.MANAGER)
+  getTemplates() {
+    return this.templateSvc.findAll();
+  }
+
+  @Get('templates/:id')
+  @Roles(Role.ADMIN, Role.MANAGER)
+  getTemplate(@Param('id') id: string) {
+    return this.templateSvc.findOne(id);
+  }
+
+  @Post('templates')
+  @Roles(Role.ADMIN)
+  createTemplate(@Body() dto: CreateTemplateDto) {
+    return this.templateSvc.create(dto);
+  }
+
+  @Patch('templates/:id')
+  @Roles(Role.ADMIN)
+  updateTemplate(@Param('id') id: string, @Body() dto: UpdateTemplateDto) {
+    return this.templateSvc.update(id, dto);
+  }
+
+  @Patch('templates/:id/toggle')
+  @Roles(Role.ADMIN)
+  toggleTemplate(@Param('id') id: string) {
+    return this.templateSvc.toggle(id);
+  }
+
+  @Post('templates/:id/criteria')
+  @Roles(Role.ADMIN)
+  addCriteria(@Param('id') id: string, @Body() dto: CreateCriteriaDto) {
+    return this.templateSvc.addCriteria(id, dto);
+  }
+
+  @Patch('criteria/:id')
+  @Roles(Role.ADMIN)
+  updateCriteria(@Param('id') id: string, @Body() dto: UpdateCriteriaDto) {
+    return this.templateSvc.updateCriteria(id, dto);
+  }
+
+  @Delete('criteria/:id')
+  @Roles(Role.ADMIN)
+  deleteCriteria(@Param('id') id: string) {
+    return this.templateSvc.deleteCriteria(id);
+  }
 
   @Post('cycles')
   @Roles(Role.ADMIN)

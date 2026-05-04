@@ -307,12 +307,12 @@ enum TargetType {
 }
 
 model EvaluationTemplates {
-  id          String        @id @default(uuid()) @db.Uuid
-  title       String        @db.VarChar(100)
-  description String?       @db.Text
-  apply_to    ContractType?
-  is_active   Boolean       @default(true)
-  created_at  DateTime      @default(now())
+  id          String   @id @default(uuid()) @db.Uuid
+  title       String   @db.VarChar(100)
+  description String?  @db.Text
+  apply_to    String[]
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
 
   criteria EvaluationCriteria[]
   cycles   ReviewCycles[]

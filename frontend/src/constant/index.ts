@@ -167,3 +167,90 @@ export const EMPLOYEE_ROLE = {
 
 export const DEFAULT_TIMEZONE = 'Asia/Ho_Chi_Minh';
 export const DEFAULT_LOCALE = 'vi-VN';
+
+export const SCORE_TYPE = {
+  RATING: 'rating',
+  BINARY: 'binary',
+} as const;
+
+export type ScoreType = (typeof SCORE_TYPE)[keyof typeof SCORE_TYPE];
+
+export const SCORE_TYPE_LABEL: Record<ScoreType, string> = {
+  rating: 'Rating',
+  binary: 'Binary',
+};
+
+export const SCORE_TYPE_OPTIONS = Object.entries(SCORE_TYPE_LABEL).map(([value, label]) => ({
+  value,
+  label,
+}));
+
+export const REVIEW_STATUS = {
+  DRAFT: 'draft',
+  SUBMITTED: 'submitted',
+  PUBLISHED: 'published',
+} as const;
+
+export type ReviewStatus = (typeof REVIEW_STATUS)[keyof typeof REVIEW_STATUS];
+
+export const REVIEW_STATUS_LABEL: Record<ReviewStatus, string> = {
+  draft: 'Draft',
+  submitted: 'Submitted',
+  published: 'Published',
+};
+
+export const REVIEW_STATUS_COLOR: Record<ReviewStatus, string> = {
+  draft: 'gray',
+  submitted: 'blue',
+  published: 'green',
+};
+
+export const REVIEW_PERIOD_TYPE = {
+  MONTHLY: 'monthly',
+  QUARTERLY: 'quarterly',
+} as const;
+
+export type ReviewPeriodType = (typeof REVIEW_PERIOD_TYPE)[keyof typeof REVIEW_PERIOD_TYPE];
+
+export const REVIEW_PERIOD_TYPE_LABEL: Record<ReviewPeriodType, string> = {
+  monthly: 'Monthly',
+  quarterly: 'Quarterly',
+};
+
+export const AWARD_CATEGORY = {
+  TOP_EMPLOYEE: 'top_employee',
+  TOP_MANAGER: 'top_manager',
+} as const;
+
+export type AwardCategory = (typeof AWARD_CATEGORY)[keyof typeof AWARD_CATEGORY];
+
+export const AWARD_CATEGORY_LABEL: Record<AwardCategory, string> = {
+  top_employee: 'Top Employee',
+  top_manager: 'Top Manager',
+};
+
+export const PROBATION_RESULT = {
+  PASS: 'pass',
+  EXTEND: 'extend',
+  FAIL: 'fail',
+} as const;
+
+export type ProbationResult = (typeof PROBATION_RESULT)[keyof typeof PROBATION_RESULT];
+
+export const PROBATION_RESULT_LABEL: Record<ProbationResult, string> = {
+  pass: 'Pass — Convert to Official',
+  extend: 'Extend Probation',
+  fail: 'Fail — Terminate',
+};
+
+export const INTERN_RESULT = {
+  RECRUIT: 'recruit',
+  NO_RECRUIT: 'no_recruit',
+} as const;
+
+export type InternResult = (typeof INTERN_RESULT)[keyof typeof INTERN_RESULT];
+
+export const INTERN_RESULT_LABEL: Record<InternResult, string> = {
+  recruit: 'Recruit — Create Offer',
+  no_recruit: 'Do Not Recruit',
+};

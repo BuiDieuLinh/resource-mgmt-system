@@ -1,10 +1,11 @@
 import { Stack, Tabs } from '@mantine/core';
-import { IconShieldCheck, IconCalendarEvent } from '@tabler/icons-react';
+import { IconShieldCheck, IconCalendarEvent, IconTemplate } from '@tabler/icons-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { WorkPolicySettings } from '@/modules/work-policies/components/WorkPolicySettings';
 import { HolidaySettings } from '@/modules/holidays/components/HolidaySettings';
 import { useAuth } from '@/modules/auth/context/AuthContext';
 import { EMPLOYEE_ROLE } from '@/constant';
+import EvaluationTemplatesPage from '@/modules/performance/views/EvaluationTemplates';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -28,6 +29,11 @@ export default function SettingsPage() {
               Public Holidays
             </Tabs.Tab>
           )}
+          {isAdmin && (
+            <Tabs.Tab value="evaluation-templates" leftSection={<IconTemplate size={16} />}>
+              Evaluation Templates
+            </Tabs.Tab>
+          )}
         </Tabs.List>
 
         {isAdmin && (
@@ -38,6 +44,11 @@ export default function SettingsPage() {
         {isAdmin && (
           <Tabs.Panel value="holidays">
             <HolidaySettings />
+          </Tabs.Panel>
+        )}
+        {isAdmin && (
+          <Tabs.Panel value="evaluation-templates">
+            <EvaluationTemplatesPage />
           </Tabs.Panel>
         )}
       </Tabs>

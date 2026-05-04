@@ -30,18 +30,22 @@ import CheckInOut from '@/modules/attendances/views/CheckInOut';
 import LeaveRequests from '@/modules/leave-requests/views/LeaveRequests';
 import MyTimesheet from '@/modules/attendances/views/MyTimesheet';
 import MyProfile from '@/modules/employees/views/MyProfile';
+import MyReviews from '@/modules/performance/views/MyReviews';
 import Settings from '@/modules/settings/views/Settings';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import PerformanceCycles from '@/modules/performance/views/PerformanceCycles';
+import EvaluationTemplates from '@/modules/performance/views/EvaluationTemplates';
 import CycleDetail from '@/modules/performance/views/CycleDetail';
 import PerformanceReview from '@/modules/performance/views/PerformanceReview';
 import HrStructureReport from '@/modules/reports/views/HrStructureReport';
 import TurnoverReport from '@/modules/reports/views/TurnoverReport';
 import InsightsReport from '@/modules/reports/views/InsightsReport';
 import {
+  performanceTemplatesUrl,
   performanceCyclesUrl,
   performanceCycleDetailUrl,
   performanceReviewUrl,
+  myReviewsUrl,
   reportsHrStructureUrl,
   reportsTurnoverUrl,
   reportsInsightsUrl,
@@ -68,7 +72,9 @@ export const router = createBrowserRouter([
           { path: checkInOutUrl, element: <CheckInOut /> },
           { path: myTimesheetUrl, element: <MyTimesheet /> },
           { path: myProfileUrl, element: <MyProfile /> },
+          { path: myReviewsUrl, element: <MyReviews /> },
           { path: settingsUrl, element: <Settings /> },
+          { path: performanceTemplatesUrl, element: <EvaluationTemplates /> },
           { path: performanceCyclesUrl, element: <PerformanceCycles /> },
           { path: performanceCycleDetailUrl, element: <CycleDetail /> },
           { path: performanceReviewUrl, element: <PerformanceReview /> },

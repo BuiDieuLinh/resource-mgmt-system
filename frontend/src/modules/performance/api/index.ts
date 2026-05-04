@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import type { IAward, IReviewCycle, IPerformanceReview } from '../types';
+import type { IAward, IReviewCycle, IPerformanceReview, IEvaluationTemplate } from '../types';
 
 const BASE = 'performance';
 
@@ -121,3 +121,85 @@ export const useGetMyAwards = () =>
     queryKey: ['my-awards'],
     queryFn: () => apiClient.get(`${BASE}/my-awards`).then((r) => r.data?.data ?? []),
   });
+
+// ============ EVALUATION TEMPLATES ============
+export const useGetTemplates = () =>
+  useQuery<IEvaluationTemplate[]>({
+    queryKey: ['evaluation-templates'],
+    queryFn: () => apiClient.get(`${BASE}/templates`).then((r) => r.data?.data ?? []),
+  });
+
+export const useGetTemplate = (id: string) =>
+  useQuery<IEvaluationTemplate>({
+    queryKey: ['evaluation-template', id],
+    queryFn: () => apiClient.get(`${BASE}/templates/${id}`).then((r) => r.data?.data),
+    enabled: !!id,
+  });
+
+export const useCreateTemplate = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => apiClient.post(`${BASE}/templates`, data).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['evaluation-templates'] }),
+  });
+};
+
+export const useUpdateTemplate = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: any) =>
+      apiClient.patch(`${BASE}/templates/${id}`, data).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['evaluation-templates'] }),
+  });
+};
+
+export const useToggleTemplate = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient.patch(`${BASE}/templates/${id}/toggle`, {}).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['evaluation-templates'] }),
+  });
+};
+
+export const useCloneTemplate = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient.post(`${BASE}/templates/${id}/clone`, {}).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['evaluation-templates'] }),
+  });
+};
+
+// ============ EVALUATION CRITERIA ============
+export const useCreateCriteria = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ template_id, ...data }: any) =>
+      apiClient.post(`${BASE}/templates/${template_id}/criteria`, data).then((r) => r.data),
+    onSuccess: (_, vars) =>
+      qc.invalidateQueries({ queryKey: ['evaluation-template', vars.template_id] }),
+  });
+};
+
+export const useUpdateCriteria = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, template_id, ...data }: any) =>
+      apiClient.patch(`${BASE}/criteria/${id}`, data).then((r) => r.data),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['evaluation-template', vars.template_id] });
+      qc.invalidateQueries({ queryKey: ['evaluation-templates'] });
+    },
+  });
+};
+
+export const useDeleteCriteria = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: any) => apiClient.delete(`${BASE}/criteria/${id}`).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['evaluation-templates'] });
+    },
+  });
+};

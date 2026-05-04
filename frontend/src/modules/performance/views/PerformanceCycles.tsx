@@ -1,104 +1,101 @@
-import { useState } from 'react';
-import {
-  Stack,
-  Group,
-  Button,
-  Badge,
-  Text,
-  Modal,
-  TextInput,
-  Select,
-  NumberInput,
-  Loader,
-  Center,
-} from '@mantine/core';
-import { useForm } from '@mantine/form';
-import { DateInput } from '@mantine/dates';
-import { IconPlus, IconTrophy, IconChevronRight, IconEye } from '@tabler/icons-react';
+import { useState, useMemo } from 'react';
+import { Stack, Group, Button, Badge, Text, Select, Loader, Center, Tooltip } from '@mantine/core';
+import { IconPlus, IconTrophy, IconCalendar } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { BaseTable, type TableColumn } from '@/components/BaseTable/BaseTable';
-import { useGetCycles, useCreateCycle, useGetAwardsByCycle } from '../api';
-import { AwardRevealPage } from '../components/AwardRevealPage';
+import { useGetCycles, useCreateCycle, useGetTemplates } from '../api';
+import { useGetEmployees } from '@/modules/employees/api/get-employees';
+import { CreateCycleModal } from '../components/CreateCycleModal';
 import { notify } from '@/components/Notification';
 import { performanceCycleDetailUrl } from '@/routes/url';
-import type { IReviewCycle, IAward } from '../types';
+import type { IReviewCycle } from '../types';
 
 const PERIOD_LABEL: Record<string, string> = { monthly: 'Monthly', quarterly: 'Quarterly' };
+const PERIOD_COLOR: Record<string, string> = { monthly: 'blue', quarterly: 'violet' };
 
 export default function PerformanceCyclesPage() {
   const navigate = useNavigate();
   const { data: cycles = [], isLoading } = useGetCycles();
+  const { data: templates = [] } = useGetTemplates();
+  const { data: employeesRes } = useGetEmployees({ pageSize: 500 });
+  const employees = employeesRes?.data ?? [];
+
   const createCycle = useCreateCycle();
   const [opened, setOpened] = useState(false);
-  const [previewCycleId, setPreviewCycleId] = useState<string | null>(null);
-  const [previewAwards, setPreviewAwards] = useState<IAward[]>([]);
+  const [filterType, setFilterType] = useState<string | null>(null);
+  const [filterYear, setFilterYear] = useState<string | null>(null);
 
-  const { data: awardsForPreview = [] } = useGetAwardsByCycle(previewCycleId ?? '');
-
-  const form = useForm({
-    initialValues: {
-      title: '',
-      period_type: 'monthly' as 'monthly' | 'quarterly',
-      period_year: new Date().getFullYear(),
-      period_seq: new Date().getMonth() + 1,
-      announce_date: null as Date | null,
-    },
-    validate: {
-      title: (v) => (!v ? 'Required' : null),
-      announce_date: (v) => (!v ? 'Required' : null),
-    },
-  });
-
-  const handleSubmit = async (values: typeof form.values) => {
-    const nid = notify.loading('Creating...');
+  const handleCreateCycle = async (values: any) => {
+    const nid = notify.loading('Creating cycle...');
     try {
-      await createCycle.mutateAsync({
-        ...values,
-        announce_date:
-          values.announce_date instanceof Date
-            ? values.announce_date.toISOString().slice(0, 10)
-            : new Date(values.announce_date!).toISOString().slice(0, 10),
-      });
-      notify.success(nid, { message: 'Review cycle created' });
+      await createCycle.mutateAsync(values);
+      notify.success(nid, { message: 'Review cycle created successfully' });
       setOpened(false);
-      form.reset();
     } catch (e: any) {
       notify.error(nid, { message: e?.response?.data?.message || 'Failed to create cycle' });
+      throw e;
     }
   };
 
-  const handleShowPreview = () => {
-    if (awardsForPreview.length > 0) setPreviewAwards(awardsForPreview);
-    else notify.error('', { message: 'No awards in this cycle yet' });
-  };
+  const filteredCycles = useMemo(() => {
+    let result = cycles;
+    if (filterType) {
+      result = result.filter((c) => c.period_type === filterType);
+    }
+    if (filterYear) {
+      result = result.filter((c) => c.period_year.toString() === filterYear);
+    }
+    return result;
+  }, [cycles, filterType, filterYear]);
+
+  const years = useMemo(() => {
+    const uniqueYears = [...new Set(cycles.map((c) => c.period_year))];
+    return uniqueYears
+      .sort((a, b) => b - a)
+      .map((y) => ({ value: y.toString(), label: y.toString() }));
+  }, [cycles]);
 
   const columns: TableColumn<IReviewCycle>[] = [
     {
       key: 'title',
       title: 'Cycle Name',
       sortable: true,
-      render: (r) => <Text fw={500}>{r.title}</Text>,
+      render: (r) => (
+        <div>
+          <Text fw={500} size="sm">
+            {r.title}
+          </Text>
+          <Text size="xs" c="dimmed">
+            {r.period_year} · Period {r.period_seq}
+          </Text>
+        </div>
+      ),
     },
     {
       key: 'period_type',
       title: 'Type',
       render: (r) => (
-        <Badge variant="light" size="sm">
+        <Badge variant="light" color={PERIOD_COLOR[r.period_type]} size="sm" fw={500}>
           {PERIOD_LABEL[r.period_type]}
         </Badge>
       ),
     },
     {
-      key: 'period_year',
-      title: 'Year',
-      align: 'center',
-      sortable: true,
-    },
-    {
-      key: 'period_seq',
-      title: 'Period',
-      align: 'center',
+      key: 'template',
+      title: 'Template',
+      render: (r) =>
+        r.template ? (
+          <Tooltip label={r.template.description || r.template.title}>
+            <Badge variant="light" color="cyan" size="sm" fw={500}>
+              {r.template.title}
+            </Badge>
+          </Tooltip>
+        ) : (
+          <Text size="sm" c="dimmed">
+            No template
+          </Text>
+        ),
     },
     {
       key: 'announce_date',
@@ -108,153 +105,102 @@ export default function PerformanceCyclesPage() {
         const d = new Date(r.announce_date);
         const isPast = d < new Date();
         return (
-          <Badge variant="light" color={isPast ? 'gray' : 'blue'} size="sm">
-            {d.toLocaleDateString('en-GB')}
-          </Badge>
+          <Group gap={6}>
+            <IconCalendar size={14} color="var(--mantine-color-dimmed)" />
+            <Text size="sm" c={isPast ? 'dimmed' : 'blue'}>
+              {d.toLocaleDateString('en-GB')}
+            </Text>
+          </Group>
         );
       },
     },
     {
-      key: 'reviews',
-      title: 'Reviews',
-      align: 'center',
-      render: (r) => <Text size="sm">{r._count?.reviews ?? 0}</Text>,
-    },
-    {
-      key: 'awards',
-      title: 'Awards',
+      key: 'stats',
+      title: 'Progress',
       align: 'center',
       render: (r) => (
-        <Group gap={4} justify="center">
-          <IconTrophy size={16} color="#FFD700" />
-          <Text size="sm">{r._count?.awards ?? 0}</Text>
-        </Group>
-      ),
-    },
-    {
-      key: 'actions',
-      title: '',
-      align: 'center',
-      render: (r) => (
-        <Group gap={4} justify="center">
+        <Group gap="xs" justify="center">
+          <Badge variant="light" size="sm" fw={500}>
+            {r._count?.reviews ?? 0} reviews
+          </Badge>
           {(r._count?.awards ?? 0) > 0 && (
-            <Button
-              size="xs"
-              variant="subtle"
-              color="yellow"
-              leftSection={<IconEye size={14} />}
-              onClick={(e) => {
-                e.stopPropagation();
-                setPreviewCycleId(r.id);
-              }}
-            >
-              Preview
-            </Button>
+            <Badge variant="light" color="yellow" size="sm" fw={500}>
+              <Group gap={4}>
+                <IconTrophy size={14} />
+                {r._count?.awards}
+              </Group>
+            </Badge>
           )}
-          <IconChevronRight size={18} color="var(--mantine-color-dimmed)" />
         </Group>
       ),
     },
   ];
 
+  if (isLoading) {
+    return (
+      <Center h={400}>
+        <Loader />
+      </Center>
+    );
+  }
+
   return (
     <Stack gap="lg">
       <PageHeader
         title="Review Cycles"
-        description="Manage performance review cycles and awards"
+        description="Manage performance review cycles and track evaluation progress"
         right={
-          <Button leftSection={<IconPlus size={18} />} onClick={() => setOpened(true)}>
-            New Cycle
-          </Button>
+          <Group>
+            <Button leftSection={<IconPlus size={18} />} onClick={() => setOpened(true)}>
+              New Cycle
+            </Button>
+            <Group>
+              <Select
+                placeholder="Filter by type"
+                data={[
+                  { value: 'monthly', label: 'Monthly' },
+                  { value: 'quarterly', label: 'Quarterly' },
+                ]}
+                value={filterType}
+                onChange={setFilterType}
+                clearable
+                style={{ width: 180 }}
+              />
+              <Select
+                placeholder="Filter by year"
+                data={years}
+                value={filterYear}
+                onChange={setFilterYear}
+                clearable
+                style={{ width: 150 }}
+              />
+              {(filterType || filterYear) && (
+                <Text size="sm" c="dimmed">
+                  Showing {filteredCycles.length} of {cycles.length} cycles
+                </Text>
+              )}
+            </Group>
+          </Group>
         }
       />
 
-      {isLoading ? (
-        <Center h={300}>
-          <Loader />
-        </Center>
-      ) : (
-        <BaseTable
-          data={cycles}
-          columns={columns}
-          height={520}
-          highlightOnHover
-          onRowClick={(r) => navigate(performanceCycleDetailUrl.replace(':id', r.id))}
-        />
-      )}
+      <BaseTable
+        data={filteredCycles}
+        columns={columns}
+        height={520}
+        highlightOnHover
+        onRowClick={(r) => navigate(performanceCycleDetailUrl.replace(':id', r.id))}
+        emptyText="No review cycles found. Create your first cycle to get started."
+      />
 
-      {previewCycleId && awardsForPreview.length > 0 && (
-        <Group justify="center" mt="sm">
-          <Button
-            variant="gradient"
-            gradient={{ from: 'violet', to: 'blue' }}
-            leftSection={<IconTrophy size={18} />}
-            onClick={handleShowPreview}
-          >
-            Preview Award Reveal
-          </Button>
-        </Group>
-      )}
-
-      {previewAwards.length > 0 && (
-        <AwardRevealPage
-          awards={previewAwards}
-          onClose={() => {
-            setPreviewAwards([]);
-            setPreviewCycleId(null);
-          }}
-          previewMode
-        />
-      )}
-
-      <Modal opened={opened} onClose={() => setOpened(false)} title="New Review Cycle" centered>
-        <form onSubmit={form.onSubmit(handleSubmit)}>
-          <Stack gap="sm">
-            <TextInput
-              label="Cycle Name"
-              placeholder="e.g. Q1 2026"
-              required
-              {...form.getInputProps('title')}
-            />
-            <Select
-              label="Type"
-              data={[
-                { value: 'monthly', label: 'Monthly' },
-                { value: 'quarterly', label: 'Quarterly' },
-              ]}
-              {...form.getInputProps('period_type')}
-            />
-            <Group grow>
-              <NumberInput
-                label="Year"
-                min={2020}
-                max={2100}
-                {...form.getInputProps('period_year')}
-              />
-              <NumberInput
-                label={form.values.period_type === 'monthly' ? 'Month (1-12)' : 'Quarter (1-4)'}
-                min={1}
-                max={form.values.period_type === 'monthly' ? 12 : 4}
-                {...form.getInputProps('period_seq')}
-              />
-            </Group>
-            <DateInput
-              label="Announce Date"
-              placeholder="Pick a date"
-              required
-              {...form.getInputProps('announce_date')}
-            />
-            <Group justify="flex-end" mt="sm">
-              <Button variant="subtle" onClick={() => setOpened(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" loading={createCycle.isPending}>
-                Create
-              </Button>
-            </Group>
-          </Stack>
-        </form>
-      </Modal>
+      <CreateCycleModal
+        opened={opened}
+        onClose={() => setOpened(false)}
+        onSubmit={handleCreateCycle}
+        templates={templates}
+        employees={employees}
+        isLoading={createCycle.isPending}
+      />
     </Stack>
   );
 }

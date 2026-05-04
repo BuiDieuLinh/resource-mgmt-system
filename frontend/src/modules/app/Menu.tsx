@@ -8,6 +8,7 @@ import {
   settingsUrl,
   checkInOutUrl,
   myTimesheetUrl,
+  myReviewsUrl,
   performanceCyclesUrl,
   performanceReviewUrl,
   reportsHrStructureUrl,
@@ -29,6 +30,7 @@ import {
   IconChartBar,
   IconChartLine,
   IconBulb,
+  IconClipboardList,
 } from '@tabler/icons-react';
 
 export type AppMenu = {
@@ -119,6 +121,12 @@ export const MENUS: AppMenu[] = [
         path: performanceReviewUrl,
         icon: IconStar,
         roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.MANAGER],
+      },
+      {
+        label: 'My Reviews',
+        path: myReviewsUrl,
+        icon: IconClipboardList,
+        roles: [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.MANAGER, EMPLOYEE_ROLE.EMPLOYEE],
       },
     ],
   },

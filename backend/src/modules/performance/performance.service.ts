@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ResponseHelper } from '../../common/helpers/response.helper';
@@ -23,7 +22,15 @@ export class PerformanceService {
         period_year: dto.period_year,
         period_seq: dto.period_seq,
         announce_date: new Date(dto.announce_date),
+        template_id: dto.template_id,
         created_by: authUserId,
+      },
+      include: {
+        template: {
+          include: {
+            criteria: true,
+          },
+        },
       },
     });
     return ResponseHelper.success(cycle, 'Review cycle created');
@@ -33,6 +40,7 @@ export class PerformanceService {
     const cycles = await this.prisma.reviewCycles.findMany({
       orderBy: [{ period_year: 'desc' }, { period_seq: 'desc' }],
       include: {
+        template: true,
         _count: { select: { reviews: true, awards: true } },
       },
     });
@@ -115,7 +123,29 @@ export class PerformanceService {
         overtime_minutes,
       },
     });
-    return ResponseHelper.success(review, 'Review saved');
+
+    if (dto.score_details && dto.score_details.length > 0) {
+      await this.prisma.scoreDetails.deleteMany({
+        where: { review_id: review.id },
+      });
+      await this.prisma.scoreDetails.createMany({
+        data: dto.score_details.map((sd) => ({
+          review_id: review.id,
+          criteria_id: sd.criteria_id,
+          criteria_name: sd.criteria_name,
+          weight: sd.weight,
+          max_score: sd.max_score,
+          score: sd.score,
+          note: sd.note,
+        })),
+      });
+    }
+
+    const full = await this.prisma.performanceReviews.findUnique({
+      where: { id: review.id },
+      include: { score_details: true },
+    });
+    return ResponseHelper.success(full, 'Review saved');
   }
 
   async submitReview(id: string, dto: SubmitReviewDto, reviewerAuthId: string) {
@@ -123,6 +153,21 @@ export class PerformanceService {
       where: { id },
     });
     if (!review) throw new NotFoundException('Review not found');
+
+    if (dto.score_details && dto.score_details.length > 0) {
+      await this.prisma.scoreDetails.deleteMany({ where: { review_id: id } });
+      await this.prisma.scoreDetails.createMany({
+        data: dto.score_details.map((sd) => ({
+          review_id: id,
+          criteria_id: sd.criteria_id,
+          criteria_name: sd.criteria_name,
+          weight: sd.weight,
+          max_score: sd.max_score,
+          score: sd.score,
+          note: sd.note,
+        })),
+      });
+    }
 
     const updated = await this.prisma.performanceReviews.update({
       where: { id },
@@ -134,6 +179,7 @@ export class PerformanceService {
         }),
         status: ReviewStatus.submitted,
       },
+      include: { score_details: true },
     });
     return ResponseHelper.success(updated, 'Review submitted');
   }
@@ -177,6 +223,7 @@ export class PerformanceService {
         assignment: {
           include: { reviewer: { select: { id: true, full_name: true } } },
         },
+        score_details: { orderBy: { weight: 'desc' } },
       },
       orderBy: { total_score: 'desc' },
     });
@@ -256,7 +303,6 @@ export class PerformanceService {
     return ResponseHelper.success(awards);
   }
 
-  /** Lịch sử award của employee — dùng trong profile */
   async getMyAwards(authUserId: string) {
     const employee = await this.prisma.employees.findUnique({
       where: { auth_user_id: authUserId },
@@ -273,8 +319,6 @@ export class PerformanceService {
     return ResponseHelper.success(awards);
   }
 
-  // ── helpers ──────────────────────────────────────────────────────────────
-
   private getCycleDateRange(cycle: {
     period_type: string;
     period_year: number;
@@ -285,7 +329,6 @@ export class PerformanceService {
       const lte = new Date(cycle.period_year, cycle.period_seq, 0);
       return { gte, lte };
     }
-    // quarterly
     const startMonth = (cycle.period_seq - 1) * 3;
     const gte = new Date(cycle.period_year, startMonth, 1);
     const lte = new Date(cycle.period_year, startMonth + 3, 0);
