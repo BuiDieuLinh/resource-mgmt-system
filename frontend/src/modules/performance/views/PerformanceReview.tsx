@@ -8,7 +8,6 @@ import {
   Badge,
   Select,
   Textarea,
-  Slider,
   Loader,
   Center,
   Grid,
@@ -16,14 +15,25 @@ import {
   Paper,
   ThemeIcon,
   Progress,
+  Box,
+  Divider,
+  RingProgress,
+  SimpleGrid,
+  ScrollArea,
+  Tooltip,
+  NumberInput,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import {
-  IconStar,
   IconCheck,
-  IconInfoCircle,
   IconChartBar,
-  IconFileText,
+  IconUser,
+  IconCircleCheck,
+  IconClock,
+  IconAlertCircle,
+  IconChevronRight,
+  IconSend,
+  IconDeviceFloppy,
 } from '@tabler/icons-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import {
@@ -33,7 +43,6 @@ import {
   useSubmitReview,
   useGetTemplate,
 } from '../api';
-import { useGetEmployees } from '@/modules/employees/api/get-employees';
 import { useGetEmployeeByUserId } from '@/modules/employees/api/get-employee-by-user';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { notify } from '@/components/Notification';
@@ -43,7 +52,7 @@ import {
   PROBATION_RESULT_LABEL,
   INTERN_RESULT_LABEL,
 } from '@/constant';
-import type { IEvaluationCriteria } from '../types';
+import type { IEvaluationCriteria, IReviewCycle, IPerformanceReview } from '../types';
 
 interface CriteriaScore {
   criteria_id: string;
@@ -67,34 +76,91 @@ function buildCriteriaScores(criteria: IEvaluationCriteria[]): CriteriaScore[] {
   }));
 }
 
+function calcWeightedScore(
+  criteriaScores: CriteriaScore[],
+  criteria: IEvaluationCriteria[],
+): number {
+  let total = 0;
+  for (const c of criteria) {
+    const entry = criteriaScores.find((s) => s.criteria_id === c.id);
+    if (entry) total += ((entry.score / c.max_score) * 100 * c.weight) / 100;
+  }
+  return Math.round(total);
+}
+
+function getGradeLabel(score: number) {
+  if (score >= 90) return { label: 'Excellent', color: 'green' };
+  if (score >= 75) return { label: 'Good', color: 'blue' };
+  if (score >= 60) return { label: 'Average', color: 'yellow' };
+  return { label: 'Below Average', color: 'red' };
+}
+
+// Pick the cycle matching the current calendar period (month or quarter)
+function pickActiveCycle(cycles: IReviewCycle[]): IReviewCycle | null {
+  if (!cycles.length) return null;
+
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+  const currentQuarter = Math.ceil(currentMonth / 3);
+
+  const quarterMatch = cycles.find(
+    (c) =>
+      c.period_type === 'quarterly' &&
+      c.period_year === currentYear &&
+      c.period_seq === currentQuarter,
+  );
+  if (quarterMatch) return quarterMatch;
+
+  const monthMatch = cycles.find(
+    (c) =>
+      c.period_type === 'monthly' && c.period_year === currentYear && c.period_seq === currentMonth,
+  );
+  if (monthMatch) return monthMatch;
+
+  return [...cycles].sort((a, b) =>
+    a.period_year !== b.period_year ? b.period_year - a.period_year : b.period_seq - a.period_seq,
+  )[0];
+}
+
 export default function PerformanceReviewPage() {
   const { data: cycles = [] } = useGetCycles();
-  const { data: employeesRes } = useGetEmployees({ pageSize: 200 });
-  const employees = employeesRes?.data ?? [];
-
   const { user } = useAuthStore();
   const { data: myEmpData } = useGetEmployeeByUserId(user?.id);
   const myEmployeeId = myEmpData?.data?.id;
 
-  const [selectedCycle, setSelectedCycle] = useState<string | null>(null);
-  const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
+  const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (cycles.length && !selectedCycleId) {
+      const active = pickActiveCycle(cycles as IReviewCycle[]);
+      if (active) setSelectedCycleId(active.id);
+    }
+  }, [cycles, selectedCycleId]);
+
+  const selectedCycle = (cycles as IReviewCycle[]).find((c) => c.id === selectedCycleId) ?? null;
 
   const { data: reviews = [], isLoading: reviewsLoading } = useGetReviewsByCycle(
-    selectedCycle ?? '',
+    selectedCycleId ?? '',
   );
 
-  const selectedCycleData = cycles.find((c: any) => c.id === selectedCycle);
-  const { data: templateData } = useGetTemplate(selectedCycleData?.template_id ?? '');
-  const template = selectedCycleData?.template_id ? templateData : null;
+  const { data: templateData } = useGetTemplate(selectedCycle?.template_id ?? '');
+  const template = selectedCycle?.template_id ? templateData : null;
 
   const createReview = useCreateReview();
   const submitReview = useSubmitReview();
 
-  const existingReview = reviews.find((r: any) => r.employee_id === selectedEmployee);
-  const isPublished = existingReview?.status === 'published';
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
 
-  const selectedEmp = employees.find((e: any) => e.id === selectedEmployee);
-  const contractType = selectedEmp?.contract_type;
+  const existingReview = (reviews as IPerformanceReview[]).find(
+    (r) => r.employee_id === selectedEmployeeId,
+  );
+  const isPublished = existingReview?.status === 'published';
+  const isSubmitted = existingReview?.status === 'submitted';
+  const isDone = isPublished || isSubmitted;
+
+  const selectedEmpData = existingReview?.employee;
+  const contractType = selectedEmpData?.contract_type;
 
   const form = useForm<FormValues>({
     initialValues: {
@@ -106,7 +172,6 @@ export default function PerformanceReviewPage() {
     },
   });
 
-  // When template loads and no criteria scores yet, initialize them
   useEffect(() => {
     if (
       template?.criteria &&
@@ -118,24 +183,14 @@ export default function PerformanceReviewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [template?.id]);
 
-  // Calculate weighted total score from criteria
   const calculatedScore = useMemo(() => {
-    if (!template?.criteria || form.values.criteriaScores.length === 0) {
-      return form.values.score;
-    }
-    let total = 0;
-    for (const c of template.criteria) {
-      const entry = form.values.criteriaScores.find((s) => s.criteria_id === c.id);
-      if (entry) {
-        total += ((entry.score / c.max_score) * 100 * c.weight) / 100;
-      }
-    }
-    return Math.round(total);
+    if (!template?.criteria || form.values.criteriaScores.length === 0) return form.values.score;
+    return calcWeightedScore(form.values.criteriaScores, template.criteria);
   }, [template, form.values.criteriaScores, form.values.score]);
 
-  const handleSelectEmployee = (empId: string | null) => {
-    setSelectedEmployee(empId);
-    const existing = reviews.find((r: any) => r.employee_id === empId);
+  const handleSelectEmployee = (empId: string) => {
+    setSelectedEmployeeId(empId);
+    const existing = (reviews as IPerformanceReview[]).find((r) => r.employee_id === empId);
     if (existing) {
       form.setValues({
         score: existing.total_score ?? 70,
@@ -144,7 +199,7 @@ export default function PerformanceReviewPage() {
         result: existing.result ?? '',
         criteriaScores:
           existing.score_details && existing.score_details.length > 0
-            ? existing.score_details.map((sd: any) => ({
+            ? existing.score_details.map((sd) => ({
                 criteria_id: sd.criteria_id,
                 score: sd.score,
                 note: sd.note ?? '',
@@ -164,15 +219,13 @@ export default function PerformanceReviewPage() {
     }
   };
 
-  const buildPayload = (_submit: boolean) => {
+  const buildPayload = () => {
     const hasCriteria = template?.criteria && template.criteria.length > 0;
-    const totalScore = hasCriteria ? calculatedScore : form.values.score;
-
     return {
-      cycle_id: selectedCycle!,
-      employee_id: selectedEmployee!,
+      cycle_id: selectedCycleId!,
+      employee_id: selectedEmployeeId!,
       reviewer_id: myEmployeeId!,
-      total_score: Math.max(0, totalScore),
+      total_score: Math.max(0, hasCriteria ? calculatedScore : form.values.score),
       comment: form.values.comment,
       achievements: form.values.achievements,
       result: form.values.result || undefined,
@@ -193,15 +246,10 @@ export default function PerformanceReviewPage() {
   };
 
   const handleSave = async (submit = false) => {
-    if (!selectedCycle || !selectedEmployee || !myEmployeeId) {
-      notify.error('', {
-        message: !myEmployeeId
-          ? 'Your employee profile was not found'
-          : 'Please select cycle and employee',
-      });
+    if (!selectedCycleId || !selectedEmployeeId || !myEmployeeId) {
+      notify.error('', { message: 'Missing required data' });
       return;
     }
-
     if (
       submit &&
       (contractType === 'probation' || contractType === 'intern') &&
@@ -211,22 +259,16 @@ export default function PerformanceReviewPage() {
       return;
     }
 
-    const payload = buildPayload(submit);
-    const nid = notify.loading(submit ? 'Submitting...' : 'Saving...');
-
+    const payload = buildPayload();
+    const nid = notify.loading(submit ? 'Submitting...' : 'Saving draft...');
     try {
       if (submit && existingReview) {
-        // Update score details + submit in one call
         await submitReview.mutateAsync({ id: existingReview.id, ...payload });
       } else if (submit && !existingReview) {
-        // Create then submit
         const created = await createReview.mutateAsync(payload);
         const reviewId = created?.data?.id;
-        if (reviewId) {
-          await submitReview.mutateAsync({ id: reviewId, ...payload });
-        }
+        if (reviewId) await submitReview.mutateAsync({ id: reviewId, ...payload });
       } else {
-        // Just save draft (upsert)
         await createReview.mutateAsync(payload);
       }
       notify.success(nid, { message: submit ? 'Review submitted' : 'Draft saved' });
@@ -235,22 +277,18 @@ export default function PerformanceReviewPage() {
     }
   };
 
-  const cycleOptions = cycles.map((c: any) => ({ value: c.id, label: c.title }));
-  const employeeOptions = employees
-    .filter((e: any) => e.status === 'active')
-    .map((e: any) => ({
-      value: e.id,
-      label: `${e.full_name} — ${e.position?.department?.department_name ?? ''}`,
-    }));
+  const totalCount = reviews.length;
+  const doneCount = (reviews as IPerformanceReview[]).filter(
+    (r) => r.status === 'submitted' || r.status === 'published',
+  ).length;
+  const draftCount = (reviews as IPerformanceReview[]).filter((r) => r.status === 'draft').length;
+  const pendingCount = totalCount - doneCount - draftCount;
+  const allDone = totalCount > 0 && doneCount === totalCount;
 
-  const scoreColor = calculatedScore >= 85 ? 'green' : calculatedScore >= 60 ? 'blue' : 'orange';
-
-  const getGradeLabel = (score: number) => {
-    if (score >= 90) return 'Excellent';
-    if (score >= 75) return 'Good';
-    if (score >= 60) return 'Average';
-    return 'Below Average';
-  };
+  const cycleOptions = (cycles as IReviewCycle[]).map((c) => ({
+    value: c.id,
+    label: `${c.title} (${c.period_type === 'quarterly' ? 'Q' + c.period_seq : 'M' + c.period_seq} ${c.period_year})`,
+  }));
 
   const probationResultOptions = Object.entries(PROBATION_RESULT_LABEL).map(([value, label]) => ({
     value,
@@ -261,364 +299,512 @@ export default function PerformanceReviewPage() {
     label,
   }));
 
+  const grade = getGradeLabel(calculatedScore);
+
   return (
-    <Stack gap="lg">
+    <Stack gap="md">
       <PageHeader
         title="Performance Review"
-        description="Evaluate employee performance based on defined criteria"
+        description="Evaluate your team's performance for the current cycle"
       />
 
-      <Grid gutter="lg">
-        {/* ── Main Form ── */}
-        <Grid.Col span={{ base: 12, md: 8 }}>
-          <Stack gap="md">
-            {/* Cycle + Employee selectors */}
-            <Card withBorder p="md">
-              <Stack gap="md">
-                <Select
-                  label="Review Cycle"
-                  placeholder="Select cycle..."
-                  data={cycleOptions}
-                  value={selectedCycle}
-                  onChange={(val) => {
-                    setSelectedCycle(val);
-                    setSelectedEmployee(null);
-                    form.reset();
-                  }}
-                  required
-                  leftSection={<IconFileText size={16} />}
-                />
-                <Select
-                  label="Employee"
-                  placeholder="Select employee..."
-                  data={employeeOptions}
-                  value={selectedEmployee}
-                  onChange={handleSelectEmployee}
-                  searchable
-                  disabled={!selectedCycle}
-                  required
-                />
-                {existingReview && (
-                  <Alert
-                    icon={<IconInfoCircle size={16} />}
-                    color={REVIEW_STATUS_COLOR[existingReview.status] ?? 'gray'}
-                    variant="light"
-                  >
-                    Status: <strong>{REVIEW_STATUS_LABEL[existingReview.status]}</strong>
-                    {isPublished && ' — Published, read-only'}
-                  </Alert>
-                )}
-              </Stack>
-            </Card>
+      <Card withBorder p="sm">
+        <Group justify="space-between" align="center">
+          <Group gap="sm">
+            <Text size="sm" fw={600}>
+              Cycle:
+            </Text>
+            <Select
+              size="sm"
+              data={cycleOptions}
+              value={selectedCycleId}
+              onChange={(val) => {
+                setSelectedCycleId(val);
+                setSelectedEmployeeId(null);
+                form.reset();
+              }}
+              style={{ width: 280 }}
+              placeholder="Select cycle..."
+            />
+          </Group>
 
-            {/* Score summary */}
-            {selectedEmployee && (
-              <Card withBorder p="md">
-                <Group justify="space-between" mb="md">
-                  <Group>
-                    <ThemeIcon size="lg" color={scoreColor} variant="light">
-                      <IconChartBar size={20} />
-                    </ThemeIcon>
-                    <div>
-                      <Text size="sm" c="dimmed">
-                        Overall Score
-                      </Text>
-                      <Text size="xl" fw={700}>
-                        {calculatedScore} / 100
-                      </Text>
-                    </div>
-                  </Group>
-                  <Badge size="lg" color={scoreColor} variant="filled">
-                    {getGradeLabel(calculatedScore)}
-                  </Badge>
-                </Group>
-                <Progress value={calculatedScore} color={scoreColor} size="lg" />
-              </Card>
-            )}
+          {selectedCycleId && totalCount > 0 && (
+            <Group gap="xs">
+              <Badge variant="light" color="gray" size="sm">
+                {totalCount} total
+              </Badge>
+              <Badge variant="light" color="green" size="sm">
+                {doneCount} done
+              </Badge>
+              <Badge variant="light" color="yellow" size="sm">
+                {draftCount} draft
+              </Badge>
+              <Badge variant="light" color="red" size="sm">
+                {pendingCount} pending
+              </Badge>
+            </Group>
+          )}
+        </Group>
+      </Card>
 
-            {/* Criteria scoring */}
-            {selectedEmployee && template?.criteria && template.criteria.length > 0 && (
-              <Card withBorder p="md">
-                <Group justify="space-between" mb="md">
-                  <Text fw={600}>Evaluation Criteria</Text>
-                  <Badge variant="light">{template.title}</Badge>
+      {!selectedCycleId ? (
+        <Center h={300}>
+          <Stack align="center" gap="xs">
+            <IconChartBar size={40} color="var(--mantine-color-dimmed)" />
+            <Text c="dimmed">Select a cycle to start reviewing</Text>
+          </Stack>
+        </Center>
+      ) : reviewsLoading ? (
+        <Center h={300}>
+          <Loader />
+        </Center>
+      ) : reviews.length === 0 ? (
+        <Center h={300}>
+          <Stack align="center" gap="xs">
+            <IconUser size={40} color="var(--mantine-color-dimmed)" />
+            <Text c="dimmed">No employees assigned to this cycle</Text>
+          </Stack>
+        </Center>
+      ) : (
+        <Grid gutter="md">
+          {/* ── Left: employee list ── */}
+          <Grid.Col span={{ base: 12, md: 3 }}>
+            <Card withBorder p={0} style={{ overflow: 'hidden' }}>
+              <Box
+                px="md"
+                py="sm"
+                style={{ borderBottom: '1px solid var(--mantine-color-gray-2)' }}
+              >
+                <Group justify="space-between">
+                  <Text size="sm" fw={600}>
+                    Employees
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    {doneCount}/{totalCount}
+                  </Text>
                 </Group>
-                <Stack gap="md">
-                  {template.criteria.map((criteria, idx) => {
-                    const scoreIndex = form.values.criteriaScores.findIndex(
-                      (s) => s.criteria_id === criteria.id,
-                    );
-                    const scoreEntry = form.values.criteriaScores[scoreIndex];
+                <Progress
+                  value={totalCount > 0 ? (doneCount / totalCount) * 100 : 0}
+                  size="xs"
+                  mt={6}
+                  color="green"
+                />
+              </Box>
+
+              <ScrollArea h={600}>
+                <Stack gap={0}>
+                  {(reviews as IPerformanceReview[]).map((r, i) => {
+                    const isSelected = r.employee_id === selectedEmployeeId;
+                    const done = r.status === 'submitted' || r.status === 'published';
+                    const draft = r.status === 'draft';
 
                     return (
-                      <Paper key={criteria.id} p="md" withBorder>
-                        <Stack gap="sm">
-                          <Group justify="space-between">
-                            <div style={{ flex: 1 }}>
-                              <Text fw={500} size="sm">
-                                {idx + 1}. {criteria.criterion}
-                              </Text>
-                              <Group gap="xs" mt={4}>
+                      <Box key={r.id}>
+                        <Box
+                          px="md"
+                          py="sm"
+                          style={{
+                            cursor: 'pointer',
+                            background: isSelected ? 'var(--mantine-color-blue-0)' : 'transparent',
+                            borderLeft: isSelected
+                              ? '3px solid var(--mantine-color-blue-5)'
+                              : '3px solid transparent',
+                          }}
+                          onClick={() => handleSelectEmployee(r.employee_id)}
+                        >
+                          <Group justify="space-between" wrap="nowrap">
+                            <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
+                              <ThemeIcon
+                                size="sm"
+                                variant="light"
+                                color={done ? 'green' : draft ? 'yellow' : 'gray'}
+                                radius="xl"
+                                style={{ flexShrink: 0 }}
+                              >
+                                {done ? (
+                                  <IconCircleCheck size={12} />
+                                ) : draft ? (
+                                  <IconDeviceFloppy size={12} />
+                                ) : (
+                                  <IconClock size={12} />
+                                )}
+                              </ThemeIcon>
+                              <Box style={{ minWidth: 0 }}>
+                                <Text size="xs" fw={500} lineClamp={1}>
+                                  {r.employee?.full_name}
+                                </Text>
+                                <Text size="xs" c="dimmed" lineClamp={1}>
+                                  {r.employee?.position?.department?.department_name}
+                                </Text>
+                              </Box>
+                            </Group>
+                            <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
+                              {r.total_score != null && done && (
                                 <Badge size="xs" variant="light" color="blue">
-                                  Weight: {criteria.weight}%
+                                  {r.total_score}
                                 </Badge>
-                                <Badge size="xs" variant="light" color="gray">
-                                  Max: {criteria.max_score}
-                                </Badge>
-                                <Badge size="xs" variant="light" color="cyan">
-                                  {criteria.score_type === 'rating' ? 'Rating' : 'Binary'}
-                                </Badge>
-                              </Group>
-                            </div>
-                            <Badge size="lg" color="blue">
-                              {scoreEntry?.score ?? 0} / {criteria.max_score}
-                            </Badge>
+                              )}
+                              <IconChevronRight size={12} color="var(--mantine-color-dimmed)" />
+                            </Group>
                           </Group>
-
-                          {scoreIndex >= 0 &&
-                            (criteria.score_type === 'rating' ? (
-                              <Slider
-                                min={0}
-                                max={criteria.max_score}
-                                step={1}
-                                marks={Array.from({ length: criteria.max_score + 1 }, (_, i) => ({
-                                  value: i,
-                                  label: String(i),
-                                }))}
-                                disabled={isPublished}
-                                {...form.getInputProps(`criteriaScores.${scoreIndex}.score`)}
-                              />
-                            ) : (
-                              <Group>
-                                <Button
-                                  variant={scoreEntry?.score === 0 ? 'filled' : 'light'}
-                                  color="red"
-                                  size="xs"
-                                  disabled={isPublished}
-                                  onClick={() =>
-                                    form.setFieldValue(`criteriaScores.${scoreIndex}.score`, 0)
-                                  }
-                                >
-                                  Not Met (0)
-                                </Button>
-                                <Button
-                                  variant={
-                                    scoreEntry?.score === criteria.max_score ? 'filled' : 'light'
-                                  }
-                                  color="green"
-                                  size="xs"
-                                  disabled={isPublished}
-                                  onClick={() =>
-                                    form.setFieldValue(
-                                      `criteriaScores.${scoreIndex}.score`,
-                                      criteria.max_score,
-                                    )
-                                  }
-                                >
-                                  Met ({criteria.max_score})
-                                </Button>
-                              </Group>
-                            ))}
-
-                          {scoreIndex >= 0 && (
-                            <Textarea
-                              placeholder="Optional note for this criterion..."
-                              size="xs"
-                              rows={2}
-                              disabled={isPublished}
-                              {...form.getInputProps(`criteriaScores.${scoreIndex}.note`)}
-                            />
-                          )}
-                        </Stack>
-                      </Paper>
+                        </Box>
+                        {i < reviews.length - 1 && <Divider />}
+                      </Box>
                     );
                   })}
                 </Stack>
-              </Card>
-            )}
+              </ScrollArea>
 
-            {/* Simple score (no template) */}
-            {selectedEmployee && !template?.criteria && (
-              <Card withBorder p="md">
-                <Text fw={600} mb="md">
-                  Performance Score
-                </Text>
-                <Stack gap="sm">
-                  <Group justify="space-between">
-                    <Text size="sm" fw={500}>
-                      Overall Score
+              {totalCount > 0 && (
+                <Box px="md" py="sm" style={{ borderTop: '1px solid var(--mantine-color-gray-2)' }}>
+                  {allDone ? (
+                    <Alert
+                      icon={<IconCircleCheck size={14} />}
+                      color="green"
+                      variant="light"
+                      p="xs"
+                    >
+                      <Text size="xs">All reviews completed!</Text>
+                    </Alert>
+                  ) : (
+                    <Text size="xs" c="dimmed" ta="center">
+                      {totalCount - doneCount} remaining
                     </Text>
-                    <Badge size="lg" color={scoreColor} variant="light">
-                      <Group gap={4}>
-                        <IconStar size={14} fill="currentColor" />
-                        {form.values.score} / 100
-                      </Group>
-                    </Badge>
-                  </Group>
-                  <Slider
-                    min={1}
-                    max={100}
-                    step={1}
-                    color={scoreColor}
-                    marks={[
-                      { value: 25, label: '25' },
-                      { value: 50, label: '50' },
-                      { value: 75, label: '75' },
-                      { value: 100, label: '100' },
-                    ]}
-                    disabled={isPublished}
-                    {...form.getInputProps('score')}
-                  />
-                </Stack>
-              </Card>
-            )}
-
-            {/* Feedback + Result */}
-            {selectedEmployee && (
-              <Card withBorder p="md">
-                <Text fw={600} mb="md">
-                  Feedback & Comments
-                </Text>
-                <Stack gap="md">
-                  {/* Result field — only for probation / intern */}
-                  {contractType === 'probation' && (
-                    <Select
-                      label="Probation Result"
-                      placeholder="Select result..."
-                      data={probationResultOptions}
-                      required
-                      disabled={isPublished}
-                      {...form.getInputProps('result')}
-                    />
                   )}
-                  {contractType === 'intern' && (
-                    <Select
-                      label="Intern Result"
-                      placeholder="Select result..."
-                      data={internResultOptions}
-                      required
-                      disabled={isPublished}
-                      {...form.getInputProps('result')}
-                    />
-                  )}
+                </Box>
+              )}
+            </Card>
+          </Grid.Col>
 
-                  <Textarea
-                    label="Key Achievements"
-                    placeholder="Outstanding work, notable projects, contributions..."
-                    rows={4}
-                    disabled={isPublished}
-                    {...form.getInputProps('achievements')}
-                  />
-                  <Textarea
-                    label="General Feedback"
-                    placeholder="Performance, attitude, areas for improvement..."
-                    rows={4}
-                    disabled={isPublished}
-                    {...form.getInputProps('comment')}
-                  />
-                </Stack>
+          <Grid.Col span={{ base: 12, md: 9 }}>
+            {!selectedEmployeeId ? (
+              <Card withBorder h={400}>
+                <Center h="100%">
+                  <Stack align="center" gap="xs">
+                    <IconUser size={40} color="var(--mantine-color-dimmed)" />
+                    <Text c="dimmed" size="sm">
+                      Select an employee from the list to start reviewing
+                    </Text>
+                  </Stack>
+                </Center>
               </Card>
-            )}
-
-            {/* Actions */}
-            {selectedEmployee && !isPublished && (
-              <Group justify="flex-end">
-                <Button
-                  variant="light"
-                  loading={createReview.isPending}
-                  onClick={() => handleSave(false)}
-                >
-                  Save Draft
-                </Button>
-                <Button
-                  leftSection={<IconCheck size={18} />}
-                  loading={submitReview.isPending || createReview.isPending}
-                  onClick={() => handleSave(true)}
-                >
-                  Submit Review
-                </Button>
-              </Group>
-            )}
-          </Stack>
-        </Grid.Col>
-
-        {/* ── Sidebar: reviews list ── */}
-        <Grid.Col span={{ base: 12, md: 4 }}>
-          <Card withBorder p="md" style={{ position: 'sticky', top: 20 }}>
-            <Text fw={600} mb="md">
-              Reviews in Cycle{selectedCycle && ` (${reviews.length})`}
-            </Text>
-            {!selectedCycle ? (
-              <Center h={100}>
-                <Text size="sm" c="dimmed" ta="center">
-                  Select a cycle to see reviews
-                </Text>
-              </Center>
-            ) : reviewsLoading ? (
-              <Center h={100}>
-                <Loader size="sm" />
-              </Center>
-            ) : reviews.length === 0 ? (
-              <Center h={100}>
-                <Text size="sm" c="dimmed" ta="center">
-                  No reviews yet
-                </Text>
-              </Center>
             ) : (
-              <Stack gap="xs" style={{ maxHeight: 600, overflowY: 'auto' }}>
-                {reviews.map((r: any) => (
-                  <Paper
-                    key={r.id}
-                    p="sm"
-                    withBorder
-                    style={{
-                      cursor: 'pointer',
-                      background:
-                        r.employee_id === selectedEmployee
-                          ? 'var(--mantine-color-blue-0)'
-                          : 'transparent',
-                      borderColor:
-                        r.employee_id === selectedEmployee
-                          ? 'var(--mantine-color-blue-3)'
-                          : 'var(--mantine-color-gray-3)',
-                    }}
-                    onClick={() => handleSelectEmployee(r.employee_id)}
-                  >
-                    <Group justify="space-between" wrap="nowrap">
-                      <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
-                        <Text size="sm" fw={500} lineClamp={1}>
-                          {r.employee?.full_name}
+              <Stack gap="md">
+                <Card withBorder p="md">
+                  <Group justify="space-between">
+                    <Group gap="sm">
+                      <ThemeIcon size="lg" variant="light" color="blue" radius="xl">
+                        <IconUser size={18} />
+                      </ThemeIcon>
+                      <Box>
+                        <Text fw={600}>{selectedEmpData?.full_name ?? '—'}</Text>
+                        <Text size="xs" c="dimmed">
+                          {selectedEmpData?.position?.position_name} ·{' '}
+                          {selectedEmpData?.position?.department?.department_name}
                         </Text>
-                        <Text size="xs" c="dimmed" lineClamp={1}>
-                          {r.employee?.position?.department?.department_name}
-                        </Text>
-                      </Stack>
-                      <Stack gap={4} align="flex-end">
-                        {r.total_score != null && (
-                          <Badge size="xs" variant="light" color="blue">
-                            {r.total_score}
-                          </Badge>
-                        )}
-                        <Badge
-                          size="xs"
-                          color={
-                            REVIEW_STATUS_COLOR[r.status as keyof typeof REVIEW_STATUS_COLOR] ??
-                            'gray'
-                          }
-                          variant="dot"
-                        >
-                          {REVIEW_STATUS_LABEL[r.status as keyof typeof REVIEW_STATUS_LABEL] ??
-                            r.status}
-                        </Badge>
-                      </Stack>
+                      </Box>
                     </Group>
-                  </Paper>
-                ))}
+                    <Group gap="xs">
+                      {existingReview && (
+                        <Badge
+                          color={REVIEW_STATUS_COLOR[existingReview.status] ?? 'gray'}
+                          variant="light"
+                        >
+                          {REVIEW_STATUS_LABEL[existingReview.status]}
+                        </Badge>
+                      )}
+                      {existingReview?.employee?.contract_type && (
+                        <Badge variant="outline" color="gray" size="sm">
+                          {existingReview.employee.contract_type}
+                        </Badge>
+                      )}
+                    </Group>
+                  </Group>
+                </Card>
+
+                <Card withBorder p="md">
+                  <Group justify="space-between" align="center">
+                    <Group gap="md">
+                      <RingProgress
+                        size={72}
+                        thickness={6}
+                        roundCaps
+                        sections={[{ value: calculatedScore, color: grade.color }]}
+                        label={
+                          <Text ta="center" size="xs" fw={700}>
+                            {calculatedScore}
+                          </Text>
+                        }
+                      />
+                      <Box>
+                        <Text size="xs" c="dimmed">
+                          Overall Score
+                        </Text>
+                        <Text size="xl" fw={700} lh={1.2}>
+                          {calculatedScore} / 100
+                        </Text>
+                        <Badge size="sm" color={grade.color} variant="light" mt={4}>
+                          {grade.label}
+                        </Badge>
+                      </Box>
+                    </Group>
+
+                    {existingReview && (
+                      <SimpleGrid cols={3} spacing="xs">
+                        <Box ta="center">
+                          <Text size="lg" fw={700} c="blue">
+                            {existingReview.attendance_days ?? '—'}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            Days Present
+                          </Text>
+                        </Box>
+                        <Box ta="center">
+                          <Text size="lg" fw={700} c="orange">
+                            {existingReview.late_count ?? '—'}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            Late
+                          </Text>
+                        </Box>
+                        <Box ta="center">
+                          <Text size="lg" fw={700} c="red">
+                            {existingReview.absent_count ?? '—'}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            Absent
+                          </Text>
+                        </Box>
+                      </SimpleGrid>
+                    )}
+                  </Group>
+                </Card>
+
+                {template?.criteria && template.criteria.length > 0 ? (
+                  <Card withBorder p="md">
+                    <Group justify="space-between" mb="md">
+                      <Text fw={600}>Evaluation Criteria</Text>
+                      <Badge variant="light" size="sm">
+                        {template.title}
+                      </Badge>
+                    </Group>
+                    <Stack gap="sm">
+                      {template.criteria.map((criteria, idx) => {
+                        const scoreIndex = form.values.criteriaScores.findIndex(
+                          (s) => s.criteria_id === criteria.id,
+                        );
+                        const scoreEntry = form.values.criteriaScores[scoreIndex];
+
+                        return (
+                          <Paper key={criteria.id} p="sm" withBorder>
+                            <Stack gap="xs">
+                              <Group justify="space-between" wrap="nowrap">
+                                <Group gap="xs" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
+                                  <Text fw={500} size="sm">
+                                    {idx + 1}. {criteria.criterion}
+                                  </Text>
+                                  <Badge size="xs" variant="light" color="blue">
+                                    {criteria.weight}%
+                                  </Badge>
+                                </Group>
+
+                                {/* Score input */}
+                                {scoreIndex >= 0 &&
+                                  (criteria.score_type === 'rating' ? (
+                                    <NumberInput
+                                      min={0}
+                                      max={criteria.max_score}
+                                      step={0.1}
+                                      decimalScale={1}
+                                      fixedDecimalScale
+                                      disabled={isDone}
+                                      size="xs"
+                                      style={{ width: 100 }}
+                                      rightSection={
+                                        <Text size="xs" c="dimmed" pr={4}>
+                                          /{criteria.max_score}
+                                        </Text>
+                                      }
+                                      rightSectionWidth={36}
+                                      value={scoreEntry?.score ?? 0}
+                                      onChange={(val) =>
+                                        form.setFieldValue(
+                                          `criteriaScores.${scoreIndex}.score`,
+                                          typeof val === 'number' ? val : 0,
+                                        )
+                                      }
+                                    />
+                                  ) : (
+                                    <Group gap="xs">
+                                      <Button
+                                        variant={scoreEntry?.score === 0 ? 'filled' : 'light'}
+                                        color="red"
+                                        size="xs"
+                                        disabled={isDone}
+                                        onClick={() =>
+                                          form.setFieldValue(
+                                            `criteriaScores.${scoreIndex}.score`,
+                                            0,
+                                          )
+                                        }
+                                      >
+                                        No (0)
+                                      </Button>
+                                      <Button
+                                        variant={
+                                          scoreEntry?.score === criteria.max_score
+                                            ? 'filled'
+                                            : 'light'
+                                        }
+                                        color="green"
+                                        size="xs"
+                                        disabled={isDone}
+                                        onClick={() =>
+                                          form.setFieldValue(
+                                            `criteriaScores.${scoreIndex}.score`,
+                                            criteria.max_score,
+                                          )
+                                        }
+                                      >
+                                        Yes ({criteria.max_score})
+                                      </Button>
+                                    </Group>
+                                  ))}
+                              </Group>
+
+                              {scoreIndex >= 0 && (
+                                <Textarea
+                                  placeholder="Note for this criterion (optional)..."
+                                  size="xs"
+                                  rows={1}
+                                  disabled={isDone}
+                                  {...form.getInputProps(`criteriaScores.${scoreIndex}.note`)}
+                                />
+                              )}
+                            </Stack>
+                          </Paper>
+                        );
+                      })}
+                    </Stack>
+                  </Card>
+                ) : (
+                  <Card withBorder p="md">
+                    <Text fw={600} mb="md">
+                      Performance Score
+                    </Text>
+                    <Group align="center" gap="md">
+                      <NumberInput
+                        min={0}
+                        max={100}
+                        step={0.1}
+                        decimalScale={1}
+                        fixedDecimalScale
+                        disabled={isDone}
+                        size="sm"
+                        style={{ width: 120 }}
+                        rightSection={
+                          <Text size="xs" c="dimmed">
+                            /100
+                          </Text>
+                        }
+                        rightSectionWidth={40}
+                        value={form.values.score}
+                        onChange={(val) =>
+                          form.setFieldValue('score', typeof val === 'number' ? val : 0)
+                        }
+                      />
+                      <Badge size="lg" color={grade.color} variant="light">
+                        {grade.label}
+                      </Badge>
+                      <Progress
+                        value={form.values.score}
+                        color={grade.color}
+                        size="sm"
+                        style={{ flex: 1 }}
+                      />
+                    </Group>
+                  </Card>
+                )}
+
+                <Card withBorder p="md">
+                  <Text fw={600} mb="md">
+                    Feedback & Conclusion
+                  </Text>
+                  <Stack gap="md">
+                    {contractType === 'probation' && (
+                      <Select
+                        label="Probation Result"
+                        placeholder="Select result..."
+                        data={probationResultOptions}
+                        required
+                        disabled={isDone}
+                        value={form.values.result || null}
+                        onChange={(val) => form.setFieldValue('result', val ?? '')}
+                        leftSection={<IconAlertCircle size={14} />}
+                      />
+                    )}
+                    {contractType === 'intern' && (
+                      <Select
+                        label="Intern Result"
+                        placeholder="Select result..."
+                        data={internResultOptions}
+                        required
+                        disabled={isDone}
+                        value={form.values.result || null}
+                        onChange={(val) => form.setFieldValue('result', val ?? '')}
+                        leftSection={<IconAlertCircle size={14} />}
+                      />
+                    )}
+                    <Textarea
+                      label="Key Achievements"
+                      placeholder="Outstanding work, notable projects, contributions..."
+                      rows={3}
+                      disabled={isDone}
+                      {...form.getInputProps('achievements')}
+                    />
+                    <Textarea
+                      label="General Feedback"
+                      placeholder="Performance, attitude, areas for improvement..."
+                      rows={3}
+                      disabled={isDone}
+                      {...form.getInputProps('comment')}
+                    />
+                  </Stack>
+                </Card>
+
+                {/* Actions */}
+                {!isDone && (
+                  <Group justify="flex-end">
+                    <Tooltip label="Save as draft — you can continue editing later">
+                      <Button
+                        variant="light"
+                        leftSection={<IconDeviceFloppy size={16} />}
+                        loading={createReview.isPending && !submitReview.isPending}
+                        onClick={() => handleSave(false)}
+                      >
+                        Save Draft
+                      </Button>
+                    </Tooltip>
+                    <Button
+                      leftSection={<IconSend size={16} />}
+                      loading={submitReview.isPending}
+                      onClick={() => handleSave(true)}
+                    >
+                      Submit Review
+                    </Button>
+                  </Group>
+                )}
+
+                {isDone && (
+                  <Alert icon={<IconCheck size={16} />} color="green" variant="light">
+                    This review has been {existingReview?.status}. No further edits allowed.
+                  </Alert>
+                )}
               </Stack>
             )}
-          </Card>
-        </Grid.Col>
-      </Grid>
+          </Grid.Col>
+        </Grid>
+      )}
     </Stack>
   );
 }
