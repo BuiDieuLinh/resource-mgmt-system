@@ -312,9 +312,7 @@ export class LeaveRequestService {
     const isSuperAdmin = actorRoles.includes(Role.SUPER_ADMIN);
     const isAdmin = isSuperAdmin || actorRoles.includes(Role.ADMIN);
     const isManager =
-      !isAdmin &&
-      (actorEmployee?.position?.level === PositionLevel.manager ||
-        actorEmployee?.position?.level === PositionLevel.lead);
+      !isAdmin && actorEmployee?.position?.level === PositionLevel.manager;
 
     if (actorEmployee && existing.employee?.id === actorEmployee.id) {
       throw new BadRequestException(

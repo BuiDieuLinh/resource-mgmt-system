@@ -46,7 +46,6 @@ export const MENUS: AppMenu[] = [
     label: 'Dashboard',
     icon: IconGauge,
     path: '/',
-    roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN],
   },
   {
     label: 'Employees',

@@ -72,6 +72,7 @@ model Employees {
   review_assignments          ReviewAssignments[]
   review_assignments_reviewed ReviewAssignments[]     @relation("AssignmentReviewer")
   awards                      Awards[]
+  notification_logs           NotificationLogs[]
 
   @@map("employees")
 }
@@ -381,6 +382,7 @@ model ReviewCycles {
   assignments ReviewAssignments[]
   reviews     PerformanceReviews[]
   awards      Awards[]
+  notification_logs NotificationLogs[]
 
   @@unique([period_type, period_year, period_seq])
   @@map("review_cycles")
@@ -391,7 +393,7 @@ model PerformanceReviews {
   cycle_id         String       @db.Uuid
   employee_id      String       @db.Uuid
   assignment_id    String?      @db.Uuid
-  total_score      Int?
+  total_score      Float?
   comment          String?      @db.Text
   achievements     String?      @db.Text
   status           ReviewStatus @default(draft)
@@ -422,7 +424,7 @@ model ScoreDetails {
   weight        Int
   max_score     Int
 
-  score Int
+  score Float
   note  String? @db.Text
 
   review   PerformanceReviews @relation(fields: [review_id], references: [id])
@@ -460,6 +462,8 @@ enum NotificationType {
   eval_submission_rejected
   eval_result_published
   timesheet_approved
+  eval_reminder_contract_ending
+  eval_reminder_overdue
 }
 
 model Notifications {
@@ -475,4 +479,56 @@ model Notifications {
   @@index([user_id, is_read])
   @@index([user_id, created_at])
   @@map("notifications")
+}
+
+enum ReminderTriggerType {
+  cycle_deadline       
+  cycle_unreviewed     
+  contract_ending      
+}
+
+enum ReminderChannel {
+  inapp
+  email
+  dashboard
+}
+
+enum ReminderLogStatus {
+  pending
+  sent
+  failed
+}
+
+model NotificationSettings {
+  id                   String               @id @default(uuid()) @db.Uuid
+  trigger_type         ReminderTriggerType
+  channel              ReminderChannel
+  is_enabled           Boolean              @default(true)
+  days_before          Int?                 
+  repeat_interval_days Int?                 
+  updated_by           String?              @db.Uuid  // auth_user_id của admin
+  updated_at           DateTime             @updatedAt
+
+  @@unique([trigger_type, channel])
+  @@map("notification_settings")
+}
+
+model NotificationLogs {
+  id           String              @id @default(uuid()) @db.Uuid
+  trigger_type ReminderTriggerType
+  channel      ReminderChannel
+  recipient_id String              @db.Uuid  
+  target_id    String              @db.Uuid  
+  cycle_id     String?             @db.Uuid  
+  scheduled_at DateTime            
+  sent_at      DateTime?           
+  status       ReminderLogStatus   @default(pending)
+  created_at   DateTime            @default(now())
+
+  employee Employees    @relation(fields: [target_id], references: [id])
+  cycle    ReviewCycles? @relation(fields: [cycle_id], references: [id])
+
+  @@index([status, scheduled_at])
+  @@index([trigger_type, target_id, status])
+  @@map("notification_logs")
 }

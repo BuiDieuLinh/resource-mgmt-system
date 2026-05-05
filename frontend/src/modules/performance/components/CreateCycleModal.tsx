@@ -110,7 +110,7 @@ export function CreateCycleModal({
           'assignments',
           filteredEmployees.map((e) => ({
             employee_id: e.id,
-            reviewer_id: e.manager_id || '',
+            reviewer_id: e.manager_id || undefined,
           })),
         );
       } else {
@@ -153,7 +153,7 @@ export function CreateCycleModal({
       const employee = employees.find((e) => e.id === employeeId);
       form.insertListItem('assignments', {
         employee_id: employeeId,
-        reviewer_id: employee?.manager_id || '',
+        reviewer_id: employee?.manager_id || undefined,
       });
     } else {
       const index = form.values.assignments.findIndex((a) => a.employee_id === employeeId);
@@ -202,8 +202,12 @@ export function CreateCycleModal({
         form.values.announce_date instanceof Date
           ? form.values.announce_date.toISOString().slice(0, 10)
           : new Date(form.values.announce_date!).toISOString().slice(0, 10),
-      assignments: form.values.assignments,
-      custom_criteria: form.values.customCriteria ? form.values.criteria : undefined,
+      assignments: form.values.assignments
+        .filter((a) => a.employee_id)
+        .map((a) => ({
+          employee_id: a.employee_id,
+          ...(a.reviewer_id ? { reviewer_id: a.reviewer_id } : {}),
+        })),
     });
 
     setActiveStep(0);

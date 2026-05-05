@@ -15,8 +15,15 @@ export class PerformanceService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createCycle(dto: CreateCycleDto, authUserId: string) {
-    const cycle = await this.prisma.reviewCycles.create({
-      data: {
+    const cycle = await this.prisma.reviewCycles.upsert({
+      where: {
+        period_type_period_year_period_seq: {
+          period_type: dto.period_type,
+          period_year: dto.period_year,
+          period_seq: dto.period_seq,
+        },
+      },
+      create: {
         title: dto.title,
         period_type: dto.period_type,
         period_year: dto.period_year,
@@ -25,14 +32,97 @@ export class PerformanceService {
         template_id: dto.template_id,
         created_by: authUserId,
       },
+      update: {
+        title: dto.title,
+        announce_date: new Date(dto.announce_date),
+        template_id: dto.template_id,
+      },
       include: {
-        template: {
-          include: {
-            criteria: true,
-          },
-        },
+        template: { include: { criteria: true } },
       },
     });
+
+    if (dto.assignments && dto.assignments.length > 0) {
+      const creatorEmployee = await this.prisma.employees.findUnique({
+        where: { auth_user_id: authUserId },
+        select: { id: true },
+      });
+
+      for (const a of dto.assignments) {
+        if (!a.employee_id) continue;
+
+        let reviewerId = a.reviewer_id;
+        if (!reviewerId) {
+          const emp = await this.prisma.employees.findUnique({
+            where: { id: a.employee_id },
+            select: { manager_id: true },
+          });
+          reviewerId = emp?.manager_id ?? creatorEmployee?.id;
+        }
+
+        if (!reviewerId) continue;
+
+        const assignment = await this.prisma.reviewAssignments.upsert({
+          where: {
+            cycle_id_employee_id: {
+              cycle_id: cycle.id,
+              employee_id: a.employee_id,
+            },
+          },
+          create: {
+            cycle_id: cycle.id,
+            employee_id: a.employee_id,
+            reviewer_id: reviewerId,
+          },
+          update: {
+            reviewer_id: reviewerId,
+          },
+        });
+
+        const { gte, lte } = this.getCycleDateRange(cycle);
+        const attendances = await this.prisma.attendances.findMany({
+          where: { employee_id: a.employee_id, work_date: { gte, lte } },
+        });
+        const attendance_days = attendances.filter(
+          (att) => att.check_in_time,
+        ).length;
+        const late_count = attendances.filter((att) => att.late > 0).length;
+        const absent_count = attendances.filter(
+          (att) => !att.check_in_time,
+        ).length;
+        const overtime_minutes = attendances.reduce(
+          (s, att) => s + (att.overtime ?? 0),
+          0,
+        );
+
+        await this.prisma.performanceReviews.upsert({
+          where: {
+            cycle_id_employee_id: {
+              cycle_id: cycle.id,
+              employee_id: a.employee_id,
+            },
+          },
+          create: {
+            cycle_id: cycle.id,
+            employee_id: a.employee_id,
+            assignment_id: assignment.id,
+            status: ReviewStatus.draft,
+            attendance_days,
+            late_count,
+            absent_count,
+            overtime_minutes,
+          },
+          update: {
+            assignment_id: assignment.id,
+            attendance_days,
+            late_count,
+            absent_count,
+            overtime_minutes,
+          },
+        });
+      }
+    }
+
     return ResponseHelper.success(cycle, 'Review cycle created');
   }
 

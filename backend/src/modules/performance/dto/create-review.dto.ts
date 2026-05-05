@@ -1,5 +1,6 @@
 import {
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   Min,
@@ -13,9 +14,9 @@ import { Type } from 'class-transformer';
 export class ScoreDetailDto {
   @IsNotEmpty() @IsString() criteria_id: string;
   @IsNotEmpty() @IsString() criteria_name: string;
-  @IsInt() @Min(0) @Max(100) weight: number;
-  @IsInt() @Min(1) max_score: number;
-  @IsInt() @Min(0) score: number;
+  @IsNumber() @Min(0) @Max(100) weight: number;
+  @IsNumber() @Min(1) max_score: number;
+  @IsNumber() @Min(0) score: number;
   @IsOptional() @IsString() note?: string;
 }
 
@@ -23,7 +24,7 @@ export class CreateReviewDto {
   @IsNotEmpty() @IsString() cycle_id: string;
   @IsNotEmpty() @IsString() employee_id: string;
   @IsNotEmpty() @IsString() reviewer_id: string;
-  @Type(() => Number) @IsInt() @Min(0) @Max(100) total_score: number;
+  @Type(() => Number) @IsNumber() @Min(0) @Max(100) total_score: number;
   @IsOptional() @IsString() comment?: string;
   @IsOptional() @IsString() achievements?: string;
   @IsOptional() @IsString() result?: string;
@@ -38,7 +39,7 @@ export class CreateReviewDto {
 export class SubmitReviewDto {
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
+  @IsNumber()
   @Min(0)
   @Max(100)
   total_score?: number;

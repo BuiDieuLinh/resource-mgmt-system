@@ -631,7 +631,7 @@ export default function Home() {
   const { user } = useAuth();
   const roles = user?.roles ?? [];
   const isAdminOrManager = roles.some((r) =>
-    [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.SUPER_ADMIN].includes(r as any),
+    [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.MANAGER].includes(r as any),
   );
   return isAdminOrManager ? <AdminDashboard /> : <EmployeeDashboard />;
 }
