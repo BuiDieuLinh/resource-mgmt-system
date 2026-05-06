@@ -13,17 +13,20 @@ export class NotificationsController {
   constructor(private readonly svc: NotificationsService) {}
 
   @Get()
-  getMyNotifications(@CurrentUser() user: { userId: string }) {
-    return this.svc.getForUser(user.userId);
+  getMyNotifications(@CurrentUser() user: { employeeId: string }) {
+    return this.svc.getForUser(user.employeeId);
   }
 
   @Patch(':id/read')
-  markRead(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
-    return this.svc.markRead(id, user.userId);
+  markRead(
+    @Param('id') id: string,
+    @CurrentUser() user: { employeeId: string },
+  ) {
+    return this.svc.markRead(id, user.employeeId);
   }
 
   @Patch('read-all')
-  markAllRead(@CurrentUser() user: { userId: string }) {
-    return this.svc.markAllRead(user.userId);
+  markAllRead(@CurrentUser() user: { employeeId: string }) {
+    return this.svc.markAllRead(user.employeeId);
   }
 }

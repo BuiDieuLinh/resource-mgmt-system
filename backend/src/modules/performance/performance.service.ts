@@ -14,7 +14,7 @@ import { ReviewStatus } from '@prisma/client';
 export class PerformanceService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createCycle(dto: CreateCycleDto, authUserId: string) {
+  async createCycle(dto: CreateCycleDto, creatorEmployeeId: string) {
     const cycle = await this.prisma.reviewCycles.upsert({
       where: {
         period_type_period_year_period_seq: {
@@ -30,7 +30,7 @@ export class PerformanceService {
         period_seq: dto.period_seq,
         announce_date: new Date(dto.announce_date),
         template_id: dto.template_id,
-        created_by: authUserId,
+        created_by: creatorEmployeeId,
       },
       update: {
         title: dto.title,
@@ -43,11 +43,6 @@ export class PerformanceService {
     });
 
     if (dto.assignments && dto.assignments.length > 0) {
-      const creatorEmployee = await this.prisma.employees.findUnique({
-        where: { auth_user_id: authUserId },
-        select: { id: true },
-      });
-
       for (const a of dto.assignments) {
         if (!a.employee_id) continue;
 
@@ -57,7 +52,7 @@ export class PerformanceService {
             where: { id: a.employee_id },
             select: { manager_id: true },
           });
-          reviewerId = emp?.manager_id ?? creatorEmployee?.id;
+          reviewerId = emp?.manager_id ?? creatorEmployeeId;
         }
 
         if (!reviewerId) continue;
@@ -282,15 +277,12 @@ export class PerformanceService {
     return ResponseHelper.success(null, 'Reviews published');
   }
 
-  async getMyReview(cycleId: string, authUserId: string) {
-    const employee = await this.prisma.employees.findUnique({
-      where: { auth_user_id: authUserId },
-    });
-    if (!employee) throw new NotFoundException('Employee not found');
+  async getMyReview(cycleId: string, employeeId: string) {
+    if (!employeeId) throw new NotFoundException('Employee not found');
 
     const review = await this.prisma.performanceReviews.findUnique({
       where: {
-        cycle_id_employee_id: { cycle_id: cycleId, employee_id: employee.id },
+        cycle_id_employee_id: { cycle_id: cycleId, employee_id: employeeId },
       },
       include: {
         assignment: {
@@ -368,11 +360,8 @@ export class PerformanceService {
     return ResponseHelper.success(awards);
   }
 
-  async getPendingReveal(authUserId: string) {
-    const employee = await this.prisma.employees.findUnique({
-      where: { auth_user_id: authUserId },
-    });
-    if (!employee) return ResponseHelper.success(null);
+  async getPendingReveal(employeeId: string) {
+    if (!employeeId) return ResponseHelper.success(null);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -381,7 +370,7 @@ export class PerformanceService {
 
     const awards = await this.prisma.awards.findMany({
       where: {
-        employee_id: employee.id,
+        employee_id: employeeId,
         cycle: { announce_date: { gte: today, lt: tomorrow } },
       },
       include: {
@@ -393,17 +382,12 @@ export class PerformanceService {
     return ResponseHelper.success(awards);
   }
 
-  async getMyAwards(authUserId: string) {
-    const employee = await this.prisma.employees.findUnique({
-      where: { auth_user_id: authUserId },
-    });
-    if (!employee) throw new NotFoundException('Employee not found');
+  async getMyAwards(employeeId: string) {
+    if (!employeeId) throw new NotFoundException('Employee not found');
 
     const awards = await this.prisma.awards.findMany({
-      where: { employee_id: employee.id },
-      include: {
-        cycle: true,
-      },
+      where: { employee_id: employeeId },
+      include: { cycle: true },
       orderBy: { created_at: 'desc' },
     });
     return ResponseHelper.success(awards);

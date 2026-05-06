@@ -17,6 +17,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { AlertsModule } from './modules/alerts/alerts.module';
+import { RemindersModule } from './modules/reminders/reminders.module';
 
 import { MailModule } from './modules/mail/mail.module';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -41,6 +42,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     NotificationsModule,
     ReportsModule,
     AlertsModule,
+    RemindersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

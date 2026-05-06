@@ -165,7 +165,7 @@ export class EmployeeService {
         where,
         skip,
         take,
-        orderBy: { created_at: 'desc' },
+        orderBy: [{ status: 'asc' }, { created_at: 'desc' }],
         include: {
           position: {
             include: {
@@ -244,9 +244,9 @@ export class EmployeeService {
     return ResponseHelper.success(employee);
   }
 
-  async getManagerDepartmentId(authUserId: string): Promise<string | null> {
-    const employee = await this.prisma.employees.findFirst({
-      where: { auth_user_id: authUserId },
+  async getManagerDepartmentId(employeeId: string): Promise<string | null> {
+    const employee = await this.prisma.employees.findUnique({
+      where: { id: employeeId },
       include: { position: true },
     });
     return employee?.position?.department_id ?? null;

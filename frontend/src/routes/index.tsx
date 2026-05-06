@@ -37,18 +37,12 @@ import PerformanceCycles from '@/modules/performance/views/PerformanceCycles';
 import EvaluationTemplates from '@/modules/performance/views/EvaluationTemplates';
 import CycleDetail from '@/modules/performance/views/CycleDetail';
 import PerformanceReview from '@/modules/performance/views/PerformanceReview';
-import HrStructureReport from '@/modules/reports/views/HrStructureReport';
-import TurnoverReport from '@/modules/reports/views/TurnoverReport';
-import InsightsReport from '@/modules/reports/views/InsightsReport';
 import {
   performanceTemplatesUrl,
   performanceCyclesUrl,
   performanceCycleDetailUrl,
   performanceReviewUrl,
   myReviewsUrl,
-  reportsHrStructureUrl,
-  reportsTurnoverUrl,
-  reportsInsightsUrl,
 } from './url';
 
 export const router = createBrowserRouter([
@@ -78,9 +72,6 @@ export const router = createBrowserRouter([
           { path: performanceCyclesUrl, element: <PerformanceCycles /> },
           { path: performanceCycleDetailUrl, element: <CycleDetail /> },
           { path: performanceReviewUrl, element: <PerformanceReview /> },
-          { path: reportsHrStructureUrl, element: <HrStructureReport /> },
-          { path: reportsTurnoverUrl, element: <TurnoverReport /> },
-          { path: reportsInsightsUrl, element: <InsightsReport /> },
         ],
       },
     ],

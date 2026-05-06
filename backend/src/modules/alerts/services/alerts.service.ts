@@ -343,65 +343,48 @@ export class AlertsService {
           ...(departmentId && { department_id: departmentId }),
         },
       },
-      select: { auth_user_id: true },
+      select: { id: true },
     });
-
-    return managers.filter((m) => m.auth_user_id).map((m) => m.auth_user_id!);
+    return managers.map((m) => m.id);
   }
 
   private async getHRDirectors(): Promise<string[]> {
     const hrDept = await this.prisma.departments.findFirst({
-      where: {
-        department_code: { contains: 'HR' },
-      },
+      where: { department_code: { contains: 'HR' } },
     });
-
     if (!hrDept) return [];
 
     const directors = await this.prisma.employees.findMany({
       where: {
         status: 'active',
-        position: {
-          level: 'manager',
-          department_id: hrDept.id,
-        },
+        position: { level: 'manager', department_id: hrDept.id },
       },
-      select: { auth_user_id: true },
+      select: { id: true },
     });
-
-    return directors.filter((d) => d.auth_user_id).map((d) => d.auth_user_id!);
+    return directors.map((d) => d.id);
   }
 
   private async getHRStaff(): Promise<string[]> {
     const hrDept = await this.prisma.departments.findFirst({
-      where: {
-        department_code: { contains: 'HR' },
-      },
+      where: { department_code: { contains: 'HR' } },
     });
-
     if (!hrDept) return [];
 
     const staff = await this.prisma.employees.findMany({
-      where: {
-        status: 'active',
-        position: {
-          department_id: hrDept.id,
-        },
-      },
-      select: { auth_user_id: true },
+      where: { status: 'active', position: { department_id: hrDept.id } },
+      select: { id: true },
     });
-
-    return staff.filter((s) => s.auth_user_id).map((s) => s.auth_user_id!);
+    return staff.map((s) => s.id);
   }
 
   private async createNotification(
-    userId: string,
+    employeeId: string,
     alertData: Omit<AlertData, 'id' | 'createdAt'>,
   ): Promise<void> {
     try {
       await this.prisma.notifications.create({
         data: {
-          user_id: userId,
+          user_id: employeeId,
           type: 'timesheet_approved',
           title: alertData.title,
           body: alertData.message,
@@ -409,7 +392,9 @@ export class AlertsService {
         },
       });
     } catch (error) {
-      this.logger.error(`Failed to create notification: ${error.message}`);
+      this.logger.error(
+        `Failed to create notification for alert: ${error.message}`,
+      );
     }
   }
 }

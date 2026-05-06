@@ -22,7 +22,3 @@ export const performanceCyclesUrl = '/performance/cycles';
 export const performanceCycleDetailUrl = '/performance/cycles/:id';
 export const performanceReviewUrl = '/performance/review';
 export const myReviewsUrl = '/my/reviews';
-
-export const reportsHrStructureUrl = '/reports/hr-structure';
-export const reportsTurnoverUrl = '/reports/turnover';
-export const reportsInsightsUrl = '/reports/insights';

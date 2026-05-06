@@ -31,21 +31,21 @@ export class LeaveRequestController {
   @Get('my')
   @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
   findMy(
-    @CurrentUser() user: { userId: string },
+    @CurrentUser() user: { employeeId: string },
     @Query('status') status?: string,
   ) {
-    return this.leaveRequestService.findByAuthUser(user.userId, status);
+    return this.leaveRequestService.findByEmployee(user.employeeId, status);
   }
 
   @Get()
   @Roles(Role.ADMIN, Role.MANAGER)
   async findAll(
     @Query() query: QueryLeaveRequestDto,
-    @CurrentUser() user: { userId: string; roles: string[] },
+    @CurrentUser() user: { employeeId: string; roles: string[] },
   ) {
     if (user.roles.includes(Role.MANAGER) && !user.roles.includes(Role.ADMIN)) {
       const deptId = await this.leaveRequestService.getManagerDepartmentId(
-        user.userId,
+        user.employeeId,
       );
       if (deptId) query.department_id = deptId;
     }
@@ -68,13 +68,13 @@ export class LeaveRequestController {
   @Roles(Role.ADMIN, Role.MANAGER)
   bulkUpdateStatus(
     @Body() dto: BulkUpdateLeaveStatusDto,
-    @CurrentUser() user: { userId: string; roles: string[] },
+    @CurrentUser() user: { employeeId: string; roles: string[] },
   ) {
     dto.actorRoles = user.roles;
     return this.leaveRequestService.bulkUpdateStatus(
       dto.ids,
       { status: dto.status, comment: dto.comment },
-      user.userId,
+      user.employeeId,
       user.roles ?? [],
     );
   }
@@ -84,12 +84,12 @@ export class LeaveRequestController {
   updateStatus(
     @Param('id') id: string,
     @Body() dto: UpdateLeaveStatusDto,
-    @CurrentUser() user: { userId: string; roles: string[] },
+    @CurrentUser() user: { employeeId: string; roles: string[] },
   ) {
     return this.leaveRequestService.updateStatus(
       id,
       dto,
-      user.userId,
+      user.employeeId,
       user.roles ?? [],
     );
   }

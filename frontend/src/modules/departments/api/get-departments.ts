@@ -17,11 +17,8 @@ interface GetDepartmentsParams {
   search?: string;
 }
 
-const getDepartments = async (
-  params: GetDepartmentsParams = {}
-): Promise<DepartmentsResponse> => {
+const getDepartments = async (params: GetDepartmentsParams = {}): Promise<DepartmentsResponse> => {
   const res = await apiClient.get(URL_API_GET_DEPARTMENTS, { params });
-  console.log('departments: ', res.data.data)
   return res.data.data;
 };
 
@@ -35,14 +32,9 @@ export const useGetDepartments = (
       [string, GetDepartmentsParams]
     >,
     'queryKey' | 'queryFn'
-  >
+  >,
 ) => {
-  return useQuery<
-    DepartmentsResponse,
-    Error,
-    DepartmentsResponse,
-    [string, GetDepartmentsParams]
-  >({
+  return useQuery<DepartmentsResponse, Error, DepartmentsResponse, [string, GetDepartmentsParams]>({
     queryKey: ['departments', params],
     queryFn: () => getDepartments(params),
     ...config,
@@ -50,8 +42,5 @@ export const useGetDepartments = (
 };
 
 export const useGetAllDepartments = () => {
-  return useGetDepartments(
-    { pageSize: 1000 }, 
-    { staleTime: 5 * 60 * 1000 } 
-  );
+  return useGetDepartments({ pageSize: 1000 }, { staleTime: 5 * 60 * 1000 });
 };

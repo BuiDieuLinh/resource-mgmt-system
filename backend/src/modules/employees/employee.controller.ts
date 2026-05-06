@@ -45,10 +45,10 @@ export class EmployeeController {
   @Roles(Role.ADMIN, Role.MANAGER)
   async findAll(
     @Query() query: QueryEmployeeDto,
-    @CurrentUser() user: { userId: string; roles: string[] },
+    @CurrentUser() user: { employeeId: string; roles: string[] },
   ) {
     if (user.roles.includes(Role.MANAGER) && !user.roles.includes(Role.ADMIN)) {
-      const deptId = await this.service.getManagerDepartmentId(user.userId);
+      const deptId = await this.service.getManagerDepartmentId(user.employeeId);
       if (deptId) query.department_id = deptId;
     }
     return this.service.findAll(query);

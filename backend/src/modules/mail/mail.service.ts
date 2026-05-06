@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
 import { welcomeTemplate } from './templates/welcome.template';
+import { reminderTemplate } from './templates/reminder.template';
 
 export interface WelcomeMailPayload {
   fullName: string;
@@ -10,6 +11,15 @@ export interface WelcomeMailPayload {
   position: string;
   department: string;
   loginUrl: string;
+}
+
+export interface ReminderMailPayload {
+  to: string;
+  recipientName: string;
+  subject: string;
+  body: string;
+  ctaUrl: string;
+  ctaLabel: string;
 }
 
 @Injectable()
@@ -41,6 +51,27 @@ export class MailService {
     } catch (err) {
       this.logger.error(
         `❌ Failed to send welcome email to ${payload.email}: ${err.message}`,
+      );
+    }
+  }
+
+  async sendReminderEmail(payload: ReminderMailPayload) {
+    this.logger.log(`Sending reminder email to ${payload.to}`);
+    try {
+      await this.mailer.sendMail({
+        to: 'buithidieulinh.1004@gmail.com', // payload.to
+        subject: payload.subject,
+        html: reminderTemplate({
+          recipientName: payload.recipientName,
+          body: payload.body,
+          ctaUrl: payload.ctaUrl,
+          ctaLabel: payload.ctaLabel,
+        }),
+      });
+      this.logger.log(`✅ Reminder email sent to ${payload.to}`);
+    } catch (err) {
+      this.logger.error(
+        `❌ Failed to send reminder email to ${payload.to}: ${err.message}`,
       );
     }
   }

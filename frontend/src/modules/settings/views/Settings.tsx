@@ -1,11 +1,12 @@
 import { Stack, Tabs } from '@mantine/core';
-import { IconShieldCheck, IconCalendarEvent, IconTemplate } from '@tabler/icons-react';
+import { IconShieldCheck, IconCalendarEvent, IconTemplate, IconBell } from '@tabler/icons-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { WorkPolicySettings } from '@/modules/work-policies/components/WorkPolicySettings';
 import { HolidaySettings } from '@/modules/holidays/components/HolidaySettings';
 import { useAuth } from '@/modules/auth/context/AuthContext';
 import { EMPLOYEE_ROLE } from '@/constant';
 import EvaluationTemplatesPage from '@/modules/performance/views/EvaluationTemplates';
+import { ReminderSettings } from '@/modules/reminders/components/ReminderSettings';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -34,6 +35,11 @@ export default function SettingsPage() {
               Evaluation Templates
             </Tabs.Tab>
           )}
+          {isAdmin && (
+            <Tabs.Tab value="reminders" leftSection={<IconBell size={16} />}>
+              Notifications
+            </Tabs.Tab>
+          )}
         </Tabs.List>
 
         {isAdmin && (
@@ -49,6 +55,11 @@ export default function SettingsPage() {
         {isAdmin && (
           <Tabs.Panel value="evaluation-templates">
             <EvaluationTemplatesPage />
+          </Tabs.Panel>
+        )}
+        {isAdmin && (
+          <Tabs.Panel value="reminders">
+            <ReminderSettings />
           </Tabs.Panel>
         )}
       </Tabs>

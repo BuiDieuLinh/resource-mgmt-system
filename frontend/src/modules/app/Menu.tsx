@@ -11,9 +11,6 @@ import {
   myReviewsUrl,
   performanceCyclesUrl,
   performanceReviewUrl,
-  reportsHrStructureUrl,
-  reportsTurnoverUrl,
-  reportsInsightsUrl,
 } from '@/routes/url';
 import {
   IconGauge,
@@ -27,9 +24,6 @@ import {
   IconClock,
   IconTrophy,
   IconStar,
-  IconChartBar,
-  IconChartLine,
-  IconBulb,
   IconClipboardList,
 } from '@tabler/icons-react';
 
@@ -126,30 +120,6 @@ export const MENUS: AppMenu[] = [
         path: myReviewsUrl,
         icon: IconClipboardList,
         roles: [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.MANAGER, EMPLOYEE_ROLE.EMPLOYEE],
-      },
-    ],
-  },
-  {
-    label: 'Reports',
-    icon: IconChartBar,
-    children: [
-      {
-        label: 'HR Structure',
-        path: reportsHrStructureUrl,
-        icon: IconChartBar,
-        roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.MANAGER],
-      },
-      {
-        label: 'Turnover Report',
-        path: reportsTurnoverUrl,
-        icon: IconChartLine,
-        roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN],
-      },
-      {
-        label: 'Insights',
-        path: reportsInsightsUrl,
-        icon: IconBulb,
-        roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN],
       },
     ],
   },

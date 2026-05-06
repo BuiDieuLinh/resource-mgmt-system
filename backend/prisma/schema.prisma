@@ -482,9 +482,9 @@ model Notifications {
 }
 
 enum ReminderTriggerType {
-  cycle_deadline       
-  cycle_unreviewed     
-  contract_ending      
+  cycle_deadline
+  cycle_unreviewed
+  contract_ending
 }
 
 enum ReminderChannel {

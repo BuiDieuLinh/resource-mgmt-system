@@ -81,9 +81,9 @@ export class PerformanceController {
   @Roles(Role.ADMIN)
   createCycle(
     @Body() dto: CreateCycleDto,
-    @CurrentUser() user: { userId: string },
+    @CurrentUser() user: { employeeId: string },
   ) {
-    return this.svc.createCycle(dto, user.userId);
+    return this.svc.createCycle(dto, user.employeeId);
   }
 
   @Get('cycles')
@@ -109,9 +109,9 @@ export class PerformanceController {
   submitReview(
     @Param('id') id: string,
     @Body() dto: SubmitReviewDto,
-    @CurrentUser() user: { userId: string },
+    @CurrentUser() user: { employeeId: string },
   ) {
-    return this.svc.submitReview(id, dto, user.userId);
+    return this.svc.submitReview(id, dto, user.employeeId);
   }
 
   @Patch('cycles/:id/publish')
@@ -130,15 +130,15 @@ export class PerformanceController {
   @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
   getMyReview(
     @Param('id') id: string,
-    @CurrentUser() user: { userId: string },
+    @CurrentUser() user: { employeeId: string },
   ) {
-    return this.svc.getMyReview(id, user.userId);
+    return this.svc.getMyReview(id, user.employeeId);
   }
 
   @Get('awards/pending-reveal')
   @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
-  getPendingReveal(@CurrentUser() user: { userId: string }) {
-    return this.svc.getPendingReveal(user.userId);
+  getPendingReveal(@CurrentUser() user: { employeeId: string }) {
+    return this.svc.getPendingReveal(user.employeeId);
   }
 
   @Post('awards')
@@ -161,7 +161,7 @@ export class PerformanceController {
 
   @Get('my-awards')
   @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
-  getMyAwards(@CurrentUser() user: { userId: string }) {
-    return this.svc.getMyAwards(user.userId);
+  getMyAwards(@CurrentUser() user: { employeeId: string }) {
+    return this.svc.getMyAwards(user.employeeId);
   }
 }

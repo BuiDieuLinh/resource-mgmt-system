@@ -34,18 +34,21 @@ export class AlertsController {
   @ApiOperation({ summary: 'Xác nhận đã xem cảnh báo' })
   async acknowledgeAlert(
     @Param('id') alertId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: { employeeId: string },
   ) {
-    await this.alertsService.acknowledgeAlert(alertId, user.userId);
-    return { message: 'Alert acknowledged successfully' };
+    await this.alertsService.acknowledgeAlert(alertId, user.employeeId);
+    return { success: true, message: 'Alert acknowledged successfully' };
   }
 
   @Post(':id/resolve')
   @Roles('manager', 'admin')
   @ApiOperation({ summary: 'Đánh dấu cảnh báo đã xử lý' })
-  async resolveAlert(@Param('id') alertId: string, @CurrentUser() user: any) {
-    await this.alertsService.resolveAlert(alertId, user.userId);
-    return { message: 'Alert resolved successfully' };
+  async resolveAlert(
+    @Param('id') alertId: string,
+    @CurrentUser() user: { employeeId: string },
+  ) {
+    await this.alertsService.resolveAlert(alertId, user.employeeId);
+    return { success: true, message: 'Alert resolved successfully' };
   }
 
   @Post('check/late-spike')

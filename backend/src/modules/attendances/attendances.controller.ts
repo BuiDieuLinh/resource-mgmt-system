@@ -44,13 +44,13 @@ export class AttendancesController {
   @Get('my')
   @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
   findMy(
-    @CurrentUser() user: { userId: string },
+    @CurrentUser() user: { employeeId: string },
     @Query('month', new DefaultValuePipe(CURRENT_MONTH), ParseIntPipe)
     month: number,
     @Query('year', new DefaultValuePipe(CURRENT_YEAR), ParseIntPipe)
     year: number,
   ) {
-    return this.attendancesService.findByAuthUser(user.userId, month, year);
+    return this.attendancesService.findByEmployee(user.employeeId, month, year);
   }
 
   @Get('summary')

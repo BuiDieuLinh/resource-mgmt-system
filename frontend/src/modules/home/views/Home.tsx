@@ -44,11 +44,12 @@ import {
 import { useAuth } from '@/modules/auth/context/AuthContext';
 import { useGetMyAttendance } from '@/modules/attendances/api/get-my-attendance';
 import { useGetLeaveRequests } from '@/modules/leave-requests/api/get-leave-requests';
-import { getHrStructure, getTurnoverReport, getInsights } from '@/modules/reports/api/hr-reports';
-import type { AlertInsight } from '@/modules/reports/api/hr-reports';
+import { getHrStructure, getTurnoverReport, getInsights } from '../api/hr-reports';
+import type { AlertInsight } from '../api/hr-reports';
 import { EMPLOYEE_ROLE } from '@/constant';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useQuery } from '@tanstack/react-query';
+import { ReminderWidget } from '@/modules/reminders/components/ReminderWidget';
 
 const now = new Date();
 const CURRENT_MONTH = now.getMonth() + 1;
@@ -128,6 +129,9 @@ function AdminDashboard() {
           Comprehensive workforce insights and trends
         </Text>
       </Stack>
+
+      {/* Reminder widget — shown when there are pending reminders */}
+      <ReminderWidget />
 
       {/* KPIs */}
       <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">

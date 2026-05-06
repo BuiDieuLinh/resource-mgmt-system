@@ -25,9 +25,9 @@ export class LeaveRequestService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  async getManagerDepartmentId(authUserId: string): Promise<string | null> {
-    const employee = await this.prisma.employees.findFirst({
-      where: { auth_user_id: authUserId },
+  async getManagerDepartmentId(employeeId: string): Promise<string | null> {
+    const employee = await this.prisma.employees.findUnique({
+      where: { id: employeeId },
       select: { position: { select: { department_id: true } } },
     });
     return employee?.position?.department_id ?? null;
@@ -41,16 +41,10 @@ export class LeaveRequestService {
     approver_admin: { select: { id: true, full_name: true } },
   } as const;
 
-  async findByAuthUser(authUserId: string, status?: string) {
-    const employee = await this.prisma.employees.findUnique({
-      where: { auth_user_id: authUserId },
-      select: { id: true },
-    });
-    if (!employee) throw new NotFoundException('Employee profile not found');
-
+  async findByEmployee(employeeId: string, status?: string) {
     const requests = await this.prisma.leaveRequests.findMany({
       where: {
-        employee_id: employee.id,
+        employee_id: employeeId,
         ...(status ? { status: status as LeaveStatus } : {}),
       },
       include: this.leaveInclude,
@@ -77,7 +71,7 @@ export class LeaveRequestService {
           department_id:
             query.department_id.length === 1
               ? query.department_id[0]
-              : { in: query.department_id },
+              : { equals: query.department_id },
         },
       };
     }
@@ -240,9 +234,9 @@ export class LeaveRequestService {
           NOT: { id: employee.id },
         },
       });
-      if (manager?.auth_user_id) {
+      if (manager?.id) {
         await this.notificationsService.notifyLeaveSubmitted({
-          managerAuthId: manager.auth_user_id,
+          managerEmployeeId: manager.id,
           employeeName: employee.full_name,
           leaveType: dto.leave_type,
           startDate: dto.start_date,
@@ -286,7 +280,7 @@ export class LeaveRequestService {
   async updateStatus(
     id: string,
     dto: UpdateLeaveStatusDto,
-    actorAuthId?: string,
+    actorEmployeeId?: string,
     actorRoles: string[] = [],
   ) {
     const existing = await this.prisma.leaveRequests.findUnique({
@@ -302,9 +296,9 @@ export class LeaveRequestService {
       );
     }
 
-    const actorEmployee = actorAuthId
-      ? await this.prisma.employees.findFirst({
-          where: { auth_user_id: actorAuthId },
+    const actorEmployee = actorEmployeeId
+      ? await this.prisma.employees.findUnique({
+          where: { id: actorEmployeeId },
           select: { id: true, position: { select: { level: true } } },
         })
       : null;
@@ -351,13 +345,13 @@ export class LeaveRequestService {
       where: { id },
       data,
       include: {
-        employee: { select: { auth_user_id: true, full_name: true } },
+        employee: { select: { id: true, full_name: true } },
       },
     });
 
-    if (data.status && updated.employee?.auth_user_id) {
+    if (data.status && updated.employee?.id) {
       await this.notificationsService.notifyLeaveStatusChanged({
-        employeeAuthId: updated.employee.auth_user_id,
+        employeeId: updated.employee.id,
         status: data.status as 'approved' | 'rejected',
         leaveType: existing.leave_type,
         startDate: existing.start_date.toISOString().slice(0, 10),
@@ -374,7 +368,7 @@ export class LeaveRequestService {
   async bulkUpdateStatus(
     ids: string[],
     dto: { status: LeaveStatus; comment?: string },
-    actorAuthId: string,
+    actorEmployeeId: string,
     actorRoles: string[],
   ) {
     const results = await Promise.allSettled(
@@ -382,7 +376,7 @@ export class LeaveRequestService {
         this.updateStatus(
           id,
           { status: dto.status, comment: dto.comment },
-          actorAuthId,
+          actorEmployeeId,
           actorRoles,
         ),
       ),
