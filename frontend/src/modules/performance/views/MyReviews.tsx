@@ -1,35 +1,33 @@
-import { useState } from 'react';
 import {
   Stack,
-  Card,
   Text,
   Badge,
   Group,
-  Progress,
+  Box,
   Loader,
   Center,
-  Grid,
   ThemeIcon,
   Alert,
-  Paper,
-  SimpleGrid,
-  RingProgress,
+  Collapse,
+  UnstyledButton,
+  useMantineColorScheme,
 } from '@mantine/core';
 import {
-  IconStar,
   IconTrophy,
   IconInfoCircle,
   IconCalendar,
-  IconClock,
   IconAlertCircle,
+  IconChevronDown,
+  IconChevronRight,
+  IconMessageCircle,
+  IconStar,
+  IconClock,
   IconChecks,
-  IconChartBar,
 } from '@tabler/icons-react';
+import { useState } from 'react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
-import { useGetCycles } from '../api';
-import { apiClient } from '@/lib/api';
-import { useQuery } from '@tanstack/react-query';
-import type { IPerformanceReview } from '../types';
+import { useGetCycles, useGetMyReview } from '../api';
+import type { IReviewCycle } from '../types';
 
 const STATUS_COLOR: Record<string, string> = {
   draft: 'gray',
@@ -38,367 +36,293 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  draft: 'Draft',
-  submitted: 'Submitted',
+  draft: 'In Progress',
+  submitted: 'Under Review',
   published: 'Published',
 };
 
-export default function MyReviewsPage() {
-  const { data: cycles = [] } = useGetCycles();
-  const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
+function CycleReviewRow({ cycle }: { cycle: IReviewCycle }) {
+  const [open, setOpen] = useState(false);
+  const { data: review, isLoading } = useGetMyReview(open ? cycle.id : '');
+  const { colorScheme } = useMantineColorScheme();
+  const isDark = colorScheme === 'dark';
 
-  const { data: myReview, isLoading } = useQuery<IPerformanceReview | null>({
-    queryKey: ['my-review', selectedCycleId],
-    queryFn: () =>
-      apiClient
-        .get(`performance/cycles/${selectedCycleId}/my-review`)
-        .then((r) => r.data?.data ?? null),
-    enabled: !!selectedCycleId,
-  });
+  const isPublished = review?.status === 'published';
+  const hasFeedback = isPublished && (review?.comment || review?.achievements);
 
-  const publishedCycles = cycles.filter((c) => {
-    const announceDate = new Date(c.announce_date);
-    return announceDate <= new Date();
-  });
-
-  const getGradeInfo = (score?: number) => {
-    if (!score) return { label: 'N/A', color: 'gray', progress: 0 };
-    if (score >= 90) return { label: 'Excellent', color: 'green', progress: 100 };
-    if (score >= 75) return { label: 'Good', color: 'blue', progress: 80 };
-    if (score >= 60) return { label: 'Average', color: 'yellow', progress: 60 };
-    return { label: 'Below Average', color: 'red', progress: 40 };
-  };
-
-  const gradeInfo = getGradeInfo(myReview?.total_score);
+  const borderColor = isDark ? '#373a40' : '#dee2e6';
+  const headerBg = open ? (isDark ? '#25262b' : '#f8f9fa') : isDark ? '#1a1b1e' : '#ffffff';
+  const contentBg = isDark ? '#25262b' : '#f8f9fa';
+  const innerItemBg = isDark ? '#1a1b1e' : '#ffffff';
+  const innerItemBorder = isDark ? '#373a40' : '#dee2e6';
+  const yellowBg = isDark ? 'rgba(250,176,5,0.08)' : 'var(--mantine-color-yellow-0)';
+  const yellowBorder = isDark ? 'rgba(250,176,5,0.25)' : 'var(--mantine-color-yellow-2)';
+  const blueBg = isDark ? 'rgba(34,139,230,0.08)' : 'var(--mantine-color-blue-0)';
+  const blueBorder = isDark ? 'rgba(34,139,230,0.25)' : 'var(--mantine-color-blue-2)';
 
   return (
-    <Stack gap="lg">
-      <PageHeader
-        title="My Performance Reviews"
-        description="View your performance evaluation history and feedback"
-      />
-
-      <Grid gutter="lg">
-        {/* Sidebar - Cycle List */}
-        <Grid.Col span={{ base: 12, md: 4 }}>
-          <Card withBorder p="md" style={{ position: 'sticky', top: 20 }}>
-            <Group justify="space-between" mb="md">
-              <Text fw={600}>Review Cycles</Text>
-              <Badge variant="light">{publishedCycles.length}</Badge>
-            </Group>
-
-            {publishedCycles.length === 0 ? (
-              <Center h={100}>
-                <Stack align="center" gap="xs">
-                  <IconInfoCircle size={32} color="var(--mantine-color-gray-5)" />
-                  <Text size="sm" c="dimmed" ta="center">
-                    No published cycles yet
-                  </Text>
-                </Stack>
-              </Center>
-            ) : (
-              <Stack gap="xs" style={{ maxHeight: 500, overflowY: 'auto' }}>
-                {publishedCycles.map((cycle) => (
-                  <Paper
-                    key={cycle.id}
-                    p="sm"
-                    withBorder
-                    style={{
-                      cursor: 'pointer',
-                      background:
-                        selectedCycleId === cycle.id
-                          ? 'var(--mantine-color-blue-0)'
-                          : 'transparent',
-                      borderColor:
-                        selectedCycleId === cycle.id
-                          ? 'var(--mantine-color-blue-3)'
-                          : 'var(--mantine-color-gray-3)',
-                    }}
-                    onClick={() => setSelectedCycleId(cycle.id)}
-                  >
-                    <Stack gap={6}>
-                      <Text size="sm" fw={500}>
-                        {cycle.title}
-                      </Text>
-                      <Group gap="xs">
-                        <IconCalendar size={12} />
-                        <Text size="xs" c="dimmed">
-                          {new Date(cycle.announce_date).toLocaleDateString('en-GB')}
-                        </Text>
-                      </Group>
-                      {cycle.template && (
-                        <Badge size="xs" variant="light" color="cyan">
-                          {cycle.template.title}
-                        </Badge>
-                      )}
-                    </Stack>
-                  </Paper>
-                ))}
-              </Stack>
-            )}
-          </Card>
-        </Grid.Col>
-
-        {/* Main Content - Review Detail */}
-        <Grid.Col span={{ base: 12, md: 8 }}>
-          {!selectedCycleId ? (
-            <Card withBorder p="xl">
-              <Center h={300}>
-                <Stack align="center" gap="md">
-                  <ThemeIcon size={80} variant="light" color="blue" radius="xl">
-                    <IconChartBar size={40} />
-                  </ThemeIcon>
-                  <Stack align="center" gap={4}>
-                    <Text size="lg" fw={600}>
-                      Select a Review Cycle
-                    </Text>
-                    <Text size="sm" c="dimmed" ta="center">
-                      Choose a cycle from the sidebar to view your performance review
-                    </Text>
-                  </Stack>
-                </Stack>
-              </Center>
-            </Card>
-          ) : isLoading ? (
-            <Center h={300}>
-              <Loader size="lg" />
-            </Center>
-          ) : !myReview ? (
-            <Card withBorder p="xl">
-              <Alert icon={<IconInfoCircle size={16} />} color="blue" variant="light">
-                <Text fw={500} mb={4}>
-                  No Review Available
+    <Box>
+      <UnstyledButton w="100%" onClick={() => setOpen((o) => !o)}>
+        <Group
+          justify="space-between"
+          align="center"
+          py="sm"
+          px="md"
+          wrap="nowrap"
+          style={{
+            borderRadius: open ? '8px 8px 0 0' : 8,
+            border: `1px solid ${borderColor}`,
+            background: headerBg,
+            transition: 'background 0.15s',
+          }}
+        >
+          <Group gap="sm" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
+            <ThemeIcon
+              size="sm"
+              variant="light"
+              color={isPublished ? 'green' : 'gray'}
+              radius="sm"
+              style={{ flexShrink: 0 }}
+            >
+              {isPublished ? <IconChecks size={13} /> : <IconClock size={13} />}
+            </ThemeIcon>
+            <Box style={{ minWidth: 0 }}>
+              <Text size="sm" fw={500} lineClamp={1}>
+                {cycle.title}
+              </Text>
+              <Group gap={6} mt={2}>
+                <IconCalendar size={11} color="var(--mantine-color-dimmed)" />
+                <Text size="xs" c="dimmed">
+                  {new Date(cycle.announce_date).toLocaleDateString('en-GB')}
                 </Text>
-                <Text size="sm">
-                  Your performance review for this cycle has not been completed yet.
-                </Text>
-              </Alert>
-            </Card>
-          ) : (
-            <Stack gap="md">
-              {/* Status & Score Overview */}
-              <Card withBorder p="lg">
-                <Grid gutter="xl">
-                  <Grid.Col span={{ base: 12, sm: 6 }}>
-                    <Stack gap="xs">
-                      <Text size="sm" c="dimmed" tt="uppercase" fw={700}>
-                        Review Status
-                      </Text>
-                      <Badge size="xl" color={STATUS_COLOR[myReview.status]} variant="light">
-                        {STATUS_LABEL[myReview.status]}
-                      </Badge>
-                      {myReview.status !== 'published' && (
-                        <Text size="xs" c="dimmed">
-                          Your review is being processed
-                        </Text>
-                      )}
-                    </Stack>
-                  </Grid.Col>
-
-                  {myReview.status === 'published' && myReview.total_score !== undefined && (
-                    <Grid.Col span={{ base: 12, sm: 6 }}>
-                      <Group justify="center">
-                        <RingProgress
-                          size={140}
-                          thickness={14}
-                          sections={[{ value: myReview.total_score, color: gradeInfo.color }]}
-                          label={
-                            <Stack align="center" gap={0}>
-                              <Text size="xl" fw={700}>
-                                {myReview.total_score}
-                              </Text>
-                              <Text size="xs" c="dimmed">
-                                out of 100
-                              </Text>
-                            </Stack>
-                          }
-                        />
-                      </Group>
-                    </Grid.Col>
-                  )}
-                </Grid>
-              </Card>
-
-              {/* Performance Grade */}
-              {myReview.status === 'published' && myReview.total_score !== undefined && (
-                <Card withBorder p="md">
-                  <Group justify="space-between" mb="md">
-                    <Group>
-                      <ThemeIcon size="lg" color={gradeInfo.color} variant="light">
-                        <IconStar size={20} />
-                      </ThemeIcon>
-                      <div>
-                        <Text size="sm" c="dimmed">
-                          Performance Grade
-                        </Text>
-                        <Text size="lg" fw={700}>
-                          {gradeInfo.label}
-                        </Text>
-                      </div>
-                    </Group>
-                    <Badge size="lg" color={gradeInfo.color} variant="filled">
-                      {myReview.total_score} / 100
-                    </Badge>
-                  </Group>
-                  <Progress value={gradeInfo.progress} color={gradeInfo.color} size="xl" />
-                </Card>
-              )}
-
-              {/* Criteria Scores */}
-              {myReview.status === 'published' &&
-                myReview.score_details &&
-                myReview.score_details.length > 0 && (
-                  <Card withBorder p="md">
-                    <Group mb="md">
-                      <IconChecks size={20} />
-                      <Text fw={600}>Detailed Evaluation</Text>
-                    </Group>
-                    <Stack gap="md">
-                      {myReview.score_details.map((detail, idx) => {
-                        const percentage = (detail.score / detail.max_score) * 100;
-                        const color =
-                          percentage >= 80 ? 'green' : percentage >= 60 ? 'blue' : 'orange';
-
-                        return (
-                          <Paper key={detail.id} p="md" withBorder>
-                            <Stack gap="sm">
-                              <Group justify="space-between">
-                                <div style={{ flex: 1 }}>
-                                  <Text fw={500} size="sm">
-                                    {idx + 1}. {detail.criteria_name}
-                                  </Text>
-                                  <Group gap="xs" mt={4}>
-                                    <Badge size="xs" variant="light" color="blue">
-                                      Weight: {detail.weight}%
-                                    </Badge>
-                                    <Badge size="xs" variant="light" color={color}>
-                                      {detail.score} / {detail.max_score}
-                                    </Badge>
-                                  </Group>
-                                </div>
-                                <ThemeIcon size="lg" color={color} variant="light">
-                                  <Text size="sm" fw={700}>
-                                    {Math.round(percentage)}%
-                                  </Text>
-                                </ThemeIcon>
-                              </Group>
-                              <Progress value={percentage} color={color} size="md" />
-                              {detail.note && (
-                                <Text size="xs" c="dimmed" fs="italic">
-                                  💬 {detail.note}
-                                </Text>
-                              )}
-                            </Stack>
-                          </Paper>
-                        );
-                      })}
-                    </Stack>
-                  </Card>
+                {cycle.template && (
+                  <Badge size="xs" variant="light" color="cyan">
+                    {cycle.template.title}
+                  </Badge>
                 )}
+              </Group>
+            </Box>
+          </Group>
 
-              {/* Feedback */}
-              {myReview.status === 'published' && (
-                <>
-                  {myReview.achievements && (
-                    <Card withBorder p="md">
-                      <Group mb="sm">
-                        <IconTrophy size={20} color="var(--mantine-color-yellow-6)" />
-                        <Text fw={600}>Key Achievements</Text>
-                      </Group>
-                      <Text size="sm" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                        {myReview.achievements}
-                      </Text>
-                    </Card>
-                  )}
+          <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
+            {review && (
+              <Badge size="xs" color={STATUS_COLOR[review.status]} variant="dot">
+                {STATUS_LABEL[review.status]}
+              </Badge>
+            )}
+            {open ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+          </Group>
+        </Group>
+      </UnstyledButton>
 
-                  {myReview.comment && (
-                    <Card withBorder p="md">
-                      <Group mb="sm">
-                        <IconInfoCircle size={20} color="var(--mantine-color-blue-6)" />
-                        <Text fw={600}>Manager Feedback</Text>
-                      </Group>
-                      <Text size="sm" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                        {myReview.comment}
-                      </Text>
-                    </Card>
-                  )}
-                </>
+      <Collapse in={open}>
+        <Box
+          px="sm"
+          pb="sm"
+          pt="sm"
+          mb="xs"
+          style={{
+            background: contentBg,
+            borderRadius: '0 0 8px 8px',
+            border: `1px solid ${borderColor}`,
+            borderTop: 'none',
+          }}
+        >
+          {isLoading ? (
+            <Center py="md">
+              <Loader size="xs" />
+            </Center>
+          ) : !review ? (
+            <Alert icon={<IconInfoCircle size={14} />} color="blue" variant="light" p="xs" mt="xs">
+              <Text size="xs">No review available for this cycle yet.</Text>
+            </Alert>
+          ) : review.status !== 'published' ? (
+            <Alert
+              icon={<IconAlertCircle size={14} />}
+              color="yellow"
+              variant="light"
+              p="xs"
+              mt="xs"
+            >
+              <Text size="xs" fw={500}>
+                Review in progress
+              </Text>
+              <Text size="xs" c="dimmed" mt={2}>
+                Your manager is working on your review. You'll be notified once it's published.
+              </Text>
+            </Alert>
+          ) : (
+            <Stack gap="sm" mt="xs">
+              {/* Attendance summary */}
+              <Group gap="xl">
+                <Box ta="center">
+                  <Text size="xs" c="dimmed">
+                    Present
+                  </Text>
+                  <Text size="sm" fw={700} c="blue">
+                    {review.attendance_days ?? '—'}
+                  </Text>
+                </Box>
+                <Box ta="center">
+                  <Text size="xs" c="dimmed">
+                    Late
+                  </Text>
+                  <Text size="sm" fw={700} c="orange">
+                    {review.late_count ?? '—'}
+                  </Text>
+                </Box>
+                <Box ta="center">
+                  <Text size="xs" c="dimmed">
+                    Absent
+                  </Text>
+                  <Text size="sm" fw={700} c="red">
+                    {review.absent_count ?? '—'}
+                  </Text>
+                </Box>
+                <Box ta="center">
+                  <Text size="xs" c="dimmed">
+                    OT (hrs)
+                  </Text>
+                  <Text size="sm" fw={700} c="teal">
+                    {((review.overtime_minutes ?? 0) / 60).toFixed(1)}
+                  </Text>
+                </Box>
+              </Group>
+
+              {/* Criteria notes */}
+              {review.score_details && review.score_details.some((d) => d.note) && (
+                <Stack gap={4}>
+                  <Group gap="xs">
+                    <IconChecks size={13} color="var(--mantine-color-dimmed)" />
+                    <Text
+                      size="xs"
+                      fw={600}
+                      c="dimmed"
+                      tt="uppercase"
+                      style={{ letterSpacing: '0.05em' }}
+                    >
+                      Criteria Notes
+                    </Text>
+                  </Group>
+                  {review.score_details
+                    .filter((d) => d.note)
+                    .map((detail) => (
+                      <Box
+                        key={detail.id}
+                        px="sm"
+                        py={6}
+                        style={{
+                          background: innerItemBg,
+                          borderRadius: 6,
+                          border: `1px solid ${innerItemBorder}`,
+                        }}
+                      >
+                        <Text size="xs" fw={500} mb={2}>
+                          {detail.criteria_name}
+                        </Text>
+                        <Text size="xs" c="dimmed" fs="italic">
+                          "{detail.note}"
+                        </Text>
+                      </Box>
+                    ))}
+                </Stack>
               )}
 
-              {/* Attendance Summary */}
-              <Card withBorder p="md">
-                <Group mb="md">
-                  <IconClock size={20} />
-                  <Text fw={600}>Attendance Summary</Text>
-                </Group>
-                <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
-                  <Paper p="sm" withBorder>
-                    <Stack gap={4} align="center">
-                      <Text size="xs" c="dimmed" ta="center">
-                        Days Present
-                      </Text>
-                      <Text size="xl" fw={700} c="green">
-                        {myReview.attendance_days ?? 0}
-                      </Text>
-                    </Stack>
-                  </Paper>
-                  <Paper p="sm" withBorder>
-                    <Stack gap={4} align="center">
-                      <Text size="xs" c="dimmed" ta="center">
-                        Late Count
-                      </Text>
-                      <Text
-                        size="xl"
-                        fw={700}
-                        c={myReview.late_count && myReview.late_count > 0 ? 'orange' : 'gray'}
-                      >
-                        {myReview.late_count ?? 0}
-                      </Text>
-                    </Stack>
-                  </Paper>
-                  <Paper p="sm" withBorder>
-                    <Stack gap={4} align="center">
-                      <Text size="xs" c="dimmed" ta="center">
-                        Absent Count
-                      </Text>
-                      <Text
-                        size="xl"
-                        fw={700}
-                        c={myReview.absent_count && myReview.absent_count > 0 ? 'red' : 'gray'}
-                      >
-                        {myReview.absent_count ?? 0}
-                      </Text>
-                    </Stack>
-                  </Paper>
-                  <Paper p="sm" withBorder>
-                    <Stack gap={4} align="center">
-                      <Text size="xs" c="dimmed" ta="center">
-                        Overtime (hrs)
-                      </Text>
-                      <Text size="xl" fw={700} c="blue">
-                        {((myReview.overtime_minutes ?? 0) / 60).toFixed(1)}
-                      </Text>
-                    </Stack>
-                  </Paper>
-                </SimpleGrid>
-              </Card>
+              {/* Achievements */}
+              {review.achievements && (
+                <Box
+                  px="sm"
+                  py="xs"
+                  style={{
+                    background: yellowBg,
+                    borderRadius: 6,
+                    border: `1px solid ${yellowBorder}`,
+                  }}
+                >
+                  <Group gap="xs" mb={4}>
+                    <IconTrophy size={13} color="var(--mantine-color-yellow-7)" />
+                    <Text size="xs" fw={600} c="yellow.7">
+                      Key Achievements
+                    </Text>
+                  </Group>
+                  <Text size="xs" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                    {review.achievements}
+                  </Text>
+                </Box>
+              )}
 
-              {/* Draft/Submitted Notice */}
-              {myReview.status !== 'published' && (
-                <Alert icon={<IconAlertCircle size={16} />} color="yellow" variant="light">
-                  <Text fw={500} size="sm">
-                    Review In Progress
+              {/* Manager feedback */}
+              {review.comment && (
+                <Box
+                  px="sm"
+                  py="xs"
+                  style={{
+                    background: blueBg,
+                    borderRadius: 6,
+                    border: `1px solid ${blueBorder}`,
+                  }}
+                >
+                  <Group gap="xs" mb={4}>
+                    <IconMessageCircle size={13} color="var(--mantine-color-blue-6)" />
+                    <Text size="xs" fw={600} c="blue.7">
+                      Manager Feedback
+                    </Text>
+                  </Group>
+                  <Text size="xs" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                    {review.comment}
                   </Text>
-                  <Text size="xs" mt={4}>
-                    Your manager is currently working on your performance review. You'll be notified
-                    once it's published.
-                  </Text>
-                </Alert>
+                </Box>
+              )}
+
+              {!hasFeedback && (
+                <Text size="xs" c="dimmed" ta="center" py="xs">
+                  No feedback provided for this review.
+                </Text>
               )}
             </Stack>
           )}
-        </Grid.Col>
-      </Grid>
+        </Box>
+      </Collapse>
+    </Box>
+  );
+}
+
+export default function MyReviewsPage() {
+  const { data: cycles = [], isLoading: cyclesLoading } = useGetCycles();
+
+  const myCycles = (cycles as IReviewCycle[]).filter(
+    (c) => new Date(c.announce_date) <= new Date(),
+  );
+
+  return (
+    <Stack gap="md">
+      <PageHeader
+        title="My Reviews"
+        description="Your performance evaluation history and feedback from your manager"
+      />
+
+      {cyclesLoading ? (
+        <Center h={300}>
+          <Loader />
+        </Center>
+      ) : myCycles.length === 0 ? (
+        <Center h={200}>
+          <Stack align="center" gap="xs">
+            <ThemeIcon size="xl" variant="light" color="gray" radius="xl">
+              <IconStar size={24} />
+            </ThemeIcon>
+            <Text c="dimmed" size="sm">
+              No review cycles available yet
+            </Text>
+          </Stack>
+        </Center>
+      ) : (
+        <Stack gap="sm">
+          {myCycles.map((cycle) => (
+            <CycleReviewRow key={cycle.id} cycle={cycle} />
+          ))}
+        </Stack>
+      )}
     </Stack>
   );
 }
