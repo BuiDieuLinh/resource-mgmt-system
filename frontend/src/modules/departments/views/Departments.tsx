@@ -1,4 +1,4 @@
-import { Stack, Button, Group, TextInput, ActionIcon } from '@mantine/core';
+import { Stack, Button, Group, TextInput, ActionIcon, Badge, Tooltip } from '@mantine/core';
 import { IconSearch, IconEdit, IconPlus } from '@tabler/icons-react';
 import { PageHeader } from '../../../components/PageHeader/PageHeader';
 import { useState } from 'react';
@@ -11,6 +11,7 @@ import { useDelayedLoading } from '../../../hooks/useDelayedLoading';
 import { useCreateDepartment } from '../api/create-department';
 import { useUpdateDepartment } from '../api/update-department';
 import { DepartmentFormModal } from '../components/DepartmentFormModal';
+import { DepartmentPositionsModal } from '../components/DepartmentPositionsModal';
 import { mapDepartmentToFormValues } from '../utils/department-mapper';
 import { notify } from '../../../components/Notification';
 import type { IDepartment, DepartmentFormValues } from '../../departments/types';
@@ -21,6 +22,7 @@ export default function DepartmentsPage() {
   const [pageSize, setPageSize] = useState(10);
   const [opened, setOpened] = useState(false);
   const [editDepartment, setEditDepartment] = useState<IDepartment | null>(null);
+  const [positionsModal, setPositionsModal] = useState<IDepartment | null>(null);
 
   const isEdit = Boolean(editDepartment);
 
@@ -42,56 +44,28 @@ export default function DepartmentsPage() {
   const createMutation = useCreateDepartment();
   const updateMutation = useUpdateDepartment();
 
-  const handleAdd = () => {
-    setEditDepartment(null);
-    setOpened(true);
-  };
-
-  const handleEdit = (department: IDepartment) => {
-    setEditDepartment(department);
-    setOpened(true);
-  };
-
   const handleSubmit = async (values: DepartmentFormValues, id?: string) => {
     const notiId = notify.loading(isEdit ? 'Updating department...' : 'Creating department...');
-
     try {
       if (isEdit && id) {
-        await updateMutation.mutateAsync({
-          id,
-          payload: values,
-        });
+        await updateMutation.mutateAsync({ id, payload: values });
       } else {
         await createMutation.mutateAsync(values);
       }
-
       notify.success(notiId, {
         message: isEdit ? 'Department updated successfully' : 'Department created successfully',
       });
-
       setOpened(false);
       setEditDepartment(null);
     } catch (e: any) {
       notify.error(notiId, {
-        message:
-          e?.response?.data?.message ||
-          (isEdit ? 'Update department failed' : 'Create department failed'),
+        message: e?.response?.data?.message || (isEdit ? 'Update failed' : 'Create failed'),
       });
     }
   };
 
-  const handleCloseModal = () => {
-    setOpened(false);
-    setEditDepartment(null);
-  };
-
   const handleSearch = (value: string) => {
     setSearch(value);
-    setPage(1);
-  };
-
-  const handlePageSizeChange = (value: number) => {
-    setPageSize(value);
     setPage(1);
   };
 
@@ -112,14 +86,44 @@ export default function DepartmentsPage() {
       key: 'description',
       title: 'Description',
       render: (row) => row.description || '-',
+      width: 300,
+    },
+    {
+      key: 'positions_count',
+      title: 'Positions',
+      width: 100,
+      align: 'center',
+      render: (row) => {
+        const count = row._count?.positions ?? 0;
+        return (
+          <Tooltip label="View positions" withArrow position="top">
+            <Badge
+              variant="light"
+              color="blue"
+              size="sm"
+              style={{ cursor: count > 0 ? 'pointer' : 'default' }}
+              onClick={() => count > 0 && setPositionsModal(row)}
+            >
+              {count}
+            </Badge>
+          </Tooltip>
+        );
+      },
     },
     {
       key: 'action',
       title: 'Actions',
       align: 'center',
-      width: 100,
+      width: 80,
       render: (row) => (
-        <ActionIcon variant="subtle" color="gray" onClick={() => handleEdit(row)} title="Edit">
+        <ActionIcon
+          variant="subtle"
+          color="gray"
+          onClick={() => {
+            setEditDepartment(row);
+            setOpened(true);
+          }}
+        >
           <IconEdit size={18} />
         </ActionIcon>
       ),
@@ -137,7 +141,13 @@ export default function DepartmentsPage() {
         description="Manage your organization's departments"
         right={
           <Group>
-            <Button leftSection={<IconPlus size={18} />} onClick={handleAdd}>
+            <Button
+              leftSection={<IconPlus size={18} />}
+              onClick={() => {
+                setEditDepartment(null);
+                setOpened(true);
+              }}
+            >
               Add Department
             </Button>
             <TextInput
@@ -151,7 +161,7 @@ export default function DepartmentsPage() {
       />
 
       {isLoading ? (
-        <TableSkeleton colWidths={[100, 200, 300, 80]} />
+        <TableSkeleton colWidths={[100, 200, 300, 80, 80]} />
       ) : (
         <>
           <BaseTable
@@ -161,25 +171,35 @@ export default function DepartmentsPage() {
             withColumnBorders
             stickyHeader
           />
-
           <TablePagination
             page={page}
             pageSize={pageSize}
             total={totalCount}
             onPageChange={setPage}
-            onPageSizeChange={handlePageSizeChange}
+            onPageSizeChange={(v) => {
+              setPageSize(v);
+              setPage(1);
+            }}
           />
         </>
       )}
 
       <DepartmentFormModal
         opened={opened}
-        onClose={handleCloseModal}
+        onClose={() => {
+          setOpened(false);
+          setEditDepartment(null);
+        }}
         mode={isEdit ? 'edit' : 'add'}
         initialValues={mapDepartmentToFormValues(editDepartment)}
         departmentId={editDepartment?.id}
         onSubmit={handleSubmit}
         loading={createMutation.isPending || updateMutation.isPending}
+      />
+
+      <DepartmentPositionsModal
+        department={positionsModal}
+        onClose={() => setPositionsModal(null)}
       />
     </Stack>
   );

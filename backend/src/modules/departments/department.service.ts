@@ -37,6 +37,18 @@ export class DepartmentService {
         skip,
         take,
         orderBy: { department_name: 'asc' },
+        include: {
+          positions: {
+            orderBy: { level: 'asc' },
+            select: {
+              id: true,
+              position_name: true,
+              level: true,
+              description: true,
+            },
+          },
+          _count: { select: { positions: true } },
+        },
       }),
       this.prisma.departments.count({ where }),
     ]);
@@ -49,6 +61,18 @@ export class DepartmentService {
   async findOne(id: string) {
     const department = await this.prisma.departments.findUnique({
       where: { id },
+      include: {
+        positions: {
+          orderBy: { level: 'asc' },
+          select: {
+            id: true,
+            position_name: true,
+            level: true,
+            description: true,
+          },
+        },
+        _count: { select: { positions: true } },
+      },
     });
     if (!department) throw new NotFoundException('Department not found');
     return ResponseHelper.success(department);
