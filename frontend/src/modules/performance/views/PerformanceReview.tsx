@@ -17,12 +17,11 @@ import {
   Progress,
   Box,
   Divider,
-  RingProgress,
-  SimpleGrid,
   ScrollArea,
   Tooltip,
   NumberInput,
 } from '@mantine/core';
+import { useMantineColorScheme } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import {
   IconCheck,
@@ -88,14 +87,32 @@ function calcWeightedScore(
   return Math.round(total);
 }
 
-function getGradeLabel(score: number) {
-  if (score >= 90) return { label: 'Excellent', color: 'green' };
-  if (score >= 75) return { label: 'Good', color: 'blue' };
-  if (score >= 60) return { label: 'Average', color: 'yellow' };
+function calcRawAverage(
+  criteriaScores: CriteriaScore[],
+  criteria: IEvaluationCriteria[],
+): { raw: number; max: number } {
+  const scaleMax = criteria[0]?.max_score ?? 5;
+  if (criteria.length === 0) return { raw: 0, max: scaleMax };
+
+  const totalScore = criteria.reduce((sum, c) => {
+    const entry = criteriaScores.find((s) => s.criteria_id === c.id);
+    return sum + ((entry?.score ?? 0) / c.max_score) * scaleMax;
+  }, 0);
+
+  return {
+    raw: Math.round((totalScore / criteria.length) * 10) / 10,
+    max: scaleMax,
+  };
+}
+
+function getGradeLabel(score: number, max = 100) {
+  const pct = max > 0 ? (score / max) * 100 : score;
+  if (pct >= 90) return { label: 'Excellent', color: 'green' };
+  if (pct >= 75) return { label: 'Good', color: 'blue' };
+  if (pct >= 60) return { label: 'Average', color: 'yellow' };
   return { label: 'Below Average', color: 'red' };
 }
 
-// Pick the cycle matching the current calendar period (month or quarter)
 function pickActiveCycle(cycles: IReviewCycle[]): IReviewCycle | null {
   if (!cycles.length) return null;
 
@@ -128,6 +145,8 @@ export default function PerformanceReviewPage() {
   const { user } = useAuthStore();
   const { data: myEmpData } = useGetEmployeeByUserId(user?.id);
   const myEmployeeId = myEmpData?.data?.id;
+  const { colorScheme } = useMantineColorScheme();
+  const isDark = colorScheme === 'dark';
 
   const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
 
@@ -187,6 +206,11 @@ export default function PerformanceReviewPage() {
     if (!template?.criteria || form.values.criteriaScores.length === 0) return form.values.score;
     return calcWeightedScore(form.values.criteriaScores, template.criteria);
   }, [template, form.values.criteriaScores, form.values.score]);
+
+  const calculatedRaw = useMemo(() => {
+    if (!template?.criteria || form.values.criteriaScores.length === 0) return null;
+    return calcRawAverage(form.values.criteriaScores, template.criteria);
+  }, [template, form.values.criteriaScores]);
 
   const handleSelectEmployee = (empId: string) => {
     setSelectedEmployeeId(empId);
@@ -299,7 +323,10 @@ export default function PerformanceReviewPage() {
     label,
   }));
 
-  const grade = getGradeLabel(calculatedScore);
+  const grade = getGradeLabel(
+    calculatedRaw ? calculatedRaw.raw : calculatedScore,
+    calculatedRaw ? calculatedRaw.max : 100,
+  );
 
   return (
     <Stack gap="md">
@@ -405,7 +432,11 @@ export default function PerformanceReviewPage() {
                           py="sm"
                           style={{
                             cursor: 'pointer',
-                            background: isSelected ? 'var(--mantine-color-blue-0)' : 'transparent',
+                            background: isSelected
+                              ? isDark
+                                ? 'var(--mantine-color-blue-9)'
+                                : 'var(--mantine-color-blue-0)'
+                              : 'transparent',
                             borderLeft: isSelected
                               ? '3px solid var(--mantine-color-blue-5)'
                               : '3px solid transparent',
@@ -439,11 +470,27 @@ export default function PerformanceReviewPage() {
                               </Box>
                             </Group>
                             <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
-                              {r.total_score != null && done && (
-                                <Badge size="xs" variant="light" color="blue">
-                                  {r.total_score}
-                                </Badge>
-                              )}
+                              {done &&
+                                (() => {
+                                  const details = r.score_details;
+                                  let displayScore: string | number = '—';
+                                  if (details && details.length > 0) {
+                                    const scaleMax = details[0]?.max_score ?? 5;
+                                    const avg =
+                                      details.reduce(
+                                        (sum, sd) => sum + (sd.score / sd.max_score) * scaleMax,
+                                        0,
+                                      ) / details.length;
+                                    displayScore = `${Math.round(avg * 10) / 10}/${scaleMax}`;
+                                  } else if (r.total_score != null) {
+                                    displayScore = r.total_score;
+                                  }
+                                  return (
+                                    <Badge size="xs" variant="light" color="blue">
+                                      {displayScore}
+                                    </Badge>
+                                  );
+                                })()}
                               <IconChevronRight size={12} color="var(--mantine-color-dimmed)" />
                             </Group>
                           </Group>
@@ -491,91 +538,110 @@ export default function PerformanceReviewPage() {
             ) : (
               <Stack gap="md">
                 <Card withBorder p="md">
-                  <Group justify="space-between">
-                    <Group gap="sm">
-                      <ThemeIcon size="lg" variant="light" color="blue" radius="xl">
+                  <Group justify="space-between" align="flex-start" wrap="nowrap">
+                    {/* Left: employee info */}
+                    <Group gap="sm" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
+                      <ThemeIcon
+                        size="lg"
+                        variant="light"
+                        color="blue"
+                        radius="xl"
+                        style={{ flexShrink: 0 }}
+                      >
                         <IconUser size={18} />
                       </ThemeIcon>
-                      <Box>
-                        <Text fw={600}>{selectedEmpData?.full_name ?? '—'}</Text>
+                      <Box style={{ minWidth: 0 }}>
+                        <Group gap="xs" wrap="nowrap">
+                          <Text fw={600} lineClamp={1}>
+                            {selectedEmpData?.full_name ?? '—'}
+                          </Text>
+                          {existingReview && (
+                            <Badge
+                              color={REVIEW_STATUS_COLOR[existingReview.status] ?? 'gray'}
+                              variant="light"
+                              size="sm"
+                            >
+                              {REVIEW_STATUS_LABEL[existingReview.status]}
+                            </Badge>
+                          )}
+                          {existingReview?.employee?.contract_type && (
+                            <Badge variant="outline" color="gray" size="xs">
+                              {existingReview.employee.contract_type}
+                            </Badge>
+                          )}
+                        </Group>
                         <Text size="xs" c="dimmed">
                           {selectedEmpData?.position?.position_name} ·{' '}
                           {selectedEmpData?.position?.department?.department_name}
                         </Text>
                       </Box>
                     </Group>
-                    <Group gap="xs">
-                      {existingReview && (
-                        <Badge
-                          color={REVIEW_STATUS_COLOR[existingReview.status] ?? 'gray'}
-                          variant="light"
-                        >
-                          {REVIEW_STATUS_LABEL[existingReview.status]}
-                        </Badge>
-                      )}
-                      {existingReview?.employee?.contract_type && (
-                        <Badge variant="outline" color="gray" size="sm">
-                          {existingReview.employee.contract_type}
-                        </Badge>
-                      )}
-                    </Group>
-                  </Group>
-                </Card>
 
-                <Card withBorder p="md">
-                  <Group justify="space-between" align="center">
-                    <Group gap="md">
-                      <RingProgress
-                        size={72}
-                        thickness={6}
-                        roundCaps
-                        sections={[{ value: calculatedScore, color: grade.color }]}
-                        label={
-                          <Text ta="center" size="xs" fw={700}>
-                            {calculatedScore}
-                          </Text>
-                        }
-                      />
+                    <Divider orientation="vertical" mx="sm" />
+
+                    {/* Center: score ring */}
+                    <Group gap="sm" wrap="nowrap" style={{ flexShrink: 0 }}>
                       <Box>
                         <Text size="xs" c="dimmed">
-                          Overall Score
+                          {template?.criteria && template.criteria.length > 0
+                            ? 'Avg Score'
+                            : 'Score'}
                         </Text>
-                        <Text size="xl" fw={700} lh={1.2}>
-                          {calculatedScore} / 100
-                        </Text>
-                        <Badge size="sm" color={grade.color} variant="light" mt={4}>
+                        {calculatedRaw ? (
+                          <Group gap={2} align="baseline">
+                            <Text size="lg" fw={700} lh={1.2}>
+                              {calculatedRaw.raw}
+                            </Text>
+                            <Text size="xs" c="dimmed" fw={400}>
+                              / {calculatedRaw.max}
+                            </Text>
+                          </Group>
+                        ) : (
+                          <Text size="lg" fw={700} lh={1.2}>
+                            {calculatedScore}
+                            <Text span size="xs" c="dimmed" fw={400}>
+                              {' '}
+                              pts
+                            </Text>
+                          </Text>
+                        )}
+                        <Badge size="xs" color={grade.color} variant="light" mt={2}>
                           {grade.label}
                         </Badge>
                       </Box>
                     </Group>
 
                     {existingReview && (
-                      <SimpleGrid cols={3} spacing="xs">
-                        <Box ta="center">
-                          <Text size="lg" fw={700} c="blue">
-                            {existingReview.attendance_days ?? '—'}
-                          </Text>
-                          <Text size="xs" c="dimmed">
-                            Days Present
-                          </Text>
-                        </Box>
-                        <Box ta="center">
-                          <Text size="lg" fw={700} c="orange">
-                            {existingReview.late_count ?? '—'}
-                          </Text>
-                          <Text size="xs" c="dimmed">
-                            Late
-                          </Text>
-                        </Box>
-                        <Box ta="center">
-                          <Text size="lg" fw={700} c="red">
-                            {existingReview.absent_count ?? '—'}
-                          </Text>
-                          <Text size="xs" c="dimmed">
-                            Absent
-                          </Text>
-                        </Box>
-                      </SimpleGrid>
+                      <>
+                        <Divider orientation="vertical" mx="sm" />
+                        {/* Right: attendance stats */}
+                        <Group gap="lg" wrap="nowrap" style={{ flexShrink: 0 }}>
+                          <Box ta="center">
+                            <Text size="md" fw={700} c="blue">
+                              {existingReview.attendance_days ?? '—'}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              Present
+                            </Text>
+                          </Box>
+                          <Box ta="center">
+                            <Text size="md" fw={700} c="orange">
+                              {existingReview.late_count ?? '—'}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              Late
+                            </Text>
+                          </Box>
+                          <Box ta="center">
+                            <Text size="md" fw={700} c="red">
+                              {existingReview.absent_count ?? '—'}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              Absent
+                            </Text>
+                          </Box>
+                        </Group>
+                      </>
                     )}
                   </Group>
                 </Card>
@@ -704,10 +770,10 @@ export default function PerformanceReviewPage() {
                         style={{ width: 120 }}
                         rightSection={
                           <Text size="xs" c="dimmed">
-                            /100
+                            pts
                           </Text>
                         }
-                        rightSectionWidth={40}
+                        rightSectionWidth={36}
                         value={form.values.score}
                         onChange={(val) =>
                           form.setFieldValue('score', typeof val === 'number' ? val : 0)

@@ -297,9 +297,27 @@ export class PerformanceService {
     return ResponseHelper.success(safeReview);
   }
 
-  async getReviewsByCycle(cycleId: string) {
+  async getReviewsByCycle(
+    cycleId: string,
+    callerEmployeeId?: string,
+    isAdmin = true,
+  ) {
+    let departmentFilter: string | undefined;
+    if (!isAdmin && callerEmployeeId) {
+      const caller = await this.prisma.employees.findUnique({
+        where: { id: callerEmployeeId },
+        select: { position: { select: { department_id: true } } },
+      });
+      departmentFilter = caller?.position?.department_id ?? undefined;
+    }
+
     const reviews = await this.prisma.performanceReviews.findMany({
-      where: { cycle_id: cycleId },
+      where: {
+        cycle_id: cycleId,
+        ...(departmentFilter && {
+          employee: { position: { department_id: departmentFilter } },
+        }),
+      },
       include: {
         employee: { include: { position: { include: { department: true } } } },
         assignment: {

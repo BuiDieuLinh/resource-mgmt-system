@@ -122,8 +122,14 @@ export class PerformanceController {
 
   @Get('cycles/:id/reviews')
   @Roles(Role.ADMIN, Role.MANAGER)
-  getReviewsByCycle(@Param('id') id: string) {
-    return this.svc.getReviewsByCycle(id);
+  getReviewsByCycle(
+    @Param('id') id: string,
+    @CurrentUser() user: { employeeId: string; roles: string[] },
+  ) {
+    const isAdmin = user.roles.some((r) =>
+      [Role.ADMIN, Role.SUPER_ADMIN].includes(r as Role),
+    );
+    return this.svc.getReviewsByCycle(id, user.employeeId, isAdmin);
   }
 
   @Get('cycles/:id/my-review')
