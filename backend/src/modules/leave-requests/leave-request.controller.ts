@@ -38,12 +38,20 @@ export class LeaveRequestController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
   async findAll(
     @Query() query: QueryLeaveRequestDto,
     @CurrentUser() user: { employeeId: string; roles: string[] },
   ) {
-    if (user.roles.includes(Role.MANAGER) && !user.roles.includes(Role.ADMIN)) {
+    const isAdmin = user.roles.some((r) =>
+      [Role.ADMIN, Role.SUPER_ADMIN].includes(r as Role),
+    );
+    const isManager = user.roles.includes(Role.MANAGER);
+    const isEmployeeOnly = !isAdmin && !isManager;
+
+    if (isEmployeeOnly) {
+      query.employee_id = [user.employeeId];
+    } else if (isManager && !isAdmin) {
       const deptId = await this.leaveRequestService.getManagerDepartmentId(
         user.employeeId,
       );

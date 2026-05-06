@@ -110,14 +110,22 @@ export default function LeaveRequestsPage() {
   const requests = leaveData?.data ?? [];
   const total = leaveData?.count ?? 0;
 
-  const { data: empData } = useGetEmployees({ pageIndex: 1, pageSize: 999 });
+  const isEmployeeOnly = !isAdmin && !isManager;
+
+  const { data: empData } = useGetEmployees({
+    pageIndex: 1,
+    pageSize: 999,
+    ...(isEmployeeOnly ? { pageSize: 0 } : {}),
+  });
   const employeeOptions = useMemo(
     () =>
-      (empData?.data ?? []).map((e) => ({
-        value: e.id,
-        label: `${e.full_name} (${e.employee_code})`,
-      })),
-    [empData],
+      isEmployeeOnly
+        ? []
+        : (empData?.data ?? []).map((e) => ({
+            value: e.id,
+            label: `${e.full_name} (${e.employee_code})`,
+          })),
+    [empData, isEmployeeOnly],
   );
 
   const { data: deptData, isLoading: isDeptLoading } = useGetAllDepartments();
@@ -402,7 +410,27 @@ export default function LeaveRequestsPage() {
         title="Leave Requests"
         description="Manage employee leave requests"
         right={
-          <Group>
+          <Group gap="sm" wrap="wrap" align="center">
+            <Button leftSection={<IconPlus size={18} />} onClick={handleOpen}>
+              New Request
+            </Button>
+            <MonthNavigator value={selectedMonth} onChange={setSelectedMonth} />
+
+            {!isEmployeeOnly && (
+              <FilterTreeSelect
+                value={filterSelect}
+                onChange={(value) => {
+                  setFilterSelect(value);
+                  setPage(1);
+                }}
+                w={isAdmin ? 280 : 200}
+                employeeOptions={isManager && !isAdmin ? [] : employeeOptions}
+                departments={isManager && !isAdmin ? [] : (deptData?.data ?? [])}
+                statusOptions={LEAVE_STATUS_OPTIONS}
+                isLoading={_loading || isDeptLoading}
+              />
+            )}
+
             {someSelected && (
               <Group gap={6}>
                 <Text size="sm" c="dimmed">
@@ -427,28 +455,9 @@ export default function LeaveRequestsPage() {
                 </Button>
               </Group>
             )}
-            <Button leftSection={<IconPlus size={18} />} onClick={handleOpen}>
-              New Request
-            </Button>
           </Group>
         }
       />
-
-      <Group gap="sm" wrap="wrap" justify="flex-end">
-        <FilterTreeSelect
-          value={filterSelect}
-          onChange={(value) => {
-            setFilterSelect(value);
-            setPage(1);
-          }}
-          w={320}
-          employeeOptions={employeeOptions}
-          departments={deptData?.data ?? []}
-          statusOptions={LEAVE_STATUS_OPTIONS}
-          isLoading={_loading || isDeptLoading}
-        />
-        <MonthNavigator value={selectedMonth} onChange={setSelectedMonth} />
-      </Group>
 
       {isLoading ? (
         <TableSkeleton colWidths={[160, 100, 160, 200, 180, 90, 100]} />
