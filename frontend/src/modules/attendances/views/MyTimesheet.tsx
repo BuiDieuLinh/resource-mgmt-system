@@ -20,6 +20,7 @@ export default function MyTimesheetPage() {
   const [viewTab, setViewTab] = useState<string>('month');
   const [weekIdx, setWeekIdx] = useState(0);
   const [leaveModal, setLeaveModal] = useState<ILeaveRequest | null>(null);
+  const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
 
   const month = selectedMonth ? selectedMonth.getMonth() + 1 : now.getMonth() + 1;
   const year = selectedMonth ? selectedMonth.getFullYear() : now.getFullYear();
@@ -143,6 +144,8 @@ export default function MyTimesheetPage() {
             workSchedules={data?.work_schedules ?? []}
             workStartMin={workStartMin}
             workEndMin={workEndMin}
+            activePopoverId={activePopoverId}
+            onPopoverChange={setActivePopoverId}
           />
         ))}
       </Stack>
