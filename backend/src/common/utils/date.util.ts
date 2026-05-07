@@ -15,8 +15,8 @@ export function toLocalWorkDate(ts: Date): Date {
 export function getMonthRange(month: number, year: number) {
   const mm = String(month).padStart(2, '0');
   return {
-    gte: dayjs(`${year}-${mm}-01`).startOf('month').toDate(),
-    lte: dayjs(`${year}-${mm}-01`).endOf('month').toDate(),
+    gte: dayjs.utc(`${year}-${mm}-01`).startOf('month').toDate(),
+    lte: dayjs.utc(`${year}-${mm}-01`).endOf('month').toDate(),
   };
 }
 

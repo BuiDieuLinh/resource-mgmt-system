@@ -9,6 +9,7 @@ import {
   Badge,
   Menu,
   FileButton,
+  Tooltip,
 } from '@mantine/core';
 import {
   IconEdit,
@@ -263,13 +264,17 @@ export default function EmployeesPage() {
       align: 'center',
       render: (row) =>
         row.position ? (
-          <Badge variant="light" color="cyan" fw={400} size="sm">
-            {row.position.position_name}
-          </Badge>
+          <Tooltip label={row.position.position_name} position="top" withArrow>
+            <Badge variant="light" color="cyan" fw={400} size="sm">
+              {row.position.position_name}
+            </Badge>
+          </Tooltip>
         ) : (
-          <Badge variant="light" color="gray" fw={400}>
-            Unknown
-          </Badge>
+          <Tooltip label="Unknown Position" position="top" withArrow>
+            <Badge variant="light" color="gray" fw={400}>
+              Unknown
+            </Badge>
+          </Tooltip>
         ),
       sortable: true,
     },
@@ -300,14 +305,20 @@ export default function EmployeesPage() {
       title: 'Status',
       align: 'center',
       render: (row) => (
-        <Badge
-          variant="light"
-          color={row.status === 'active' ? 'green' : 'gray'}
-          fw={400}
-          size="sm"
+        <Tooltip
+          label={row.status === 'active' ? 'Active employee' : 'Inactive employee'}
+          position="top"
+          withArrow
         >
-          {row.status}
-        </Badge>
+          <Badge
+            variant="light"
+            color={row.status === 'active' ? 'green' : 'gray'}
+            fw={400}
+            size="sm"
+          >
+            {row.status}
+          </Badge>
+        </Tooltip>
       ),
     },
     {

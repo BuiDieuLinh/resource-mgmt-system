@@ -294,10 +294,13 @@ export class AttendancesService {
       ]);
 
     const holidayDates = new Set(
-      holidays.map((h) => h.holiday_date.toISOString().slice(0, 10)),
+      holidays.map((h) => {
+        const d = h.holiday_date;
+        return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+      }),
     );
     const holidayCount = holidays.filter((h) => {
-      const dow = h.holiday_date.getDay();
+      const dow = h.holiday_date.getUTCDay();
       return dow !== 0 && dow !== 6;
     }).length;
 
