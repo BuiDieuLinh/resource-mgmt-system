@@ -1,0 +1,88 @@
+name: Playwright Tests
+
+on:
+  push:
+    branches: [develop, master]
+    paths:
+      - 'frontend/tests/**'
+  pull_request:
+    branches: [develop, master]
+    paths:
+      - 'frontend/tests/**'
+  workflow_dispatch:
+    inputs:
+      module:
+        description: 'Module to test'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - attendance
+          - employees
+
+defaults:
+  run:
+    working-directory: frontend/tests
+
+jobs:
+  test:
+    name: Run Playwright Tests (${{ github.event.inputs.module || 'all' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/tests/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers (Chromium only)
+        run: npx playwright install chromium --with-deps
+
+      - name: Resolve test path
+        id: resolve
+        run: |
+          MODULE="${{ github.event.inputs.module || 'all' }}"
+          if [ "$MODULE" = "all" ]; then
+            echo "path=" >> $GITHUB_OUTPUT
+          else
+            echo "path=tests/$MODULE" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Playwright tests
+        run: |
+          if [ -z "${{ steps.resolve.outputs.path }}" ]; then
+            npx playwright test
+          else
+            npx playwright test ${{ steps.resolve.outputs.path }}
+          fi
+        env:
+          CI: true
+          BASE_URL: ${{ secrets.BASE_URL }}
+          AUTH_URL: ${{ secrets.AUTH_URL }}
+          API_URL: ${{ secrets.API_URL }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          MANAGER_EMAIL: ${{ secrets.MANAGER_EMAIL }}
+          MANAGER_PASSWORD: ${{ secrets.MANAGER_PASSWORD }}
+          EMPLOYEE_EMAIL: ${{ secrets.EMPLOYEE_EMAIL }}
+          EMPLOYEE_PASSWORD: ${{ secrets.EMPLOYEE_PASSWORD }}
+          OFFICE_LATITUDE: ${{ secrets.OFFICE_LATITUDE }}
+          OFFICE_LONGITUDE: ${{ secrets.OFFICE_LONGITUDE }}
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-${{ github.event.inputs.module || 'all' }}-${{ github.run_number }}
+          path: frontend/tests/playwright-report/
+          retention-days: 14
