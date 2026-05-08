@@ -179,7 +179,7 @@ export function DayRow({
   const checkOutId = record ? `${record.id}-checkout` : '';
 
   return (
-    <Card withBorder p="xs" radius="sm" bg={bgColor}>
+    <Card withBorder p="xs" radius="sm" bg={bgColor} data-testid="day-row-timesheet">
       <div
         style={{
           display: 'grid',
