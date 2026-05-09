@@ -5,7 +5,6 @@ import { Employee } from '../modules';
 import {
   employeeListUrl,
   employeeDepartmentsUrl,
-  employeePositionsUrl,
   employeeOrgChartUrl,
   employeeProfileUrl,
   attendanceUrl,
@@ -22,7 +21,6 @@ import Error403 from '../components/ErrorPage/Error403';
 import ErrorTokenExpired from '../components/ErrorPage/ErrorTokenExpired';
 import OrgChart from '@/modules/employees/views/OrgChart';
 import Departments from '@/modules/departments/views/Departments';
-import Positions from '@/modules/positions/views/Positions';
 import EmployeeProfile from '@/modules/employees/views/EmployeeProfile';
 import Attendance from '@/modules/attendances/views/Attendances';
 import AttendanceDetail from '@/modules/attendances/views/AttendanceDetail';
@@ -57,7 +55,6 @@ export const router = createBrowserRouter([
           { path: '', element: <Home /> },
           { path: employeeListUrl, element: <Employee /> },
           { path: employeeDepartmentsUrl, element: <Departments /> },
-          { path: employeePositionsUrl, element: <Positions /> },
           { path: employeeOrgChartUrl, element: <OrgChart /> },
           { path: employeeProfileUrl, element: <EmployeeProfile /> },
           { path: attendanceUrl, element: <Attendance /> },

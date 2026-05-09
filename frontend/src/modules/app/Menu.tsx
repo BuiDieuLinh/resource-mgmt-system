@@ -2,7 +2,6 @@ import { EMPLOYEE_ROLE } from '@/constant';
 import {
   employeeListUrl,
   employeeDepartmentsUrl,
-  employeePositionsUrl,
   attendanceUrl,
   leaveRequestUrl,
   settingsUrl,
@@ -18,7 +17,6 @@ import {
   IconSettings,
   IconTimelineEvent,
   IconBuilding,
-  IconBriefcase,
   IconCalendarOff,
   IconLogin,
   IconClock,
@@ -55,12 +53,6 @@ export const MENUS: AppMenu[] = [
         label: 'Departments',
         path: employeeDepartmentsUrl,
         icon: IconBuilding,
-        roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN],
-      },
-      {
-        label: 'Positions',
-        path: employeePositionsUrl,
-        icon: IconBriefcase,
         roles: [EMPLOYEE_ROLE.SUPER_ADMIN, EMPLOYEE_ROLE.ADMIN],
       },
     ],
