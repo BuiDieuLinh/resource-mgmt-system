@@ -116,16 +116,6 @@ export default function CycleDetailPage() {
     }
   };
 
-  const handlePublish = async () => {
-    const nid = notify.loading('Publishing...');
-    try {
-      await publishReviews.mutateAsync(id!);
-      notify.success(nid, { message: 'Reviews published' });
-    } catch (e: any) {
-      notify.error(nid, { message: e?.response?.data?.message || 'Failed to publish' });
-    }
-  };
-
   const employeeOptions = reviews.map((r: any) => ({
     value: r.employee_id,
     label: r.employee?.full_name ?? r.employee_id,
