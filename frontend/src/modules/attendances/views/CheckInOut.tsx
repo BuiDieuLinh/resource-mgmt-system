@@ -73,12 +73,13 @@ export default function CheckInOutPage() {
   const employee = empData?.data;
   const { data: policyData } = useGetActivePolicy();
   const policy = policyData?.data;
-  const schedule = employee?.work_schedules?.[0];
+  const schedule =
+    employee?.work_schedules?.find((s) => s.day_of_week === now.getDay()) ??
+    employee?.work_schedules?.[0];
 
   const { data: todayData, refetch: refetchToday } = useGetTodayAttendance(employee?.id);
   const todayRecord = todayData?.data;
 
-  // Derive state from today's record
   const hasCheckedIn = !!todayRecord?.check_in_time;
   const hasCheckedOut = !!todayRecord?.check_out_time;
   const checkInTime = todayRecord?.check_in_time ? new Date(todayRecord.check_in_time) : null;
@@ -113,6 +114,10 @@ export default function CheckInOutPage() {
       : null;
   const withinRange = distanceToOffice != null ? distanceToOffice <= maxDist : true;
   const canAct = !(!withinRange && hasOfficeLocation);
+
+  const workEnd = schedule?.end_time ?? 1020;
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const isPastWorkEnd = schedule != null && !hasCheckedIn && nowMin > workEnd;
 
   const handleCheckIn = async () => {
     if (!employee) return;
@@ -166,8 +171,6 @@ export default function CheckInOutPage() {
     year: 'numeric',
   });
   const workStart = schedule?.start_time ?? 480;
-  const workEnd = schedule?.end_time ?? 1020;
-  const nowMin = now.getHours() * 60 + now.getMinutes();
   const workProgress = Math.min(
     100,
     Math.max(0, ((nowMin - workStart) / (workEnd - workStart)) * 100),
@@ -321,14 +324,15 @@ export default function CheckInOutPage() {
                     size="md"
                     radius="xl"
                     leftSection={<IconLogin size={18} />}
-                    disabled={hasCheckedIn || checkInMutation.isPending || !canAct}
+                    disabled={hasCheckedIn || checkInMutation.isPending || !canAct || isPastWorkEnd}
                     loading={checkInMutation.isPending}
                     onClick={handleCheckIn}
                     style={{
-                      background: hasCheckedIn
-                        ? 'rgba(255,255,255,0.08)'
-                        : 'rgba(255,255,255,0.95)',
-                      color: hasCheckedIn ? 'rgba(255,255,255,0.3)' : '#3b82f6',
+                      background:
+                        hasCheckedIn || isPastWorkEnd
+                          ? 'rgba(255,255,255,0.08)'
+                          : 'rgba(255,255,255,0.95)',
+                      color: hasCheckedIn || isPastWorkEnd ? 'rgba(255,255,255,0.3)' : '#3b82f6',
                       border: 'none',
                       fontWeight: 700,
                     }}
@@ -360,6 +364,11 @@ export default function CheckInOutPage() {
                 {hasOfficeLocation && !withinRange && position && (
                   <Text size="xs" ta="center" mt="xs" style={{ color: 'rgba(255,255,255,0.55)' }}>
                     Too far from office — move closer to check in
+                  </Text>
+                )}
+                {isPastWorkEnd && (
+                  <Text size="xs" ta="center" mt="xs" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                    Check-in unavailable — work hours ended at {minutesToTime(workEnd)}
                   </Text>
                 )}
               </Box>

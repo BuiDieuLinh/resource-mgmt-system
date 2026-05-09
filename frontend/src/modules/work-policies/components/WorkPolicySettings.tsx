@@ -101,6 +101,10 @@ export function WorkPolicySettings() {
             const flexText = p.is_flexible_enabled
               ? `+${p.flexible_start ?? 0} / -${p.flexible_end ?? 0} min`
               : 'Disabled';
+            const geoText =
+              p.office_latitude != null && p.office_longitude != null
+                ? `GPS ≤${p.max_distance_meters ?? 100}m`
+                : 'No geo-fence';
 
             return (
               <SettingRow
@@ -108,7 +112,7 @@ export function WorkPolicySettings() {
                 icon={<IconShieldCheck size={16} />}
                 color={active ? 'green' : 'gray'}
                 title={`${formatDate(p.effective_from)} – ${p.effective_to ? formatDate(p.effective_to) : 'ongoing'}`}
-                description={`Break: ${breakText}  ·  Flex: ${flexText}`}
+                description={`Break: ${breakText}  ·  Flex: ${flexText}  ·  ${geoText}`}
                 noDivider={i === policies.length - 1}
                 right={
                   <Group gap={6} wrap="nowrap">

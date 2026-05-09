@@ -63,6 +63,13 @@ export class AttendancesService {
     if (!schedule)
       throw new BadRequestException('No work schedule found for employee');
 
+    const checkInMinutes = dateToMinutes(timestamp);
+    if (checkInMinutes > schedule.end_time) {
+      throw new BadRequestException(
+        `Check-in not allowed after work hours end (${schedule.end_time} min). Current time: ${checkInMinutes} min.`,
+      );
+    }
+
     const policyRes = await this.workPolicyService.getActive(timestamp);
     const policy = policyRes.data;
 
@@ -142,7 +149,6 @@ export class AttendancesService {
       },
     });
 
-    const checkInMinutes = dateToMinutes(timestamp);
     const late = Math.max(0, checkInMinutes - schedule.start_time);
 
     await this.prisma.attendances.update({

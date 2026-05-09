@@ -145,6 +145,10 @@ model WorkPolicies {
   break_start Int?
   break_end   Int?
 
+  office_latitude     Decimal? @db.Decimal(10, 6)
+  office_longitude    Decimal? @db.Decimal(10, 6)
+  max_distance_meters Int?
+
   effective_from DateTime
   effective_to   DateTime?
 
