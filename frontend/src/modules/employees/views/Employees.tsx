@@ -325,6 +325,7 @@ export default function EmployeesPage() {
       key: 'action',
       title: 'Actions',
       align: 'center',
+      fixed: 'right',
       render: (row) => (
         <Group gap="xs" justify="center" wrap="nowrap">
           <ActionIcon

@@ -24,6 +24,7 @@ import { useParams } from 'react-router-dom';
 import { IconTrophy, IconPlus, IconTrash, IconStar, IconCheck, IconEye } from '@tabler/icons-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { BaseTable, type TableColumn } from '@/components/BaseTable/BaseTable';
+import { useConfirm } from '@/hooks/useConfirm';
 import {
   useGetCycle,
   useGetReviewsByCycle,
@@ -58,6 +59,8 @@ export default function CycleDetailPage() {
   const [awardModal, setAwardModal] = useState(false);
   const [previewAwards, setPreviewAwards] = useState<IAward[]>([]);
 
+  const { confirm, ConfirmComponent } = useConfirm();
+
   const form = useForm({
     initialValues: {
       employee_id: '',
@@ -81,6 +84,35 @@ export default function CycleDetailPage() {
       form.reset();
     } catch (e: any) {
       notify.error(nid, { message: e?.response?.data?.message || 'Failed to create award' });
+    }
+  };
+
+  const handleDeleteAward = (id: string, employeeName: string, title: string) => {
+    confirm({
+      title: 'Delete Award',
+      message: `Are you sure you want to delete the award "${title}" for ${employeeName}? This action cannot be undone.`,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      type: 'delete',
+      onConfirm: async () => {
+        const notiId = notify.loading('Deleting award...');
+        try {
+          await deleteAward.mutateAsync(id);
+          notify.success(notiId, { message: 'Award deleted successfully' });
+        } catch (e: any) {
+          notify.error(notiId, { message: e?.response?.data?.message || 'Failed to delete award' });
+        }
+      },
+    });
+  };
+
+  const handlePublish = async () => {
+    const nid = notify.loading('Publishing...');
+    try {
+      await publishReviews.mutateAsync(id!);
+      notify.success(nid, { message: 'Reviews published' });
+    } catch (e: any) {
+      notify.error(nid, { message: e?.response?.data?.message || 'Failed to publish' });
     }
   };
 
@@ -235,7 +267,7 @@ export default function CycleDetailPage() {
               variant="subtle"
               color="red"
               size="sm"
-              onClick={() => deleteAward.mutate(r.id)}
+              onClick={() => handleDeleteAward(r.id, r.employee?.full_name, r.title)}
             >
               <IconTrash size={16} />
             </ActionIcon>
@@ -365,6 +397,8 @@ export default function CycleDetailPage() {
           </Stack>
         </form>
       </Modal>
+
+      <ConfirmComponent />
     </Stack>
   );
 }

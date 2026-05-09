@@ -39,6 +39,7 @@ import {
 } from '@/constant';
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useConfirm } from '@/hooks/useConfirm';
 import { useGetLeaveRequests } from '../api/get-leave-requests';
 import { useCreateLeaveRequest } from '../api/create-leave-request';
 import { useUpdateLeaveStatus } from '../api/update-leave-status';
@@ -68,6 +69,8 @@ export default function LeaveRequestsPage() {
   const [editRequest, setEditRequest] = useState<ILeaveRequest | null>(null);
   const isAdmin = useHasRole(EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.SUPER_ADMIN);
   const isManager = useHasRole(EMPLOYEE_ROLE.MANAGER);
+
+  const { confirm, ConfirmComponent } = useConfirm();
 
   const { user } = useAuth();
   const { data: currentEmpData } = useGetEmployeeByUserId(user?.id);
@@ -219,14 +222,23 @@ export default function LeaveRequestsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    const notiId = notify.loading('Deleting...');
-    try {
-      await deleteMutation.mutateAsync(id);
-      notify.success(notiId, { message: 'Deleted' });
-    } catch (e: any) {
-      notify.error(notiId, { message: e?.response?.data?.message || 'Delete failed' });
-    }
+  const handleDelete = (id: string) => {
+    confirm({
+      title: 'Delete Leave Request',
+      message: 'Are you sure you want to delete this leave request? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      type: 'delete',
+      onConfirm: async () => {
+        const notiId = notify.loading('Deleting...');
+        try {
+          await deleteMutation.mutateAsync(id);
+          notify.success(notiId, { message: 'Deleted' });
+        } catch (e: any) {
+          notify.error(notiId, { message: e?.response?.data?.message || 'Delete failed' });
+        }
+      },
+    });
   };
 
   const columns: TableColumn<ILeaveRequest>[] = [
@@ -563,6 +575,8 @@ export default function LeaveRequestsPage() {
           </Group>
         </Stack>
       </Modal>
+
+      <ConfirmComponent />
     </Stack>
   );
 }

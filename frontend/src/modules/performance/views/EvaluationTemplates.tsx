@@ -24,6 +24,7 @@ import {
 import { SettingsCard, SectionLabel } from '@/components/SettingsUI';
 import { SettingRowSkeleton } from '@/components/Skeleton/SettingRowSkeleton';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useConfirm } from '@/hooks/useConfirm';
 import { useGetTemplates, useCreateTemplate, useUpdateTemplate, useToggleTemplate } from '../api';
 import { CreateTemplateModal } from '../components/CreateTemplateModal';
 import { notify } from '@/components/Notification';
@@ -38,6 +39,8 @@ export default function EvaluationTemplatesPage() {
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [editingTemplate, setEditingTemplate] = useState<IEvaluationTemplate | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const { confirm, ConfirmComponent } = useConfirm();
 
   const createTemplate = useCreateTemplate();
   const updateTemplate = useUpdateTemplate();
@@ -94,14 +97,25 @@ export default function EvaluationTemplatesPage() {
     }
   };
 
-  const handleToggle = async (id: string) => {
-    const nid = notify.loading('Updating...');
-    try {
-      await toggleTemplate.mutateAsync(id);
-      notify.success(nid, { message: 'Status updated' });
-    } catch (e: any) {
-      notify.error(nid, { message: e?.response?.data?.message || 'Failed to update' });
-    }
+  const handleToggle = (id: string, isActive: boolean, title: string) => {
+    confirm({
+      title: isActive ? 'Deactivate Template' : 'Activate Template',
+      message: isActive
+        ? `Are you sure you want to deactivate template "${title}"? It will no longer be available for new review cycles.`
+        : `Are you sure you want to activate template "${title}"?`,
+      confirmLabel: isActive ? 'Deactivate' : 'Activate',
+      cancelLabel: 'Cancel',
+      type: isActive ? 'warning' : 'info',
+      onConfirm: async () => {
+        const nid = notify.loading('Updating...');
+        try {
+          await toggleTemplate.mutateAsync(id);
+          notify.success(nid, { message: 'Status updated' });
+        } catch (e: any) {
+          notify.error(nid, { message: e?.response?.data?.message || 'Failed to update' });
+        }
+      },
+    });
   };
 
   const toggleExpand = (id: string) => {
@@ -238,7 +252,7 @@ export default function EvaluationTemplatesPage() {
                         color={t.is_active ? 'red' : 'green'}
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleToggle(t.id);
+                          handleToggle(t.id, t.is_active, t.title);
                         }}
                       >
                         <IconEyeOff size={15} />
@@ -347,6 +361,8 @@ export default function EvaluationTemplatesPage() {
         mode={modalMode}
         initialValues={editingTemplate}
       />
+
+      <ConfirmComponent />
     </Stack>
   );
 }

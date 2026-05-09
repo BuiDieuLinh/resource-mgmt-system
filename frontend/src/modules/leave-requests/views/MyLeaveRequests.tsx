@@ -8,6 +8,7 @@ import ErrorState from '@/components/ErrorState/ErrorState';
 import { formatDate, LEAVE_TYPE_LABEL, LEAVE_STATUS_LABEL, minutesToTime } from '@/constant';
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useConfirm } from '@/hooks/useConfirm';
 import { useGetMyLeaveRequests } from '../api/get-my-leave-requests';
 import { useCreateLeaveRequest } from '../api/create-leave-request';
 import { useDeleteLeaveRequest } from '../api/delete-leave-request';
@@ -24,6 +25,8 @@ export default function MyLeaveRequestsPage() {
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [opened, setOpened] = useState(false);
   const [editRequest, setEditRequest] = useState<ILeaveRequest | null>(null);
+
+  const { confirm, ConfirmComponent } = useConfirm();
 
   const {
     data,
@@ -61,14 +64,23 @@ export default function MyLeaveRequestsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    const notiId = notify.loading('Deleting...');
-    try {
-      await deleteMutation.mutateAsync(id);
-      notify.success(notiId, { message: 'Deleted' });
-    } catch (e: any) {
-      notify.error(notiId, { message: e?.response?.data?.message || 'Delete failed' });
-    }
+  const handleDelete = (id: string) => {
+    confirm({
+      title: 'Delete Leave Request',
+      message: 'Are you sure you want to delete this leave request? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      type: 'delete',
+      onConfirm: async () => {
+        const notiId = notify.loading('Deleting...');
+        try {
+          await deleteMutation.mutateAsync(id);
+          notify.success(notiId, { message: 'Deleted' });
+        } catch (e: any) {
+          notify.error(notiId, { message: e?.response?.data?.message || 'Delete failed' });
+        }
+      },
+    });
   };
 
   const columns: TableColumn<ILeaveRequest>[] = [
@@ -185,6 +197,8 @@ export default function MyLeaveRequestsPage() {
         onSubmit={handleSubmit}
         loading={createMutation.isPending}
       />
+
+      <ConfirmComponent />
     </Stack>
   );
 }

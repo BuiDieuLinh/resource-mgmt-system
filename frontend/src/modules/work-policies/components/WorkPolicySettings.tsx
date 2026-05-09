@@ -6,6 +6,7 @@ import { formatDate } from '@/constant';
 import { SettingRow, SettingsCard, SectionLabel } from '@/components/SettingsUI';
 import { SettingRowSkeleton } from '@/components/Skeleton/SettingRowSkeleton';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useConfirm } from '@/hooks/useConfirm';
 import { useGetWorkPolicies } from '../api/get-work-policies';
 import { useCreateWorkPolicy } from '../api/create-work-policy';
 import { useUpdateWorkPolicy } from '../api/update-work-policy';
@@ -32,14 +33,25 @@ export function WorkPolicySettings() {
   const policies = data?.data ?? [];
   const isEdit = Boolean(editPolicy);
 
-  const handleDelete = async (id: string) => {
-    const notiId = notify.loading('Deleting...');
-    try {
-      await deleteMutation.mutateAsync(id);
-      notify.success(notiId, { message: 'Policy deleted' });
-    } catch (e: any) {
-      notify.error(notiId, { message: e?.response?.data?.message || 'Delete failed' });
-    }
+  const { confirm, ConfirmComponent } = useConfirm();
+
+  const handleDelete = (id: string, dateRange: string) => {
+    confirm({
+      title: 'Delete Work Policy',
+      message: `Are you sure you want to delete the work policy for "${dateRange}"? This action cannot be undone.`,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      type: 'delete',
+      onConfirm: async () => {
+        const notiId = notify.loading('Deleting...');
+        try {
+          await deleteMutation.mutateAsync(id);
+          notify.success(notiId, { message: 'Policy deleted' });
+        } catch (e: any) {
+          notify.error(notiId, { message: e?.response?.data?.message || 'Delete failed' });
+        }
+      },
+    });
   };
 
   const handleSubmit = async (payload: IWorkPolicyPayload, id?: string) => {
@@ -105,13 +117,14 @@ export function WorkPolicySettings() {
               p.office_latitude != null && p.office_longitude != null
                 ? `GPS ≤${p.max_distance_meters ?? 100}m`
                 : 'No geo-fence';
+            const dateRange = `${formatDate(p.effective_from)} – ${p.effective_to ? formatDate(p.effective_to) : 'ongoing'}`;
 
             return (
               <SettingRow
                 key={p.id}
                 icon={<IconShieldCheck size={16} />}
                 color={active ? 'green' : 'gray'}
-                title={`${formatDate(p.effective_from)} – ${p.effective_to ? formatDate(p.effective_to) : 'ongoing'}`}
+                title={dateRange}
                 description={`Break: ${breakText}  ·  Flex: ${flexText}  ·  ${geoText}`}
                 noDivider={i === policies.length - 1}
                 right={
@@ -140,7 +153,7 @@ export function WorkPolicySettings() {
                         color="red"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDelete(p.id);
+                          handleDelete(p.id, dateRange);
                         }}
                       >
                         <IconTrash size={15} />
@@ -165,6 +178,8 @@ export function WorkPolicySettings() {
         onSubmit={handleSubmit}
         loading={createMutation.isPending || updateMutation.isPending}
       />
+
+      <ConfirmComponent />
     </Stack>
   );
 }

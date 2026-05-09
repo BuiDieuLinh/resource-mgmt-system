@@ -12,6 +12,7 @@ import { formatDate } from '@/constant';
 import { SettingRow, SettingsCard, SectionLabel } from '@/components/SettingsUI';
 import { SettingRowSkeleton } from '@/components/Skeleton/SettingRowSkeleton';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useConfirm } from '@/hooks/useConfirm';
 import { useGetHolidays } from '../api/get-holidays';
 import { useCreateHoliday } from '../api/create-holiday';
 import { useUpdateHoliday } from '../api/update-holiday';
@@ -31,6 +32,8 @@ export function HolidaySettings() {
   const deleteMutation = useDeleteHoliday();
   const isEdit = Boolean(editHoliday);
 
+  const { confirm, ConfirmComponent } = useConfirm();
+
   const yearOptions = Array.from({ length: 5 }, (_, i) => {
     const y = String(new Date().getFullYear() - 1 + i);
     return { value: y, label: y };
@@ -49,14 +52,23 @@ export function HolidaySettings() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    const notiId = notify.loading('Deleting...');
-    try {
-      await deleteMutation.mutateAsync(id);
-      notify.success(notiId, { message: 'Holiday deleted' });
-    } catch (e: any) {
-      notify.error(notiId, { message: e?.response?.data?.message || 'Delete failed' });
-    }
+  const handleDelete = (id: string, name: string) => {
+    confirm({
+      title: 'Delete Holiday',
+      message: `Are you sure you want to delete holiday "${name}"? This action cannot be undone.`,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      type: 'delete',
+      onConfirm: async () => {
+        const notiId = notify.loading('Deleting...');
+        try {
+          await deleteMutation.mutateAsync(id);
+          notify.success(notiId, { message: 'Holiday deleted' });
+        } catch (e: any) {
+          notify.error(notiId, { message: e?.response?.data?.message || 'Delete failed' });
+        }
+      },
+    });
   };
 
   if (isLoading)
@@ -140,7 +152,7 @@ export function HolidaySettings() {
                       color="red"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDelete(h.id);
+                        handleDelete(h.id, h.name);
                       }}
                     >
                       <IconTrash size={15} />
@@ -164,6 +176,8 @@ export function HolidaySettings() {
         onSubmit={handleSubmit}
         loading={createMutation.isPending || updateMutation.isPending}
       />
+
+      <ConfirmComponent />
     </Stack>
   );
 }

@@ -19,6 +19,7 @@ import ErrorState from '@/components/ErrorState/ErrorState';
 import { useGetDepartments } from '../../departments/api/get-departments';
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useConfirm } from '@/hooks/useConfirm';
 import { useCreateDepartment } from '../api/create-department';
 import { useUpdateDepartment } from '../api/update-department';
 import { useCreatePosition } from '@/modules/positions/api/create-position';
@@ -54,6 +55,7 @@ export default function DepartmentsPage() {
     useState<IDepartment | null>(null);
   const [selectedPosition, setSelectedPosition] = useState<IPosition | null>(null);
 
+  const { confirm, ConfirmComponent } = useConfirm();
   const isEdit = Boolean(editDepartment);
 
   const {
@@ -126,15 +128,24 @@ export default function DepartmentsPage() {
     }
   };
 
-  const handleDeletePosition = async (id: string) => {
-    const notiId = notify.loading('Deleting position...');
-    try {
-      await deletePositionMutation.mutateAsync(id);
-      notify.success(notiId, { message: 'Position deleted successfully' });
-      refetch();
-    } catch (e: any) {
-      notify.error(notiId, { message: e?.response?.data?.message || 'Delete failed' });
-    }
+  const handleDeletePosition = (id: string, positionName: string) => {
+    confirm({
+      title: 'Delete Position',
+      message: `Are you sure you want to delete position "${positionName}"? This action cannot be undone.`,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      type: 'delete',
+      onConfirm: async () => {
+        const notiId = notify.loading('Deleting position...');
+        try {
+          await deletePositionMutation.mutateAsync(id);
+          notify.success(notiId, { message: 'Position deleted successfully' });
+          refetch();
+        } catch (e: any) {
+          notify.error(notiId, { message: e?.response?.data?.message || 'Delete failed' });
+        }
+      },
+    });
   };
 
   const handleSearch = (value: string) => {
@@ -304,8 +315,7 @@ export default function DepartmentsPage() {
                 size="sm"
                 variant="subtle"
                 color="red"
-                loading={deletePositionMutation.isPending}
-                onClick={() => handleDeletePosition(row.id)}
+                onClick={() => handleDeletePosition(row.id, row.position_name)}
               >
                 <IconTrash size={14} />
               </ActionIcon>
@@ -439,6 +449,8 @@ export default function DepartmentsPage() {
         onSubmit={handleEditPosition}
         loading={updatePositionMutation.isPending}
       />
+
+      <ConfirmComponent />
     </Stack>
   );
 }
