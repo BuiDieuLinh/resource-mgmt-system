@@ -424,7 +424,7 @@ export default function LeaveRequestsPage() {
         right={
           <Group gap="sm" wrap="wrap" align="center">
             <Button leftSection={<IconPlus size={18} />} onClick={handleOpen}>
-              New Request
+              Add Leave Request
             </Button>
             <MonthNavigator value={selectedMonth} onChange={setSelectedMonth} />
 

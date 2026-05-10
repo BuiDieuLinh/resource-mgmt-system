@@ -36,6 +36,7 @@ import {
 import { AwardRevealPage } from '../components/AwardRevealPage';
 import { notify } from '@/components/Notification';
 import type { IAward } from '../types';
+import { performanceCyclesUrl } from '@/routes/url';
 
 const RANK_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
 const CATEGORY_LABEL: Record<string, string> = {
@@ -281,7 +282,7 @@ export default function CycleDetailPage() {
         title={cycle.title}
         description={`Announce date: ${new Date(cycle.announce_date).toLocaleDateString('en-GB')}`}
         breadcrumbs={[
-          { label: 'Review Cycles', path: '/performance/cycles' },
+          { label: 'Review Cycles', path: performanceCyclesUrl },
           { label: cycle.title },
         ]}
         right={
@@ -359,6 +360,7 @@ export default function CycleDetailPage() {
               data={employeeOptions}
               searchable
               required
+              checkIconPosition="right"
               {...form.getInputProps('employee_id')}
             />
             <Select
@@ -367,6 +369,7 @@ export default function CycleDetailPage() {
                 { value: 'top_employee', label: 'Top Employee' },
                 { value: 'top_manager', label: 'Top Manager' },
               ]}
+              checkIconPosition="right"
               {...form.getInputProps('category')}
             />
             <NumberInput label="Rank" min={1} max={3} {...form.getInputProps('rank')} />

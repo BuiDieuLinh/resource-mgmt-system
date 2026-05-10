@@ -164,6 +164,7 @@ export default function PerformanceCyclesPage() {
                 value={filterType}
                 onChange={setFilterType}
                 clearable
+                checkIconPosition="right"
                 style={{ width: 180 }}
               />
               <Select
@@ -172,6 +173,7 @@ export default function PerformanceCyclesPage() {
                 value={filterYear}
                 onChange={setFilterYear}
                 clearable
+                checkIconPosition="right"
                 style={{ width: 150 }}
               />
               {(filterType || filterYear) && (

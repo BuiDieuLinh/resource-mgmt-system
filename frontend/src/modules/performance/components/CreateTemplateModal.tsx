@@ -132,6 +132,7 @@ export function CreateTemplateModal({
             placeholder="Select contract types (leave empty for all)"
             data={CONTRACT_TYPE_OPTIONS}
             clearable
+            checkIconPosition="right"
             {...form.getInputProps('apply_to')}
           />
 

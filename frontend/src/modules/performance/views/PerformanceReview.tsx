@@ -350,6 +350,7 @@ export default function PerformanceReviewPage() {
                 setSelectedEmployeeId(null);
                 form.reset();
               }}
+              checkIconPosition="right"
               style={{ width: 280 }}
               placeholder="Select cycle..."
             />

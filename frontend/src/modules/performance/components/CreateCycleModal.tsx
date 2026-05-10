@@ -235,7 +235,7 @@ export function CreateCycleModal({
   const isWeightValid = totalWeight === 100;
 
   return (
-    <Modal opened={opened} onClose={handleClose} title="Create Review Cycle" size="xl" centered>
+    <Modal opened={opened} onClose={handleClose} title="CREATE REVIEW CYCLE" size="xl" centered>
       <Stepper active={activeStep} onStepClick={setActiveStep} allowNextStepsSelect={false}>
         {/* Step 1: Basic Info */}
         <Stepper.Step label="Basic Info" description="Cycle details">
@@ -252,6 +252,7 @@ export function CreateCycleModal({
                 { value: 'monthly', label: 'Monthly' },
                 { value: 'quarterly', label: 'Quarterly' },
               ]}
+              checkIconPosition="right"
               {...form.getInputProps('period_type')}
             />
             <Group grow>
@@ -283,6 +284,7 @@ export function CreateCycleModal({
               clearable
               searchable
               description="Choose a template to define evaluation criteria"
+              checkIconPosition="right"
               value={form.values.template_id}
               onChange={handleTemplateChange}
             />
@@ -350,6 +352,7 @@ export function CreateCycleModal({
                         size="xs"
                         style={{ width: 95 }}
                         styles={{ input: { height: 32 } }}
+                        checkIconPosition="right"
                         {...form.getInputProps(`criteria.${index}.score_type`)}
                       />
                       {form.values.criteria.length > 1 && (
@@ -596,6 +599,7 @@ export function CreateCycleModal({
                         data={employeeOptions}
                         searchable
                         style={{ flex: 1 }}
+                        checkIconPosition="right"
                         {...form.getInputProps(`assignments.${index}.reviewer_id`)}
                       />
                       <ActionIcon

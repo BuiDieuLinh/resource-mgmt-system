@@ -24,10 +24,10 @@ import {
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { BaseTable, type TableColumn } from '../../../components/BaseTable/BaseTable';
-import { PageHeader } from '../../../components/PageHeader/PageHeader';
-import { TablePagination } from '../../../components/Pagination';
-import ErrorState from '../../../components/ErrorState/ErrorState';
+import { BaseTable, type TableColumn } from '@/components/BaseTable/BaseTable';
+import { PageHeader } from '@/components/PageHeader/PageHeader';
+import { TablePagination } from '@/components/Pagination';
+import ErrorState from '@/components/ErrorState/ErrorState';
 
 import type { IEmployee, EmployeeFormValues } from '../types';
 import { EmployeeFormModal } from '../components/EmployeeFormModal';
@@ -38,7 +38,7 @@ import { useUpdateEmployee } from '../api/update-employee';
 import { useImportEmployees } from '../api/import-employees';
 import { usePreviewImport, type PreviewEmployee } from '../api/preview-import';
 import { exportEmployees } from '../api/export-employees';
-import { notify } from '../../../components/Notification';
+import { notify } from '@/components/Notification';
 import { mapEmployeeToFormValues } from '../utils/employee-mapper';
 import {
   EMPLOYEE_ROLE,
@@ -46,9 +46,9 @@ import {
   CONTRACT_TYPE_COLOR,
   CONTRACT_TYPE_LABEL,
   type ContractType,
-} from '../../../constant';
-import { TableSkeleton } from '../../../components/Skeleton/TableSkeleton';
-import { useDelayedLoading } from '../../../hooks/useDelayedLoading';
+} from '@/constant';
+import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { normalizeString } from '../utils/search';
 import { useHasRole } from '@/hooks/useHasRole';
 

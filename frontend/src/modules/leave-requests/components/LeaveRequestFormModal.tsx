@@ -296,7 +296,7 @@ export function LeaveRequestFormModal({
       onClose={onClose}
       title={
         <Text size="xl" fw={700} c={PRIMARY_COLOR}>
-          {mode === 'edit' ? 'EDIT LEAVE REQUEST' : 'NEW LEAVE REQUEST'}
+          {mode === 'edit' ? 'EDIT LEAVE REQUEST' : 'ADD LEAVE REQUEST'}
         </Text>
       }
       centered

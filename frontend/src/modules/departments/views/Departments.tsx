@@ -275,6 +275,7 @@ export default function DepartmentsPage() {
           <Badge
             size="sm"
             variant="light"
+            fw={500}
             color={LEVEL_COLOR[row.level as LevelPosition] ?? 'gray'}
           >
             {LEVEL_LABEL[row.level as LevelPosition] ?? row.level}

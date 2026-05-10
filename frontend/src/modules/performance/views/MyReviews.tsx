@@ -96,7 +96,7 @@ function CycleReviewRow({ cycle }: { cycle: IReviewCycle }) {
                   {new Date(cycle.announce_date).toLocaleDateString('en-GB')}
                 </Text>
                 {cycle.template && (
-                  <Badge size="xs" variant="light" color="cyan">
+                  <Badge size="xs" variant="light" color="cyan" fw={500}>
                     {cycle.template.title}
                   </Badge>
                 )}

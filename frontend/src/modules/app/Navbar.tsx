@@ -40,6 +40,7 @@ import { myProfileUrl, settingsUrl } from '@/routes/url';
 import { useGetNotifications, useMarkRead, useMarkAllRead } from '@/modules/notifications/api';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { EMPLOYEE_ROLE } from '@/constant';
 dayjs.extend(relativeTime);
 
 interface NavbarProps {
@@ -53,6 +54,8 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
   const { user, logout } = useAuth();
   const AUTH_APP_URL = `${AUTH_URL}apps` || new URL(AUTH_URL).origin;
+  const isSettingDisabled =
+    !user?.roles.includes(EMPLOYEE_ROLE.SUPER_ADMIN) && !user?.roles.includes(EMPLOYEE_ROLE.ADMIN);
 
   const { data: notiData } = useGetNotifications();
   const markReadMutation = useMarkRead();
@@ -325,7 +328,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
                         if (n.link) navigate(n.link);
                       }}
                     >
-                      <Group gap="sm" wrap="nowrap" align="flex-start">
+                      <Group gap="sm" wrap="nowrap" align="flex-start" w={280}>
                         <Indicator color="deepPurple" size={7} disabled={n.is_read} mt={6}>
                           <Avatar size={28} radius="xl" color="deepPurple" variant="light">
                             <IconBell size={15} />
@@ -338,9 +341,14 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
                           <Text size="xs" c="dimmed" lineClamp={2}>
                             {n.body}
                           </Text>
-                          <Text size="xs" c="dimmed" mt={2}>
-                            {dayjs(n.created_at).fromNow()}
-                          </Text>
+                          <Tooltip
+                            label={dayjs(n.created_at).format('YYYY-MM-DD HH:mm:ss')}
+                            withArrow
+                          >
+                            <Text size="xs" c="dimmed" mt={2} w={'fit-content'}>
+                              {dayjs(n.created_at).fromNow()}
+                            </Text>
+                          </Tooltip>
                         </Box>
                       </Group>
                     </UnstyledButton>
@@ -373,12 +381,14 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
             >
               My Profile
             </Menu.Item>
-            <Menu.Item
-              leftSection={<IconSettings style={{ width: rem(14) }} />}
-              onClick={() => navigate(settingsUrl)}
-            >
-              Settings
-            </Menu.Item>
+            {!isSettingDisabled && (
+              <Menu.Item
+                leftSection={<IconSettings style={{ width: rem(14) }} />}
+                onClick={() => navigate(settingsUrl)}
+              >
+                Settings
+              </Menu.Item>
+            )}
             <Menu.Divider />
             <Menu.Item
               leftSection={<IconHome style={{ width: rem(14) }} />}
