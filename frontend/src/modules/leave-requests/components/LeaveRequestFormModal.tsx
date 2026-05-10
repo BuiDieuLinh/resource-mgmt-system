@@ -12,7 +12,6 @@ import {
 } from '@/constant';
 import { useGetEmployee } from '@/modules/employees/api/get-employee';
 import { useGetEmployeeByUserId } from '@/modules/employees/api/get-employee-by-user';
-import { useAuthStore } from '@/stores/useAuthStore';
 import type { ILeaveRequest, ILeaveRequestPayload } from '../types';
 import { toDateOnly } from '@/utils/date';
 import { TIME_OPTIONS } from '@/modules/employees/utils/time-option';
@@ -65,8 +64,7 @@ export function LeaveRequestFormModal({
   onReject,
   loading = false,
 }: LeaveRequestFormModalProps) {
-  const { user } = useAuthStore();
-  const { data: currentEmployeeData } = useGetEmployeeByUserId(user?.id);
+  const { data: currentEmployeeData } = useGetEmployeeByUserId();
   const currentEmployee = currentEmployeeData?.data;
   const [reviewComment, setReviewComment] = useState('');
 

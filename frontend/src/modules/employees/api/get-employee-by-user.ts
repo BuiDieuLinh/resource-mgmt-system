@@ -10,14 +10,13 @@ interface EmployeeByUserResponse {
   timestamp: string;
 }
 
-const getEmployeeByUserId = async (userId: string): Promise<EmployeeByUserResponse> => {
-  const res = await apiClient.get(`${URL_API_GET_EMPLOYEES}/by-user/${userId}`);
+const getEmployeeByUserId = async (): Promise<EmployeeByUserResponse> => {
+  const res = await apiClient.get(`${URL_API_GET_EMPLOYEES}/by-user`);
   return res.data;
 };
 
-export const useGetEmployeeByUserId = (userId: string | undefined) =>
+export const useGetEmployeeByUserId = () =>
   useQuery({
-    queryKey: ['employees', userId],
-    queryFn: () => getEmployeeByUserId(userId!),
-    enabled: !!userId,
+    queryKey: ['employees'],
+    queryFn: () => getEmployeeByUserId(),
   });

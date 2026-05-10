@@ -9,7 +9,9 @@ export interface PaginationMeta {
 
 export function resolvePagination(dto: PaginationDto): PaginationMeta {
   const pageIndex = dto.pageIndex ?? 1;
-  const pageSize = dto.pageSize ?? 10;
+  const pageSize =
+    dto.pageSize != null && dto.pageSize > 0 ? dto.pageSize : 999;
+
   return {
     pageIndex,
     pageSize,

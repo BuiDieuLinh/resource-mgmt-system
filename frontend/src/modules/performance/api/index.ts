@@ -10,6 +10,12 @@ export const useGetCycles = () =>
     queryFn: () => apiClient.get(`${BASE}/cycles`).then((r) => r.data?.data ?? []),
   });
 
+export const useGetMyCycles = () =>
+  useQuery<IReviewCycle[]>({
+    queryKey: ['my-performance-cycles'],
+    queryFn: () => apiClient.get(`${BASE}/my-cycles`).then((r) => r.data?.data ?? []),
+  });
+
 export const useGetCycle = (id: string) =>
   useQuery({
     queryKey: ['performance-cycle', id],

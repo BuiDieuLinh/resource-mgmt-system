@@ -162,7 +162,6 @@ export default function OrgChartPage() {
 
   const { data: employeesData, isLoading: _loading } = useGetEmployees({
     pageIndex: 1,
-    pageSize: 1000,
   });
   const isLoading = useDelayedLoading(_loading);
   const employees = employeesData?.data || [];

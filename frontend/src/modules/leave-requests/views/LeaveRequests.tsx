@@ -50,7 +50,6 @@ import type { ILeaveRequest, ILeaveRequestPayload } from '../types';
 import { useGetEmployees } from '@/modules/employees/api/get-employees';
 import { useHasRole } from '@/hooks/useHasRole';
 import { STATUS_COLOR } from '../utils';
-import { useAuth } from '@/modules/auth/context/AuthContext';
 import { useGetEmployeeByUserId } from '@/modules/employees/api/get-employee-by-user';
 import { useGetAllDepartments } from '@/modules/departments/api/get-departments';
 import { EmployeeColumn } from '@/components/EmployeeColumn/EmployeeColumn';
@@ -72,8 +71,7 @@ export default function LeaveRequestsPage() {
 
   const { confirm, ConfirmComponent } = useConfirm();
 
-  const { user } = useAuth();
-  const { data: currentEmpData } = useGetEmployeeByUserId(user?.id);
+  const { data: currentEmpData } = useGetEmployeeByUserId();
   const currentEmployeeId = currentEmpData?.data?.id;
 
   const [actionModal, setActionModal] = useState<{
@@ -115,11 +113,15 @@ export default function LeaveRequestsPage() {
 
   const isEmployeeOnly = !isAdmin && !isManager;
 
-  const { data: empData } = useGetEmployees({
-    pageIndex: 1,
-    pageSize: 999,
-    ...(isEmployeeOnly ? { pageSize: 0 } : {}),
-  });
+  const { data: empData } = useGetEmployees(
+    {
+      pageIndex: 1,
+      // Don't pass pageSize - backend will return all employees for filter search
+    },
+    {
+      enabled: !isEmployeeOnly,
+    },
+  );
   const employeeOptions = useMemo(
     () =>
       isEmployeeOnly

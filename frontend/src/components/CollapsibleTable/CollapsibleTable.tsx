@@ -1,6 +1,6 @@
+import React, { useMemo, useState, type ReactNode } from 'react';
 import { Table, Center, Loader, Text, Collapse } from '@mantine/core';
 import { IconChevronUp, IconChevronDown, IconSelector } from '@tabler/icons-react';
-import { useMemo, useState, type ReactNode } from 'react';
 import cx from 'clsx';
 import classes from './CollapsibleTable.module.css';
 
@@ -189,9 +189,8 @@ export function CollapsibleTable<T extends Record<string, any>>({
               const isExpanded = isRowExpanded ? isRowExpanded(row, index) : false;
 
               return (
-                <>
+                <React.Fragment key={rowId}>
                   <Table.Tr
-                    key={rowId}
                     onClick={() => onRowClick?.(row)}
                     style={{ cursor: onRowClick ? 'pointer' : 'default' }}
                   >
@@ -245,7 +244,7 @@ export function CollapsibleTable<T extends Record<string, any>>({
                       </Table.Td>
                     </Table.Tr>
                   )}
-                </>
+                </React.Fragment>
               );
             })
           )}

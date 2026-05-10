@@ -18,7 +18,7 @@ export default function PerformanceCyclesPage() {
   const navigate = useNavigate();
   const { data: cycles = [], isLoading } = useGetCycles();
   const { data: templates = [] } = useGetTemplates();
-  const { data: employeesRes } = useGetEmployees({ pageSize: 500 });
+  const { data: employeesRes } = useGetEmployees({ pageIndex: 1 });
   const employees = employeesRes?.data ?? [];
 
   const createCycle = useCreateCycle();

@@ -26,7 +26,7 @@ import {
 } from '@tabler/icons-react';
 import { useState } from 'react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
-import { useGetCycles, useGetMyReview } from '../api';
+import { useGetMyCycles, useGetMyReview } from '../api';
 import type { IReviewCycle } from '../types';
 
 const STATUS_COLOR: Record<string, string> = {
@@ -124,7 +124,9 @@ function CycleReviewRow({ cycle }: { cycle: IReviewCycle }) {
           style={{
             background: contentBg,
             borderRadius: '0 0 8px 8px',
-            border: `1px solid ${borderColor}`,
+            borderLeft: `1px solid ${borderColor}`,
+            borderRight: `1px solid ${borderColor}`,
+            borderBottom: `1px solid ${borderColor}`,
             borderTop: 'none',
           }}
         >
@@ -288,7 +290,7 @@ function CycleReviewRow({ cycle }: { cycle: IReviewCycle }) {
 }
 
 export default function MyReviewsPage() {
-  const { data: cycles = [], isLoading: cyclesLoading } = useGetCycles();
+  const { data: cycles = [], isLoading: cyclesLoading } = useGetMyCycles();
 
   const myCycles = (cycles as IReviewCycle[]).filter(
     (c) => new Date(c.announce_date) <= new Date(),

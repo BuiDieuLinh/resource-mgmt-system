@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import Home from '../modules/home/views/Home';
 import Layout from '../modules/app/Layout';
 import { Employee } from '../modules';
@@ -42,6 +42,23 @@ import {
   performanceReviewUrl,
   myReviewsUrl,
 } from './url';
+import { useAuth } from '@/modules/auth/context/AuthContext';
+import { EMPLOYEE_ROLE } from '@/constant';
+
+function RoleBasedRedirect() {
+  const { user } = useAuth();
+  const roles = user?.roles ?? [];
+
+  if (roles.includes(EMPLOYEE_ROLE.ADMIN) || roles.includes(EMPLOYEE_ROLE.SUPER_ADMIN)) {
+    return <Home />;
+  }
+
+  if (roles.includes(EMPLOYEE_ROLE.MANAGER)) {
+    return <Navigate to={employeeListUrl} replace />;
+  }
+
+  return <Navigate to={checkInOutUrl} replace />;
+}
 
 export const router = createBrowserRouter([
   {
@@ -52,7 +69,7 @@ export const router = createBrowserRouter([
         path: '/',
         element: <Layout />,
         children: [
-          { path: '', element: <Home /> },
+          { path: '', element: <RoleBasedRedirect /> },
           { path: employeeListUrl, element: <Employee /> },
           { path: employeeDepartmentsUrl, element: <Departments /> },
           { path: employeeOrgChartUrl, element: <OrgChart /> },

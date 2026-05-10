@@ -25,9 +25,17 @@ function flattenMenuRoles(menus: AppMenu[]): { path: string; roles: string[] }[]
 const MENU_ROLES = flattenMenuRoles(MENUS);
 
 function getRequiredRoles(pathname: string): string[] | null {
-  const match = MENU_ROLES.filter(
-    ({ path }) => pathname === path || pathname.startsWith(path + '/'),
-  ).sort((a, b) => b.path.length - a.path.length)[0];
+  const exactMatch = MENU_ROLES.find(({ path }) => pathname === path);
+  if (exactMatch) return exactMatch.roles;
+
+  if (pathname.match(/^\/employees\/[^/]+\/profile$/) || pathname === '/my/profile') {
+    return null;
+  }
+
+  const match = MENU_ROLES.filter(({ path }) => pathname.startsWith(path + '/')).sort(
+    (a, b) => b.path.length - a.path.length,
+  )[0];
+
   return match?.roles ?? null;
 }
 
@@ -49,10 +57,26 @@ export default function ProtectedRoute() {
     );
   }
 
+  if (location.pathname === '/') {
+    return <Outlet />;
+  }
+
+  const isProfileRoute =
+    location.pathname.match(/^\/employees\/[^/]+\/profile$/) || location.pathname === '/my/profile';
+
+  if (isProfileRoute) {
+    return <Outlet />;
+  }
+
   const requiredRoles = getRequiredRoles(location.pathname);
-  if (requiredRoles && requiredRoles.length > 0) {
-    const hasRole = requiredRoles.some((r) => user.roles?.includes(r));
-    if (!hasRole) return <Navigate to="/403" replace />;
+
+  if (!requiredRoles || requiredRoles.length === 0) {
+    return <Outlet />;
+  }
+
+  const hasRole = requiredRoles.some((r) => user.roles?.includes(r));
+  if (!hasRole) {
+    return <Navigate to="/403" replace />;
   }
 
   return <Outlet />;

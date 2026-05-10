@@ -81,7 +81,6 @@ export function EmployeeFormModal({
   const { data: positionsData, isLoading: isPositionsLoading } = useGetAllPositions();
   const { data: employeesData, isLoading: isEmployeesLoading } = useGetEmployees({
     pageIndex: 1,
-    pageSize: 1000,
   });
 
   const [existsErrors, setExistsErrors] = useState<Partial<Record<CheckExistsField, string>>>({});

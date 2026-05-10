@@ -1,15 +1,13 @@
 import { useEffect } from 'react';
 import { Center, Loader } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/stores/useAuthStore';
 import { useGetEmployeeByUserId } from '../api/get-employee-by-user';
 import ErrorState from '@/components/ErrorState/ErrorState';
 import { employeeProfileUrl } from '@/routes/url';
 
 export default function MyProfile() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
-  const { data, isLoading, error, refetch } = useGetEmployeeByUserId(user?.id);
+  const { data, isLoading, error, refetch } = useGetEmployeeByUserId();
 
   const employeeId = data?.data?.id;
 

@@ -132,6 +132,26 @@ export class PerformanceService {
     return ResponseHelper.success(cycles);
   }
 
+  async getMyCycles(employeeId: string) {
+    if (!employeeId) throw new NotFoundException('Employee not found');
+
+    const cycles = await this.prisma.reviewCycles.findMany({
+      where: {
+        reviews: {
+          some: {
+            employee_id: employeeId,
+          },
+        },
+      },
+      orderBy: [{ period_year: 'desc' }, { period_seq: 'desc' }],
+      include: {
+        template: true,
+        _count: { select: { reviews: true, awards: true } },
+      },
+    });
+    return ResponseHelper.success(cycles);
+  }
+
   async getCycleById(id: string) {
     const cycle = await this.prisma.reviewCycles.findUnique({
       where: { id },

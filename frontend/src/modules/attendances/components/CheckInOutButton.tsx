@@ -1,7 +1,6 @@
 import { Button, Group, Text, Badge } from '@mantine/core';
 import { IconLogin, IconLogout } from '@tabler/icons-react';
 import { notify } from '@/components/Notification';
-import { useAuthStore } from '@/stores/useAuthStore';
 import { useGetEmployeeByUserId } from '@/modules/employees/api/get-employee-by-user';
 import { useCheckIn, useCheckOut } from '../api/check-in-out';
 import { useGetTodayAttendance } from '../api/get-today-attendance';
@@ -9,8 +8,7 @@ import { useGPS } from '@/hooks/useGPS';
 import { DEFAULT_LOCALE, DEFAULT_TIMEZONE } from '@/constant/index';
 
 export function CheckInOutButton() {
-  const { user } = useAuthStore();
-  const { data: empData } = useGetEmployeeByUserId(user?.id);
+  const { data: empData } = useGetEmployeeByUserId();
   const employee = empData?.data;
 
   const { data: todayData, refetch: refetchToday } = useGetTodayAttendance(employee?.id);

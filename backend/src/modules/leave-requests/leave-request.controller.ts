@@ -29,7 +29,6 @@ export class LeaveRequestController {
   constructor(private readonly leaveRequestService: LeaveRequestService) {}
 
   @Get('my')
-  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
   findMy(
     @CurrentUser() user: { employeeId: string },
     @Query('status') status?: string,

@@ -25,7 +25,6 @@ import {
 } from '@tabler/icons-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { notify } from '@/components/Notification';
-import { useAuthStore } from '@/stores/useAuthStore';
 import { useGetEmployeeByUserId } from '@/modules/employees/api/get-employee-by-user';
 import { useGetActivePolicy } from '@/modules/work-policies/api/get-work-policies';
 import { useCheckIn, useCheckOut } from '../api/check-in-out';
@@ -68,8 +67,7 @@ async function reverseGeocode(lat: number, lon: number): Promise<string> {
 
 export default function CheckInOutPage() {
   const now = useNow();
-  const { user } = useAuthStore();
-  const { data: empData } = useGetEmployeeByUserId(user?.id);
+  const { data: empData } = useGetEmployeeByUserId();
   const employee = empData?.data;
   const { data: policyData } = useGetActivePolicy();
   const policy = policyData?.data;

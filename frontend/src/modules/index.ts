@@ -24,3 +24,8 @@ export const LeaveRequests = lazyLoad(
   () => import('./leave-requests/views/LeaveRequests'),
   (m) => m.default,
 );
+
+export const MyProfile = lazyLoad(
+  () => import('./employees/views/MyProfile'),
+  (m) => m.default,
+);

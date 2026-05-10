@@ -10,6 +10,7 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
   UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AttendancesService } from './attendances.service';
 import { QueryAttendanceDto } from './dto/query-attendance.dto';
@@ -42,7 +43,6 @@ export class AttendancesController {
   }
 
   @Get('my')
-  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
   findMy(
     @CurrentUser() user: { employeeId: string },
     @Query('month', new DefaultValuePipe(CURRENT_MONTH), ParseIntPipe)
@@ -94,8 +94,22 @@ export class AttendancesController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.MANAGER)
-  findAll(@Query() query: QueryAttendanceDto) {
+  async findAll(
+    @Query() query: QueryAttendanceDto,
+    @CurrentUser() user: { employeeId: string; roles: string[] },
+  ) {
+    if (query.employee_id && query.employee_id === user.employeeId) {
+      return this.attendancesService.findAll(query);
+    }
+
+    const hasPermission =
+      user.roles.includes(Role.ADMIN) || user.roles.includes(Role.MANAGER);
+    if (!hasPermission) {
+      throw new ForbiddenException(
+        'You do not have permission to view all attendances',
+      );
+    }
+
     return this.attendancesService.findAll(query);
   }
 

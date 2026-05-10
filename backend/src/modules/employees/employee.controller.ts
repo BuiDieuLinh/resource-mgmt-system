@@ -12,6 +12,7 @@ import {
   UploadedFile,
   Res,
   UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
@@ -95,10 +96,10 @@ export class EmployeeController {
     return this.service.importFromExcel(body.employees);
   }
 
-  @Get('by-user/:userId')
+  @Get('by-user')
   @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
-  findByUserId(@Param('userId') userId: string) {
-    return this.service.findByUserId(userId);
+  findByUserId(@CurrentUser() user: { userId: string; roles: string[] }) {
+    return this.service.findByUserId(user.userId);
   }
 
   @Get(':id/work-schedule')
@@ -113,7 +114,22 @@ export class EmployeeController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser() user: { employeeId: string; roles: string[] },
+  ) {
+    if (user.employeeId === id) {
+      return this.service.findOne(id);
+    }
+
+    const hasPermission =
+      user.roles.includes(Role.ADMIN) || user.roles.includes(Role.MANAGER);
+    if (!hasPermission) {
+      throw new ForbiddenException(
+        'You do not have permission to view this profile',
+      );
+    }
+
     return this.service.findOne(id);
   }
 

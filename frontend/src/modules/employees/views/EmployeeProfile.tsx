@@ -23,15 +23,12 @@ import {
   IconCoffee,
   IconUser,
   IconMapPin,
-  IconTrophy,
-  IconEye,
   IconUserPlus,
   IconUserMinus,
   IconArrowUpRight,
   IconSwitchHorizontal,
   IconFileText,
   IconUserCheck,
-  IconEdit,
   IconArrowLeft,
 } from '@tabler/icons-react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -43,26 +40,19 @@ import { employeeListUrl } from '../../../routes/url';
 import { Skeleton } from '@mantine/core';
 import { useDelayedLoading } from '../../../hooks/useDelayedLoading';
 
-import type { IWorkSchedule, EmployeeFormValues } from '../types';
+import type { IWorkSchedule } from '../types';
 import type { IWorkPolicy } from '../../work-policies/types';
 import { WorkDayBadges } from '../components/WorkDayBadges';
 import {
   minutesToTime,
   formatDate,
-  EMPLOYEE_ROLE,
   CONTRACT_TYPE_COLOR,
   CONTRACT_TYPE_LABEL,
   type ContractType,
 } from '../../../constant';
-import { useGetMyAwards } from '../../performance/api';
 import { AwardRevealPage } from '../../performance/components/AwardRevealPage';
 import { useState } from 'react';
 import type { IAward } from '../../performance/types';
-import { EmployeeFormModal } from '../components/EmployeeFormModal';
-import { mapEmployeeToFormValues } from '../utils/employee-mapper';
-import { useUpdateEmployee } from '../api/update-employee';
-import { notify } from '../../../components/Notification';
-import { useHasRole } from '@/hooks/useHasRole';
 
 function InfoRow({
   icon,
@@ -79,10 +69,10 @@ function InfoRow({
         {icon}
       </ThemeIcon>
       <div>
-        <Text size="xs" c="dimmed" lh={1.2}>
+        <Text size="xs" c="dimmed" lh={1.2} component="div">
           {label}
         </Text>
-        <Text size="sm" fw={500} lh={1.4}>
+        <Text size="sm" fw={500} lh={1.4} component="div">
           {value}
         </Text>
       </div>
@@ -178,77 +168,11 @@ function WorkScheduleSection({
 export default function EmployeeProfile() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const isAdmin = useHasRole(EMPLOYEE_ROLE.ADMIN);
 
   const { data, isLoading: _loading, error, refetch } = useGetEmployee(id!);
   const isLoading = useDelayedLoading(_loading);
   const { data: policyData } = useGetActivePolicy();
-  const { data: myAwards = [] } = useGetMyAwards();
   const [previewAward, setPreviewAward] = useState<IAward | null>(null);
-  const [editModalOpened, setEditModalOpened] = useState(false);
-
-  const updateMutation = useUpdateEmployee();
-
-  const RANK_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'] as const;
-  const CATEGORY_LABEL: Record<string, string> = {
-    top_employee: 'Nhân Viên Xuất Sắc',
-    top_manager: 'Quản Lý Xuất Sắc',
-  };
-
-  const handleEdit = () => {
-    setEditModalOpened(true);
-  };
-
-  const handleSubmit = async (values: EmployeeFormValues) => {
-    const notiId = notify.loading('Updating employee...');
-
-    try {
-      const payload = {
-        employee_code: values.employee_code,
-        full_name: values.full_name,
-        display_name: values.display_name,
-        email: values.email,
-        phone: values.phone,
-        identify_card: values.identify_card,
-        gender: values.gender,
-        date_of_birth:
-          values.date_of_birth instanceof Date
-            ? values.date_of_birth.toISOString()
-            : values.date_of_birth,
-        address: values.address,
-        hire_date:
-          values.hire_date instanceof Date
-            ? values.hire_date.toISOString()
-            : values.hire_date || new Date().toISOString(),
-        position_id: values.position_id,
-        status: values.status,
-        contract_type: values.contract_type,
-        manager_id: values.manager_id && values.manager_id.trim() !== '' ? values.manager_id : null,
-        terminated_at: values.terminated_at
-          ? values.terminated_at instanceof Date
-            ? values.terminated_at.toISOString()
-            : values.terminated_at
-          : null,
-        work_schedules: values.work_schedules,
-      };
-
-      await updateMutation.mutateAsync({
-        id: id!,
-        payload,
-      });
-
-      notify.success(notiId, {
-        message: 'Employee updated successfully',
-      });
-
-      setEditModalOpened(false);
-      refetch();
-    } catch (e: any) {
-      notify.error(notiId, {
-        message: e?.response?.data?.message || 'Update employee failed',
-      });
-    }
-  };
 
   if (isLoading)
     return (
@@ -316,11 +240,6 @@ export default function EmployeeProfile() {
             >
               Back to List
             </Button>
-            {isAdmin && (
-              <Button leftSection={<IconEdit size={18} />} onClick={handleEdit}>
-                Edit Employee
-              </Button>
-            )}
           </Group>
         }
       />
@@ -651,7 +570,7 @@ export default function EmployeeProfile() {
                 </>
               )}
 
-              {myAwards.length > 0 && (
+              {/* {myAwards.length > 0 && (
                 <>
                   <Divider />
                   <div>
@@ -699,7 +618,7 @@ export default function EmployeeProfile() {
                     </Stack>
                   </div>
                 </>
-              )}
+              )} */}
             </Stack>
           </Card>
         </Grid.Col>
@@ -710,18 +629,6 @@ export default function EmployeeProfile() {
           awards={[previewAward]}
           onClose={() => setPreviewAward(null)}
           previewMode
-        />
-      )}
-
-      {isAdmin && (
-        <EmployeeFormModal
-          opened={editModalOpened}
-          onClose={() => setEditModalOpened(false)}
-          mode="edit"
-          initialValues={mapEmployeeToFormValues(employee)}
-          employeeId={employee.id}
-          onSubmit={handleSubmit}
-          loading={updateMutation.isPending}
         />
       )}
     </Stack>

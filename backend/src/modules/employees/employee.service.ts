@@ -237,6 +237,7 @@ export class EmployeeService {
       include: {
         position: { include: { department: true } },
         work_schedules: true,
+        employment_histories: true,
       },
     });
     if (!employee)

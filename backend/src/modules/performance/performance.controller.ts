@@ -92,6 +92,11 @@ export class PerformanceController {
     return this.svc.getCycles();
   }
 
+  @Get('my-cycles')
+  getMyCycles(@CurrentUser() user: { employeeId: string }) {
+    return this.svc.getMyCycles(user.employeeId);
+  }
+
   @Get('cycles/:id')
   @Roles(Role.ADMIN, Role.MANAGER)
   getCycleById(@Param('id') id: string) {
@@ -133,7 +138,6 @@ export class PerformanceController {
   }
 
   @Get('cycles/:id/my-review')
-  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
   getMyReview(
     @Param('id') id: string,
     @CurrentUser() user: { employeeId: string },
@@ -142,7 +146,6 @@ export class PerformanceController {
   }
 
   @Get('awards/pending-reveal')
-  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
   getPendingReveal(@CurrentUser() user: { employeeId: string }) {
     return this.svc.getPendingReveal(user.employeeId);
   }
@@ -166,7 +169,6 @@ export class PerformanceController {
   }
 
   @Get('my-awards')
-  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
   getMyAwards(@CurrentUser() user: { employeeId: string }) {
     return this.svc.getMyAwards(user.employeeId);
   }

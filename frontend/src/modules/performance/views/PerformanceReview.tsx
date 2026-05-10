@@ -43,7 +43,6 @@ import {
   useGetTemplate,
 } from '../api';
 import { useGetEmployeeByUserId } from '@/modules/employees/api/get-employee-by-user';
-import { useAuthStore } from '@/stores/useAuthStore';
 import { notify } from '@/components/Notification';
 import {
   REVIEW_STATUS_COLOR,
@@ -142,8 +141,7 @@ function pickActiveCycle(cycles: IReviewCycle[]): IReviewCycle | null {
 
 export default function PerformanceReviewPage() {
   const { data: cycles = [] } = useGetCycles();
-  const { user } = useAuthStore();
-  const { data: myEmpData } = useGetEmployeeByUserId(user?.id);
+  const { data: myEmpData } = useGetEmployeeByUserId();
   const myEmployeeId = myEmpData?.data?.id;
   const { colorScheme } = useMantineColorScheme();
   const isDark = colorScheme === 'dark';
