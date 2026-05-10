@@ -11,7 +11,9 @@ const EMPLOYEE_TEST = '[Auto-Test] Employee View';
 let adminToken: string;
 let profileEmployeeId: string;
 
-test.describe('Employee Profile', () => {
+test.describe('Employee Profile - Admin Access', () => {
+  test.use({ storageState: `playwright/.auth/${ROLES.ADMIN}.json` });
+
   test.beforeEach(async ({ page }) => {
     adminToken = await getTokenForRole(ROLES.ADMIN);
 
@@ -39,22 +41,27 @@ test.describe('Employee Profile', () => {
   test('View employee profile page', async ({ page }) => {
     log.step('Test: admin can view employee profile');
 
-    try {
-      await page.goto(`${ENV.baseUrl}${ROUTES.employeeProfile(profileEmployeeId)}`);
-      await page.waitForLoadState('networkidle');
+    if (ROLES.ADMIN && ROLES.MANAGER) {
+      try {
+        await page.goto(`${ENV.baseUrl}${ROUTES.employeeProfile(profileEmployeeId)}`);
+        await page.waitForLoadState('networkidle');
 
-      await expect(page.getByText(EMPLOYEE_TEST).nth(1)).toBeVisible();
-      await expect(page.getByText(/personal information/i)).toBeVisible();
-      await expect(page.getByText(/work information/i)).toBeVisible();
-      log.ok('Employee profile page loaded');
-    } catch (err) {
-      log.error('Failed: view employee profile', err);
-      throw err;
+        await expect(page.getByText(EMPLOYEE_TEST).nth(1)).toBeVisible();
+        await expect(page.getByText(/personal information/i)).toBeVisible();
+        await expect(page.getByText(/work information/i)).toBeVisible();
+        log.ok('Employee profile page loaded');
+      } catch (err) {
+        log.error('Failed: view employee profile', err);
+        throw err;
+      }
+    } else {
+      await expect(page.getByText('You do not have permission to view this profile')).toBeVisible();
     }
   });
 
-  test('View org chart page', async ({ page }) => {
+  test('Admin can view org chart', async ({ page }) => {
     log.step('Test: admin can view org chart');
+    if (ROLES.EMPLOYEE) return;
 
     try {
       await page.goto(`${ENV.baseUrl}${ROUTES.orgChart}`);

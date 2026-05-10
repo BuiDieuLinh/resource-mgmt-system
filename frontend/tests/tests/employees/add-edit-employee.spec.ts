@@ -5,10 +5,11 @@ import { ROUTES } from '../../common/routes';
 import { ENV } from '../../common/env';
 import { EmployeesPage } from '../../pom/EmployeesPage';
 
-test.describe('Add + Edit Employee', () => {
+test.describe('Add + Edit Employee - Admin Only', () => {
   test.use({ storageState: 'playwright/.auth/admin.json' });
   let employeeCreated = '';
-  test('Add employee', async ({ page }) => {
+
+  test('Admin can add employee', async ({ page }) => {
     log.step('Test: admin can add employee');
     const employeePage = new EmployeesPage(page);
 
@@ -32,7 +33,7 @@ test.describe('Add + Edit Employee', () => {
     }
   });
 
-  test('Edit employee', async ({ page }) => {
+  test('Admin can edit employee', async ({ page }) => {
     log.step('Test: admin can edit employee');
     const employeePage = new EmployeesPage(page);
 
@@ -41,13 +42,14 @@ test.describe('Add + Edit Employee', () => {
       await page.waitForLoadState('networkidle');
 
       await employeePage.searchEmployee(employeeCreated);
-      const row = await employeePage.getRowByCode(EMPLOYEE_CREATE_DATA.code);
-      await employeePage.editButtons.click();
+      await employeePage.clickEditOnRow(EMPLOYEE_CREATE_DATA.code);
 
       const newName = EMPLOYEE_CREATE_DATA.fullName + ' Edited';
       await employeePage.fullNameInput.fill(newName);
+      await employeePage.hireDateInput.fill('2026-05-08');
       await employeePage.submitForm();
-      await employeePage.waitForPage();
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(5_000);
 
       await employeePage.searchEmployee(newName);
       await expect(employeePage.tableRows.filter({ hasText: newName })).toBeVisible();

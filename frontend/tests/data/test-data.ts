@@ -30,7 +30,7 @@ export function makeEmployeePayload(
     employee_code: `AUTO_TEST_EMP_000`,
     full_name: fullName,
     display_name: `Test ${uid()}`,
-    email: `autotest@company.com`,
+    email: `autotest.10@company.com`,
     phone: `090${uid()}`,
     identify_card: `ID${uid()}${uid().slice(-3)}`,
     gender: 'Male',

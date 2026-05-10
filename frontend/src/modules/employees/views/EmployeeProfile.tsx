@@ -217,10 +217,22 @@ export default function EmployeeProfile() {
         </Grid>
       </Stack>
     );
-  if (error)
+
+  if (error) {
+    const errorMessage = error.message || 'Error loading employee profile';
+    const isForbidden =
+      errorMessage.includes('403') ||
+      errorMessage.includes('permission') ||
+      errorMessage.includes('Forbidden');
+
     return (
-      <ErrorState message={`Error loading employee profile: ${error.message}`} onRetry={refetch} />
+      <ErrorState
+        message={isForbidden ? 'You do not have permission to view this profile' : errorMessage}
+        onRetry={isForbidden ? undefined : refetch}
+      />
     );
+  }
+
   if (!data?.data)
     return <ErrorState message="Employee not found" onRetry={() => navigate(employeeListUrl)} />;
 

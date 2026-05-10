@@ -56,11 +56,5 @@ export default defineConfig({
       },
       testMatch: '**/*.spec.ts',
     },
-
-    {
-      name: 'e2e',
-      use: { ...devices['Desktop Chrome'] },
-      testMatch: '**/*.spec.ts',
-    },
   ],
 });
