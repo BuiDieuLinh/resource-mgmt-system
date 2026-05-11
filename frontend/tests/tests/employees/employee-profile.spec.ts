@@ -12,8 +12,6 @@ let adminToken: string;
 let profileEmployeeId: string;
 
 test.describe('Employee Profile - Admin Access', () => {
-  test.use({ storageState: `playwright/.auth/${ROLES.ADMIN}.json` });
-
   test.beforeEach(async ({ page }) => {
     adminToken = await getTokenForRole(ROLES.ADMIN);
 
@@ -38,17 +36,22 @@ test.describe('Employee Profile - Admin Access', () => {
       log.ok('beforeAll: CRUD test data ready');
     }
   });
-  test('View employee profile page', async ({ page }) => {
+  test('View employee profile page', async ({ page }, testInfo) => {
     log.step('Test: admin can view employee profile');
+    const role = testInfo.project.name;
 
-    if (ROLES.ADMIN && ROLES.MANAGER) {
+    await page.goto(`${ENV.baseUrl}${ROUTES.employeeProfile(profileEmployeeId)}`);
+    await page.waitForLoadState('networkidle');
+    log.info('Navigated to employee profile page');
+
+    if (role === ROLES.ADMIN || role === ROLES.MANAGER) {
       try {
-        await page.goto(`${ENV.baseUrl}${ROUTES.employeeProfile(profileEmployeeId)}`);
-        await page.waitForLoadState('networkidle');
-
         await expect(page.getByText(EMPLOYEE_TEST).nth(1)).toBeVisible();
+        log.info('Employee name visible');
         await expect(page.getByText(/personal information/i)).toBeVisible();
+        log.info('Personal information section visible');
         await expect(page.getByText(/work information/i)).toBeVisible();
+        log.info('Work information section visible');
         log.ok('Employee profile page loaded');
       } catch (err) {
         log.error('Failed: view employee profile', err);
@@ -56,19 +59,27 @@ test.describe('Employee Profile - Admin Access', () => {
       }
     } else {
       await expect(page.getByText('You do not have permission to view this profile')).toBeVisible();
+      log.info('Permission denied message shown');
     }
   });
 
-  test('Admin can view org chart', async ({ page }) => {
+  test('Admin can view org chart', async ({ page }, testInfo) => {
     log.step('Test: admin can view org chart');
-    if (ROLES.EMPLOYEE) return;
+    const role = testInfo.project.name;
+    if (role !== ROLES.ADMIN && role !== ROLES.MANAGER) {
+      log.warn(`[SKIP] ${role} is not allowed to run this test`);
+      return;
+    }
 
     try {
       await page.goto(`${ENV.baseUrl}${ROUTES.orgChart}`);
       await page.waitForLoadState('networkidle');
+      log.info('Navigated to org chart page');
 
       await expect(page.getByText(/organization chart/i)).toBeVisible();
+      log.info('Org chart title visible');
       await expect(page.getByText(EMPLOYEE_TEST)).toBeVisible();
+      log.info('Test employee visible in org chart');
       log.ok('Org chart page loaded');
     } catch (err) {
       log.error('Failed: view org chart', err);

@@ -17,6 +17,11 @@ test.describe('Check-In / Check-Out', () => {
     log.info(
       `Check In button is ${isCheckInDisabled ? 'disabled (already checked in)' : 'enabled (not checked in yet)'}`,
     );
+    if (isCheckInDisabled) {
+      log.info('User has already checked in today');
+    } else {
+      log.info('User can check in now');
+    }
   });
 
   test('check-in flow: click → check-in time shown and button disabled', async ({ page }) => {
@@ -37,15 +42,20 @@ test.describe('Check-In / Check-Out', () => {
       return;
     }
 
+    log.info('Clicking check-in button');
     await checkInBtn.click();
     await page.waitForTimeout(2_500);
 
-    // const outOfRange = await page.getByText(/too far|out of range/i).isVisible().catch(() => false);
-    // if (outOfRange) {
-    //   log.info('GPS out of range — check-in blocked by distance policy');
-    //   return;
-    // }
+    const outOfRange = await page
+      .getByText(/too far|out of range/i)
+      .isVisible()
+      .catch(() => false);
+    if (outOfRange) {
+      log.info('GPS out of range — check-in blocked by distance policy');
+      return;
+    }
 
+    log.info('Check-in successful, verifying UI updates');
     await expect(page.getByText(/in at/i)).toBeVisible({ timeout: 6_000 });
     await expect(checkInBtn).toBeDisabled({ timeout: 5_000 });
     log.ok('Check-in time shown and Check In button disabled');
