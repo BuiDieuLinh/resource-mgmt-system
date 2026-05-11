@@ -39,6 +39,7 @@ import ErrorState from '../../../components/ErrorState/ErrorState';
 import { employeeListUrl } from '../../../routes/url';
 import { Skeleton } from '@mantine/core';
 import { useDelayedLoading } from '../../../hooks/useDelayedLoading';
+import { parseApiError } from '../../../utils/error';
 
 import type { IWorkSchedule } from '../types';
 import type { IWorkPolicy } from '../../work-policies/types';
@@ -219,16 +220,16 @@ export default function EmployeeProfile() {
     );
 
   if (error) {
-    const errorMessage = error.message || 'Error loading employee profile';
-    const isForbidden =
-      errorMessage.includes('403') ||
-      errorMessage.includes('permission') ||
-      errorMessage.includes('Forbidden');
+    const parsedError = parseApiError(error, 'Error loading employee profile');
 
     return (
       <ErrorState
-        message={isForbidden ? 'You do not have permission to view this profile' : errorMessage}
-        onRetry={isForbidden ? undefined : refetch}
+        message={
+          parsedError.isForbidden
+            ? 'You do not have permission to view this profile'
+            : parsedError.message
+        }
+        onRetry={parsedError.isForbidden ? undefined : refetch}
       />
     );
   }
