@@ -26,6 +26,7 @@ import { UpdateAttendanceDto } from './dto/update-attendance.dto';
 import {
   AttendanceAction,
   AttendanceStatus,
+  EmployeeStatus,
   LeaveStatus,
   LeaveType,
 } from '@prisma/client';
@@ -250,8 +251,11 @@ export class AttendancesService {
 
   async findSummaries(month: number, year: number, departmentId?: string) {
     const deptFilter = departmentId
-      ? { position: { department_id: departmentId } }
-      : undefined;
+      ? {
+          position: { department_id: departmentId },
+          status: EmployeeStatus.active,
+        }
+      : { status: EmployeeStatus.active };
 
     const monthRange = getMonthRange(month, year);
 
@@ -260,9 +264,14 @@ export class AttendancesService {
         this.prisma.attendances.findMany({
           where: {
             work_date: monthRange,
-            ...(departmentId && {
-              employee: { position: { department_id: departmentId } },
-            }),
+            ...(departmentId
+              ? {
+                  employee: {
+                    position: { department_id: departmentId },
+                    status: EmployeeStatus.active,
+                  },
+                }
+              : { employee: { status: EmployeeStatus.active } }),
           },
           include: {
             employee: {
@@ -279,9 +288,14 @@ export class AttendancesService {
             status: LeaveStatus.approved,
             start_date: { lte: monthRange.lte },
             end_date: { gte: monthRange.gte },
-            ...(departmentId && {
-              employee: { position: { department_id: departmentId } },
-            }),
+            ...(departmentId
+              ? {
+                  employee: {
+                    position: { department_id: departmentId },
+                    status: EmployeeStatus.active,
+                  },
+                }
+              : { employee: { status: EmployeeStatus.active } }),
           },
         }),
         this.prisma.holidays.findMany({
@@ -291,9 +305,14 @@ export class AttendancesService {
           where: {
             status: LeaveStatus.pending,
             approved_by_admin: null,
-            ...(departmentId && {
-              employee: { position: { department_id: departmentId } },
-            }),
+            ...(departmentId
+              ? {
+                  employee: {
+                    position: { department_id: departmentId },
+                    status: EmployeeStatus.active,
+                  },
+                }
+              : { employee: { status: EmployeeStatus.active } }),
           },
           select: { employee_id: true },
         }),
