@@ -31,13 +31,13 @@ export class AttendancesController {
   constructor(private readonly attendancesService: AttendancesService) {}
 
   @Post('check-in')
-  @Roles(Role.EMPLOYEE, Role.MANAGER, Role.ADMIN)
+  @Roles(Role.EMPLOYEE, Role.MANAGER, Role.HR, Role.ADMIN)
   checkIn(@Body() dto: CheckInDto) {
     return this.attendancesService.checkIn(dto);
   }
 
   @Post('check-out')
-  @Roles(Role.EMPLOYEE, Role.MANAGER, Role.ADMIN)
+  @Roles(Role.EMPLOYEE, Role.MANAGER, Role.HR, Role.ADMIN)
   checkOut(@Body() dto: CheckOutDto) {
     return this.attendancesService.checkOut(dto);
   }
@@ -54,7 +54,7 @@ export class AttendancesController {
   }
 
   @Get('summary')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.HR, Role.MANAGER, Role.ADMIN)
   getSummaries(
     @Query('month', new DefaultValuePipe(CURRENT_MONTH), ParseIntPipe)
     month: number,
@@ -66,7 +66,7 @@ export class AttendancesController {
   }
 
   @Get('employee/:employeeId')
-  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
+  @Roles(Role.HR, Role.MANAGER, Role.EMPLOYEE, Role.ADMIN)
   findByEmployee(
     @Param('employeeId') employeeId: string,
     @Query('month', new DefaultValuePipe(CURRENT_MONTH), ParseIntPipe)
@@ -78,7 +78,7 @@ export class AttendancesController {
   }
 
   @Patch('employee/:employeeId/approve')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.HR, Role.MANAGER, Role.ADMIN)
   approveTimesheet(
     @Param('employeeId') employeeId: string,
     @Query('month', new DefaultValuePipe(CURRENT_MONTH), ParseIntPipe)
@@ -103,7 +103,7 @@ export class AttendancesController {
     }
 
     const hasPermission =
-      user.roles.includes(Role.ADMIN) || user.roles.includes(Role.MANAGER);
+      user.roles.includes(Role.HR) || user.roles.includes(Role.MANAGER);
     if (!hasPermission) {
       throw new ForbiddenException(
         'You do not have permission to view all attendances',
@@ -114,19 +114,19 @@ export class AttendancesController {
   }
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   create(@Body() dto: CreateAttendanceDto) {
     return this.attendancesService.create(dto);
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   update(@Param('id') id: string, @Body() dto: UpdateAttendanceDto) {
     return this.attendancesService.update(id, dto);
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   remove(@Param('id') id: string) {
     return this.attendancesService.remove(id);
   }

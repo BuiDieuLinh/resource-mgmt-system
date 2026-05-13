@@ -24,7 +24,7 @@ export class PositionController {
   constructor(private readonly service: PositionService) {}
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.HR)
   create(@Body() dto: CreatePositionDto) {
     return this.service.create(dto);
   }
@@ -40,13 +40,13 @@ export class PositionController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.HR)
   update(@Param('id') id: string, @Body() dto: UpdatePositionDto) {
     return this.service.update(id, dto);
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.HR)
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }

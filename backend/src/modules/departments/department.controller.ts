@@ -24,29 +24,31 @@ export class DepartmentController {
   constructor(private readonly service: DepartmentService) {}
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   create(@Body() dto: CreateDepartmentDto) {
     return this.service.create(dto);
   }
 
   @Get()
+  @Roles(Role.HR, Role.ADMIN)
   findAll(@Query() query: QueryDepartmentDto) {
     return this.service.findAll(query);
   }
 
   @Get(':id')
+  @Roles(Role.HR, Role.ADMIN)
   findOne(@Param('id') id: string) {
     return this.service.findOne(id);
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   update(@Param('id') id: string, @Body() dto: UpdateDepartmentDto) {
     return this.service.update(id, dto);
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }

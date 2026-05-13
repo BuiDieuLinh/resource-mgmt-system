@@ -37,18 +37,18 @@ export class EmployeeController {
   ) {}
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   create(@Body() dto: CreateEmployeeDto) {
     return this.service.create(dto);
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.HR, Role.MANAGER, Role.ADMIN)
   async findAll(
     @Query() query: QueryEmployeeDto,
     @CurrentUser() user: { employeeId: string; roles: string[] },
   ) {
-    if (user.roles.includes(Role.MANAGER) && !user.roles.includes(Role.ADMIN)) {
+    if (user.roles.includes(Role.MANAGER) && !user.roles.includes(Role.HR)) {
       const deptId = await this.service.getManagerDepartmentId(user.employeeId);
       if (deptId) query.department_id = deptId;
     }
@@ -56,7 +56,7 @@ export class EmployeeController {
   }
 
   @Get('check-exists')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   checkExists(
     @Query('field') field: 'employee_code' | 'email' | 'identify_card',
     @Query('value') value: string,
@@ -66,7 +66,7 @@ export class EmployeeController {
   }
 
   @Get('export')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   async exportExcel(@Res() res: Response) {
     const buffer = await this.service.exportToExcel();
     res.setHeader(
@@ -81,7 +81,7 @@ export class EmployeeController {
   }
 
   @Post('import/preview')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   @UseInterceptors(FileInterceptor('file'))
   async previewImport(@UploadedFile() file: Express.Multer.File) {
     if (!file) return { success: false, message: 'No file uploaded' };
@@ -89,7 +89,7 @@ export class EmployeeController {
   }
 
   @Post('import')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   async importExcel(@Body() body: { employees: any[] }) {
     if (!body.employees?.length)
       return { success: false, message: 'No employees data provided' };
@@ -97,7 +97,7 @@ export class EmployeeController {
   }
 
   @Get('by-user')
-  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
+  @Roles(Role.HR, Role.MANAGER, Role.ADMIN, Role.EMPLOYEE)
   findByUserId(@CurrentUser() user: { userId: string; roles: string[] }) {
     return this.service.findByUserId(user.userId);
   }
@@ -108,7 +108,7 @@ export class EmployeeController {
   }
 
   @Put(':id/work-schedule')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   setWorkSchedule(@Param('id') id: string, @Body() dto: WorkScheduleDto[]) {
     return this.workScheduleService.setSchedule(id, dto);
   }
@@ -123,7 +123,9 @@ export class EmployeeController {
     }
 
     const hasPermission =
-      user.roles.includes(Role.ADMIN) || user.roles.includes(Role.MANAGER);
+      user.roles.includes(Role.HR) ||
+      user.roles.includes(Role.MANAGER) ||
+      user.roles.includes(Role.ADMIN);
     if (!hasPermission) {
       throw new ForbiddenException(
         'You do not have permission to view this profile',
@@ -134,13 +136,13 @@ export class EmployeeController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   update(@Param('id') id: string, @Body() dto: UpdateEmployeeDto) {
     return this.service.update(id, dto);
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }

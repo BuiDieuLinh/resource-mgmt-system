@@ -8,7 +8,7 @@ import { Role } from 'src/common/constant/roles';
 
 @Controller('notifications')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN, Role.SUPER_ADMIN, Role.MANAGER, Role.EMPLOYEE)
+@Roles(Role.ADMIN, Role.HR, Role.MANAGER, Role.EMPLOYEE)
 export class NotificationsController {
   constructor(private readonly svc: NotificationsService) {}
 

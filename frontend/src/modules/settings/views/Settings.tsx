@@ -11,7 +11,7 @@ import { ReminderSettings } from '@/modules/reminders/components/ReminderSetting
 export default function SettingsPage() {
   const { user } = useAuth();
   const isAdmin = user?.roles?.some((r) =>
-    [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.SUPER_ADMIN].includes(r as any),
+    [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.HR].includes(r as any),
   );
 
   return (

@@ -37,7 +37,7 @@ export default function AttendanceDetailPage() {
   const isLoading = useDelayedLoading(_loading);
   const { mutate: approve, isPending: approving } = useApproveTimesheet();
   const updateLeaveStatus = useUpdateLeaveStatus();
-  const isAdmin = useHasRole(EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.SUPER_ADMIN);
+  const isAdmin = useHasRole(EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.HR);
   const isManager = useHasRole(EMPLOYEE_ROLE.MANAGER);
 
   const allDays = useMemo(() => getDaysInMonth(year, month), [year, month]);

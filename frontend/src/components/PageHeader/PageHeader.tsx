@@ -45,7 +45,7 @@ export function PageHeader({
   const roles = user?.roles ?? [];
 
   const canAccessDashboard = roles.some((r) =>
-    [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.SUPER_ADMIN].includes(r as any),
+    [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.HR].includes(r as any),
   );
 
   const items = breadcrumbs ?? findPath(MENUS, location.pathname);

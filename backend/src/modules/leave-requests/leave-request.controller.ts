@@ -37,14 +37,12 @@ export class LeaveRequestController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
+  @Roles(Role.HR, Role.MANAGER, Role.ADMIN, Role.EMPLOYEE)
   async findAll(
     @Query() query: QueryLeaveRequestDto,
     @CurrentUser() user: { employeeId: string; roles: string[] },
   ) {
-    const isAdmin = user.roles.some((r) =>
-      [Role.ADMIN, Role.SUPER_ADMIN].includes(r as Role),
-    );
+    const isAdmin = user.roles.some((r) => [Role.ADMIN].includes(r as Role));
     const isManager = user.roles.includes(Role.MANAGER);
     const isEmployeeOnly = !isAdmin && !isManager;
 
@@ -60,19 +58,19 @@ export class LeaveRequestController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
+  @Roles(Role.HR, Role.MANAGER, Role.EMPLOYEE, Role.ADMIN)
   findOne(@Param('id') id: string) {
     return this.leaveRequestService.findOne(id);
   }
 
   @Post()
-  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
+  @Roles(Role.HR, Role.MANAGER, Role.EMPLOYEE, Role.ADMIN)
   create(@Body() dto: CreateLeaveRequestDto) {
     return this.leaveRequestService.create(dto);
   }
 
   @Patch('bulk-status')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.HR, Role.MANAGER, Role.ADMIN)
   bulkUpdateStatus(
     @Body() dto: BulkUpdateLeaveStatusDto,
     @CurrentUser() user: { employeeId: string; roles: string[] },
@@ -87,7 +85,7 @@ export class LeaveRequestController {
   }
 
   @Patch(':id/status')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.HR, Role.MANAGER, Role.ADMIN)
   updateStatus(
     @Param('id') id: string,
     @Body() dto: UpdateLeaveStatusDto,
@@ -102,13 +100,13 @@ export class LeaveRequestController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
+  @Roles(Role.HR, Role.MANAGER, Role.ADMIN, Role.EMPLOYEE)
   update(@Param('id') id: string, @Body() dto: UpdateLeaveRequestDto) {
     return this.leaveRequestService.update(id, dto);
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN, Role.EMPLOYEE)
+  @Roles(Role.HR, Role.ADMIN, Role.EMPLOYEE)
   remove(@Param('id') id: string) {
     return this.leaveRequestService.remove(id);
   }

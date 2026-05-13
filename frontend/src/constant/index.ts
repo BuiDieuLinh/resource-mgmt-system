@@ -159,8 +159,8 @@ export const LEVEL_COLOR: Record<LevelPosition, string> = {
 };
 
 export const EMPLOYEE_ROLE = {
-  SUPER_ADMIN: 'super_admin',
   ADMIN: 'admin',
+  HR: 'hr',
   MANAGER: 'manager',
   EMPLOYEE: 'employee',
 } as const;

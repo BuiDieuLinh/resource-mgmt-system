@@ -303,10 +303,12 @@ export class LeaveRequestService {
         })
       : null;
 
-    const isSuperAdmin = actorRoles.includes(Role.SUPER_ADMIN);
-    const isAdmin = isSuperAdmin || actorRoles.includes(Role.ADMIN);
+    const isAdmin = actorRoles.includes(Role.ADMIN);
+    const isHR = actorRoles.includes(Role.HR);
     const isManager =
-      !isAdmin && actorEmployee?.position?.level === PositionLevel.manager;
+      !isAdmin &&
+      !isHR &&
+      actorEmployee?.position?.level === PositionLevel.manager;
 
     if (actorEmployee && existing.employee?.id === actorEmployee.id) {
       throw new BadRequestException(
@@ -320,8 +322,10 @@ export class LeaveRequestService {
     if (isManager && existing.approved_by_manager) {
       throw new BadRequestException('You have already reviewed this request');
     }
-    if (isAdmin && !isSuperAdmin && existing.approved_by_admin) {
-      throw new BadRequestException('Admin has already reviewed this request');
+    if ((isHR || isAdmin) && existing.approved_by_admin) {
+      throw new BadRequestException(
+        'HR/Admin has already reviewed this request',
+      );
     }
 
     const now = new Date();

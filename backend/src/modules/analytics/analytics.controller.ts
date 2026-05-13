@@ -20,7 +20,7 @@ export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Get('overview')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Roles(Role.ADMIN, Role.HR)
   getOverview(
     @Query('year', new DefaultValuePipe(CURRENT_YEAR), ParseIntPipe)
     year: number,

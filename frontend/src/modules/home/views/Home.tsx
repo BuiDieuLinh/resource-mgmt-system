@@ -63,9 +63,7 @@ function AdminDashboard() {
 
   const { user } = useAuth();
   const roles = user?.roles ?? [];
-  const isAdmin = roles.some((r) =>
-    [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.SUPER_ADMIN].includes(r as any),
-  );
+  const isAdmin = roles.some((r) => [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.HR].includes(r as any));
 
   const { data: hrData, isLoading: hrLoading } = useQuery({
     queryKey: ['hr-structure'],
@@ -357,9 +355,7 @@ function AdminDashboard() {
 export default function Home() {
   const { user } = useAuth();
   const roles = user?.roles ?? [];
-  const isAdmin = roles.some((r) =>
-    [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.SUPER_ADMIN].includes(r as any),
-  );
+  const isAdmin = roles.some((r) => [EMPLOYEE_ROLE.ADMIN].includes(r as any));
 
   if (!isAdmin) {
     return (

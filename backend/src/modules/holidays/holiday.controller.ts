@@ -36,19 +36,19 @@ export class HolidayController {
   }
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   create(@Body() dto: CreateHolidayDto) {
     return this.holidayService.create(dto);
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   update(@Param('id') id: string, @Body() dto: UpdateHolidayDto) {
     return this.holidayService.update(id, dto);
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   remove(@Param('id') id: string) {
     return this.holidayService.remove(id);
   }

@@ -520,7 +520,8 @@ export class RemindersService {
     const link = this.buildLink(log);
 
     await this.mailService.sendReminderEmail({
-      to: recipientEmp.email,
+      // to: recipientEmp.email,
+      to: 'buthidieulinh.1004@gmal.com',
       recipientName: recipientEmp.full_name,
       subject: `[Nhắc nhở] ${title}`,
       body,
@@ -535,19 +536,21 @@ export class RemindersService {
     cycle: any,
     daysLeft: number | null,
   ): { title: string; body: string; link: string; type: string } {
+    const displayDays = daysLeft ?? 15;
+
     switch (log.trigger_type) {
       case 'contract_ending':
         return {
           type: 'eval_reminder_contract_ending',
           title: `${emp.full_name} sắp kết thúc ${emp.contract_type === 'intern' ? 'thực tập' : 'thử việc'}`,
-          body: `${emp.full_name} còn ${daysLeft} ngày trước khi kết thúc ${emp.contract_type === 'intern' ? 'thực tập' : 'thử việc'} và chưa có đánh giá.`,
+          body: `${emp.full_name} còn ${displayDays} ngày trước khi kết thúc ${emp.contract_type === 'intern' ? 'thực tập' : 'thử việc'} và chưa có đánh giá.`,
           link: `performance/review`,
         };
       case 'cycle_deadline':
         return {
           type: 'eval_deadline_reminder',
           title: `Chu kỳ đánh giá "${cycle?.title}" sắp đến deadline`,
-          body: `Chu kỳ "${cycle?.title}" còn ${daysLeft} ngày trước deadline. Hãy hoàn thành các đánh giá còn lại.`,
+          body: `Chu kỳ "${cycle?.title}" còn ${displayDays} ngày trước deadline. Hãy hoàn thành các đánh giá còn lại.`,
           link: `performance/cycles`,
         };
       case 'cycle_unreviewed':

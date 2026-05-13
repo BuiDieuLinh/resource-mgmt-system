@@ -32,19 +32,19 @@ export class WorkPolicyController {
   }
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   create(@Body() dto: CreateWorkPolicyDto) {
     return this.workPolicyService.create(dto);
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   update(@Param('id') id: string, @Body() dto: CreateWorkPolicyDto) {
     return this.workPolicyService.update(id, dto);
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   remove(@Param('id') id: string) {
     return this.workPolicyService.remove(id);
   }

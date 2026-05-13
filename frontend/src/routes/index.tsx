@@ -49,7 +49,7 @@ function RoleBasedRedirect() {
   const { user } = useAuth();
   const roles = user?.roles ?? [];
 
-  if (roles.includes(EMPLOYEE_ROLE.ADMIN) || roles.includes(EMPLOYEE_ROLE.SUPER_ADMIN)) {
+  if (roles.includes(EMPLOYEE_ROLE.ADMIN) || roles.includes(EMPLOYEE_ROLE.HR)) {
     return <Home />;
   }
 

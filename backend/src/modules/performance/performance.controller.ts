@@ -30,55 +30,55 @@ export class PerformanceController {
   ) {}
 
   @Get('templates')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.HR, Role.MANAGER, Role.ADMIN)
   getTemplates() {
     return this.templateSvc.findAll();
   }
 
   @Get('templates/:id')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.HR, Role.MANAGER, Role.ADMIN)
   getTemplate(@Param('id') id: string) {
     return this.templateSvc.findOne(id);
   }
 
   @Post('templates')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   createTemplate(@Body() dto: CreateTemplateDto) {
     return this.templateSvc.create(dto);
   }
 
   @Patch('templates/:id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   updateTemplate(@Param('id') id: string, @Body() dto: UpdateTemplateDto) {
     return this.templateSvc.update(id, dto);
   }
 
   @Patch('templates/:id/toggle')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   toggleTemplate(@Param('id') id: string) {
     return this.templateSvc.toggle(id);
   }
 
   @Post('templates/:id/criteria')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   addCriteria(@Param('id') id: string, @Body() dto: CreateCriteriaDto) {
     return this.templateSvc.addCriteria(id, dto);
   }
 
   @Patch('criteria/:id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   updateCriteria(@Param('id') id: string, @Body() dto: UpdateCriteriaDto) {
     return this.templateSvc.updateCriteria(id, dto);
   }
 
   @Delete('criteria/:id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   deleteCriteria(@Param('id') id: string) {
     return this.templateSvc.deleteCriteria(id);
   }
 
   @Post('cycles')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   createCycle(
     @Body() dto: CreateCycleDto,
     @CurrentUser() user: { employeeId: string },
@@ -87,7 +87,7 @@ export class PerformanceController {
   }
 
   @Get('cycles')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.HR, Role.MANAGER, Role.ADMIN)
   getCycles() {
     return this.svc.getCycles();
   }
@@ -98,19 +98,19 @@ export class PerformanceController {
   }
 
   @Get('cycles/:id')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.HR, Role.MANAGER, Role.ADMIN)
   getCycleById(@Param('id') id: string) {
     return this.svc.getCycleById(id);
   }
 
   @Post('reviews')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.HR, Role.MANAGER, Role.ADMIN)
   createReview(@Body() dto: CreateReviewDto) {
     return this.svc.createReview(dto);
   }
 
   @Patch('reviews/:id/submit')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.HR, Role.MANAGER, Role.ADMIN)
   submitReview(
     @Param('id') id: string,
     @Body() dto: SubmitReviewDto,
@@ -120,20 +120,18 @@ export class PerformanceController {
   }
 
   @Patch('cycles/:id/publish')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   publishReviews(@Param('id') id: string) {
     return this.svc.publishReviews(id);
   }
 
   @Get('cycles/:id/reviews')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.HR, Role.MANAGER, Role.ADMIN)
   getReviewsByCycle(
     @Param('id') id: string,
     @CurrentUser() user: { employeeId: string; roles: string[] },
   ) {
-    const isAdmin = user.roles.some((r) =>
-      [Role.ADMIN, Role.SUPER_ADMIN].includes(r as Role),
-    );
+    const isAdmin = user.roles.some((r) => [Role.ADMIN].includes(r as Role));
     return this.svc.getReviewsByCycle(id, user.employeeId, isAdmin);
   }
 
@@ -151,19 +149,19 @@ export class PerformanceController {
   }
 
   @Post('awards')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   createAward(@Body() dto: CreateAwardDto) {
     return this.svc.createAward(dto);
   }
 
   @Delete('awards/:id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.HR, Role.ADMIN)
   deleteAward(@Param('id') id: string) {
     return this.svc.deleteAward(id);
   }
 
   @Get('cycles/:id/awards')
-  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
+  @Roles(Role.HR, Role.MANAGER, Role.ADMIN, Role.EMPLOYEE)
   getAwardsByCycle(@Param('id') id: string) {
     return this.svc.getAwardsByCycle(id);
   }

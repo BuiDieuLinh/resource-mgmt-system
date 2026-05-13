@@ -55,7 +55,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
   const { user, logout } = useAuth();
   const AUTH_APP_URL = `${AUTH_URL}apps` || new URL(AUTH_URL).origin;
   const isSettingDisabled =
-    !user?.roles.includes(EMPLOYEE_ROLE.SUPER_ADMIN) && !user?.roles.includes(EMPLOYEE_ROLE.ADMIN);
+    !user?.roles.includes(EMPLOYEE_ROLE.ADMIN) && !user?.roles.includes(EMPLOYEE_ROLE.HR);
 
   const { data: notiData } = useGetNotifications();
   const markReadMutation = useMarkRead();

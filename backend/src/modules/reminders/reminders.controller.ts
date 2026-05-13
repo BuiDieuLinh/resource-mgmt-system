@@ -13,13 +13,13 @@ export class RemindersController {
   constructor(private readonly svc: RemindersService) {}
 
   @Get('settings')
-  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @Roles(Role.ADMIN, Role.HR)
   getSettings() {
     return this.svc.getSettings();
   }
 
   @Patch('settings')
-  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @Roles(Role.ADMIN, Role.HR)
   updateSetting(
     @Body() dto: UpdateSettingDto,
     @CurrentUser() user: { employeeId: string },
@@ -37,13 +37,25 @@ export class RemindersController {
   }
 
   @Get('dashboard')
-  @Roles(Role.ADMIN, Role.SUPER_ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.HR)
   getDashboardReminders(
     @CurrentUser() user: { employeeId: string; roles: string[] },
   ) {
-    const isAdmin = user.roles.some((r) =>
-      [Role.ADMIN, Role.SUPER_ADMIN].includes(r as Role),
-    );
+    const isAdmin = user.roles.some((r) => [Role.ADMIN].includes(r as Role));
     return this.svc.getDashboardReminders(user.employeeId, isAdmin);
+  }
+
+  @Get('process-pending')
+  @Roles(Role.ADMIN)
+  async processPending() {
+    await this.svc.processPendingLogs();
+    return { success: true, message: 'Pending logs processed' };
+  }
+
+  @Get('generate-logs')
+  @Roles(Role.ADMIN)
+  async generateLogs() {
+    await this.svc.generateReminderLogs();
+    return { success: true, message: 'Reminder logs generated' };
   }
 }

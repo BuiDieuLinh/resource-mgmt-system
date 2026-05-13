@@ -19,7 +19,7 @@ export class ReportsController {
   ) {}
 
   @Get('hr/structure')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Roles(Role.ADMIN, Role.HR)
   @ApiOperation({ summary: 'Báo cáo cơ cấu nhân sự' })
   async getHrStructure(@Query() query: HrStructureQueryDto) {
     const data = await this.hrReportsService.getHrStructure(query);
@@ -27,7 +27,7 @@ export class ReportsController {
   }
 
   @Get('hr/turnover')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.HR)
   @ApiOperation({ summary: 'Báo cáo biến động nhân sự và turnover rate' })
   async getTurnoverReport(@Query() query: TurnoverQueryDto) {
     const data = await this.hrReportsService.getTurnoverReport(query);
@@ -35,7 +35,7 @@ export class ReportsController {
   }
 
   @Get('insights')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.HR)
   @ApiOperation({ summary: 'Lấy insights tương quan tự động' })
   async getInsights() {
     const data = await this.insightsService.getInsights();

@@ -66,7 +66,7 @@ export default function LeaveRequestsPage() {
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
   const [opened, setOpened] = useState(false);
   const [editRequest, setEditRequest] = useState<ILeaveRequest | null>(null);
-  const isAdmin = useHasRole(EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.SUPER_ADMIN);
+  const isAdmin = useHasRole(EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.HR);
   const isManager = useHasRole(EMPLOYEE_ROLE.MANAGER);
 
   const { confirm, ConfirmComponent } = useConfirm();
