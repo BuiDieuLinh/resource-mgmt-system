@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { authClient } from '../lib/api';
 import { STORAGE_KEYS } from '../constant/config';
@@ -9,7 +9,19 @@ export interface AuthUser {
   roles: string[];
 }
 
-export const useAuth = () => {
+interface AuthContextType {
+  isLoading: boolean;
+  isLoggedIn: boolean;
+  user: AuthUser | null;
+  error: string | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  checkLoginStatus: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -41,7 +53,6 @@ export const useAuth = () => {
 
   useEffect(() => {
     checkLoginStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -94,5 +105,19 @@ export const useAuth = () => {
     setError(null);
   };
 
-  return { isLoading, isLoggedIn, user, error, login, logout, checkLoginStatus };
+  return (
+    <AuthContext.Provider
+      value={{ isLoading, isLoggedIn, user, error, login, logout, checkLoginStatus }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };

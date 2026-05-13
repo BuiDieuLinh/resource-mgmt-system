@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, ActivityIndicator } from 'react-native';
 
-import { useAuth } from './src/hooks/useAuth';
+import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { LoginScreen } from './src/modules/auth/screens/LoginScreen';
 import { TabNavigator } from './src/navigation/TabNavigator-simple';
 import { TimesheetScreen } from './src/modules/attendances/screens/TimesheetScreen';
@@ -50,10 +50,12 @@ function AppNavigator() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        <AppNavigator />
-        <StatusBar style="light" />
-      </NavigationContainer>
+      <AuthProvider>
+        <NavigationContainer>
+          <AppNavigator />
+          <StatusBar style="light" />
+        </NavigationContainer>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

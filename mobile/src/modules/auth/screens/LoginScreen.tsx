@@ -12,7 +12,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../../../hooks/useAuth';
+import { useAuth } from '../../../contexts/AuthContext';
 import { useForm } from '../../../hooks/useForm';
 import { validateEmail, validatePassword } from '../../../utils';
 import { Button, Input } from '../../../components/ui';
