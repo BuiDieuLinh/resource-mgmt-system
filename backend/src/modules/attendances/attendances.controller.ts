@@ -24,6 +24,7 @@ import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from 'src/common/constant/roles';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { WifiGuard } from './guards/wifi.guard';
 
 @Controller('attendances')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -31,6 +32,7 @@ export class AttendancesController {
   constructor(private readonly attendancesService: AttendancesService) {}
 
   @Post('check-in')
+  @UseGuards(WifiGuard)
   @Roles(Role.EMPLOYEE, Role.MANAGER, Role.HR, Role.ADMIN)
   checkIn(@Body() dto: CheckInDto) {
     return this.attendancesService.checkIn(dto);
