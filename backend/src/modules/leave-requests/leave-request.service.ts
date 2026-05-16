@@ -305,10 +305,10 @@ export class LeaveRequestService {
 
     const isAdmin = actorRoles.includes(Role.ADMIN);
     const isHR = actorRoles.includes(Role.HR);
-    const isManager =
-      !isAdmin &&
-      !isHR &&
-      actorEmployee?.position?.level === PositionLevel.manager;
+    const isManager = actorRoles.includes(Role.MANAGER);
+
+    const canApproveAsAdmin = isAdmin || isHR;
+    const canApproveAsManager = isManager && !canApproveAsAdmin;
 
     if (actorEmployee && existing.employee?.id === actorEmployee.id) {
       throw new BadRequestException(
@@ -331,14 +331,15 @@ export class LeaveRequestService {
     const now = new Date();
     const data: any = {};
 
-    if (isManager) {
+    if (canApproveAsManager) {
       data.approved_by_manager = actorEmployee!.id;
       data.manager_approved_at = now;
       data.manager_comment = dto.comment ?? null;
       if (dto.status === LeaveStatus.rejected) {
         data.status = LeaveStatus.rejected;
       }
-    } else {
+    }
+    if (canApproveAsAdmin) {
       data.approved_by_admin = actorEmployee!.id;
       data.admin_approved_at = now;
       data.admin_comment = dto.comment ?? null;
