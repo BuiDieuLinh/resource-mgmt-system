@@ -122,6 +122,8 @@ export class AttendancesService {
     const user_agent = req.headers['user-agent'] || 'unknown';
     const parsedUserAgent = parseUserAgent(user_agent);
 
+    const isFlexibleEnabled = !!policy?.is_flexible_enabled;
+
     const attendance = await this.prisma.attendances.upsert({
       where: {
         employee_id_work_date: {
@@ -136,16 +138,16 @@ export class AttendancesService {
         scheduled_end: schedule.end_time,
         break_start: policy?.break_start ?? null,
         break_end: policy?.break_end ?? null,
-        flexible_start: policy?.is_flexible_enabled
-          ? (policy.flexible_start_minutes ?? null)
-          : null,
-        flexible_end: policy?.is_flexible_enabled
-          ? (policy.flexible_end_minutes ?? null)
-          : null,
+        flexible_start: isFlexibleEnabled ? policy?.flexible_start : null,
+        flexible_end: isFlexibleEnabled ? policy?.flexible_end : null,
         check_in_time: timestamp,
         status: AttendanceStatus.pending,
       },
-      update: { check_in_time: timestamp },
+      update: {
+        check_in_time: timestamp,
+        flexible_start: isFlexibleEnabled ? policy?.flexible_start : null,
+        flexible_end: isFlexibleEnabled ? policy?.flexible_end : null,
+      },
     });
 
     await this.prisma.attendanceLogs.create({
