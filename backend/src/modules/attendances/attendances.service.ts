@@ -30,6 +30,8 @@ import {
   LeaveStatus,
   LeaveType,
 } from '@prisma/client';
+import { Request } from 'express';
+import { parseUserAgent } from './utils/argent-parser';
 
 function haversineMeters(
   lat1: number,
@@ -54,7 +56,7 @@ export class AttendancesService {
     private readonly workPolicyService: WorkPolicyService,
   ) {}
 
-  async checkIn(dto: CheckInDto) {
+  async checkIn(dto: CheckInDto, req: Request) {
     const timestamp = dto.timestamp ? new Date(dto.timestamp) : new Date();
     const workDate = toLocalWorkDate(timestamp);
 
@@ -112,6 +114,14 @@ export class AttendancesService {
       throw new BadRequestException('Already checked in today');
     }
 
+    const ip_address = Array.isArray(req.headers['x-forwarded-for'])
+      ? req.headers['x-forwarded-for'][0]
+      : req.headers['x-forwarded-for'] ||
+        req.socket.remoteAddress ||
+        '127.0.0.1';
+    const user_agent = req.headers['user-agent'] || 'unknown';
+    const parsedUserAgent = parseUserAgent(user_agent);
+
     const attendance = await this.prisma.attendances.upsert({
       where: {
         employee_id_work_date: {
@@ -145,8 +155,13 @@ export class AttendancesService {
         timestamp,
         latitude: dto.latitude ?? null,
         longitude: dto.longitude ?? null,
-        ip_address: dto.ip_address ?? null,
-        user_agent: dto.user_agent ?? null,
+        ip_address: ip_address,
+        user_agent:
+          parsedUserAgent.browser +
+          ' ' +
+          parsedUserAgent.os +
+          ' ' +
+          parsedUserAgent.device,
       },
     });
 
@@ -163,7 +178,7 @@ export class AttendancesService {
     );
   }
 
-  async checkOut(dto: CheckOutDto) {
+  async checkOut(dto: CheckOutDto, req: Request) {
     const timestamp = dto.timestamp ? new Date(dto.timestamp) : new Date();
     const workDate = toLocalWorkDate(timestamp);
 
@@ -179,6 +194,14 @@ export class AttendancesService {
     if (!attendance.check_in_time)
       throw new BadRequestException('Must check-in first');
 
+    const ip_address = Array.isArray(req.headers['x-forwarded-for'])
+      ? req.headers['x-forwarded-for'][0]
+      : req.headers['x-forwarded-for'] ||
+        req.socket.remoteAddress ||
+        '127.0.0.1';
+    const user_agent = req.headers['user-agent'] || 'unknown';
+    const parsedUserAgent = parseUserAgent(user_agent);
+
     await this.prisma.attendanceLogs.create({
       data: {
         attendance_id: attendance.id,
@@ -186,8 +209,13 @@ export class AttendancesService {
         timestamp,
         latitude: dto.latitude ?? null,
         longitude: dto.longitude ?? null,
-        ip_address: dto.ip_address ?? null,
-        user_agent: dto.user_agent ?? null,
+        ip_address: ip_address,
+        user_agent:
+          parsedUserAgent.browser +
+          ' ' +
+          parsedUserAgent.os +
+          ' ' +
+          parsedUserAgent.device,
       },
     });
 

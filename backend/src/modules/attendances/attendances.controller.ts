@@ -11,6 +11,7 @@ import {
   DefaultValuePipe,
   UseGuards,
   ForbiddenException,
+  Req,
 } from '@nestjs/common';
 import { AttendancesService } from './attendances.service';
 import { QueryAttendanceDto } from './dto/query-attendance.dto';
@@ -25,6 +26,7 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from 'src/common/constant/roles';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { WifiGuard } from './guards/wifi.guard';
+import type { Request } from 'express';
 
 @Controller('attendances')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -34,14 +36,14 @@ export class AttendancesController {
   @Post('check-in')
   @UseGuards(WifiGuard)
   @Roles(Role.EMPLOYEE, Role.MANAGER, Role.HR, Role.ADMIN)
-  checkIn(@Body() dto: CheckInDto) {
-    return this.attendancesService.checkIn(dto);
+  checkIn(@Body() dto: CheckInDto, @Req() req: Request) {
+    return this.attendancesService.checkIn(dto, req);
   }
 
   @Post('check-out')
   @Roles(Role.EMPLOYEE, Role.MANAGER, Role.HR, Role.ADMIN)
-  checkOut(@Body() dto: CheckOutDto) {
-    return this.attendancesService.checkOut(dto);
+  checkOut(@Body() dto: CheckOutDto, @Req() req: Request) {
+    return this.attendancesService.checkOut(dto, req);
   }
 
   @Get('my')
