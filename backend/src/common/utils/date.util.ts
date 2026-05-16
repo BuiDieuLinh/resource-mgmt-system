@@ -20,11 +20,7 @@ export function getMonthRange(month: number, year: number) {
   };
 }
 
-export function getWorkingDaysInMonth(
-  month: number,
-  year: number,
-  holidayDates: Set<string> = new Set(),
-): number {
+export function getWorkingDaysInMonth(month: number, year: number): number {
   const start = dayjs(`${year}-${month}-01`).startOf('month');
   const daysInMonth = start.daysInMonth();
   let count = 0;
@@ -32,7 +28,7 @@ export function getWorkingDaysInMonth(
     const cur = start.add(d, 'day');
     const dow = cur.day();
     const iso = cur.format('YYYY-MM-DD');
-    if (dow !== 0 && dow !== 6 && !holidayDates.has(iso)) count++;
+    if (dow !== 0 && dow !== 6) count++;
   }
   return count;
 }

@@ -116,7 +116,6 @@ export default function LeaveRequestsPage() {
   const { data: empData } = useGetEmployees(
     {
       pageIndex: 1,
-      // Don't pass pageSize - backend will return all employees for filter search
     },
     {
       enabled: !isEmployeeOnly,

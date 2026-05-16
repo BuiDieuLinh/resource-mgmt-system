@@ -359,7 +359,7 @@ export class AttendancesService {
       return dow !== 0 && dow !== 6;
     }).length;
 
-    const planDay = getWorkingDaysInMonth(month, year, holidayDates);
+    const planDay = getWorkingDaysInMonth(month, year);
     const elapsedWorkDays = getWorkingDaysUpToToday(month, year, holidayDates);
     const summaryMap = new Map<string, any>();
 
