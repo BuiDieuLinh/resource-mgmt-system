@@ -41,6 +41,16 @@ export const useGetDepartments = (
   });
 };
 
-export const useGetAllDepartments = () => {
-  return useGetDepartments({ pageSize: 1000 }, { staleTime: 5 * 60 * 1000 });
+export const useGetAllDepartments = (
+  config?: Omit<
+    UseQueryOptions<
+      DepartmentsResponse,
+      Error,
+      DepartmentsResponse,
+      [string, GetDepartmentsParams]
+    >,
+    'queryKey' | 'queryFn'
+  >,
+) => {
+  return useGetDepartments({ pageSize: 1000 }, { staleTime: 5 * 60 * 1000, ...config });
 };

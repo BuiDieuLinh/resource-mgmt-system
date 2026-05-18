@@ -12,6 +12,8 @@ import {
   ThemeIcon,
   Divider,
   Box,
+  MultiSelect,
+  Paper,
 } from '@mantine/core';
 import {
   IconPlus,
@@ -22,6 +24,9 @@ import {
   IconUser,
   IconShieldCheck,
   IconChecks,
+  IconFilter,
+  IconFilterOff,
+  IconUserCheck,
 } from '@tabler/icons-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { BaseTable, type TableColumn } from '@/components/BaseTable/BaseTable';
@@ -36,6 +41,7 @@ import {
   LEAVE_STATUS,
   EMPLOYEE_ROLE,
   LEAVE_STATUS_OPTIONS,
+  LEAVE_TYPE_OPTIONS,
 } from '@/constant';
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
@@ -54,13 +60,8 @@ import { useGetEmployeeByUserId } from '@/modules/employees/api/get-employee-by-
 import { useGetAllDepartments } from '@/modules/departments/api/get-departments';
 import { EmployeeColumn } from '@/components/EmployeeColumn/EmployeeColumn';
 import MonthNavigator from '@/modules/attendances/components/MonthPickerInput';
-import {
-  FilterTreeSelect,
-  type CombinedFilterItem,
-} from '@/components/FilterTreeSelect/FilterTreeSelect';
 
 export default function LeaveRequestsPage() {
-  const [filterSelect, setFilterSelect] = useState<CombinedFilterItem[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<Date | null>(() => new Date());
   const [page, setPage] = useState(1);
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
@@ -68,6 +69,12 @@ export default function LeaveRequestsPage() {
   const [editRequest, setEditRequest] = useState<ILeaveRequest | null>(null);
   const isAdmin = useHasRole(EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.HR);
   const isManager = useHasRole(EMPLOYEE_ROLE.MANAGER);
+
+  const [showMyRequests, setShowMyRequests] = useState(false);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedLeaveTypes, setSelectedLeaveTypes] = useState<string[]>([]);
+  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
 
   const { confirm, ConfirmComponent } = useConfirm();
 
@@ -80,18 +87,23 @@ export default function LeaveRequestsPage() {
   } | null>(null);
   const [actionComment, setActionComment] = useState('');
 
-  const selectedStatusIds = filterSelect
-    .filter((item) => item.type === 'status')
-    .map((item) => item.value);
-  const selectedEmployeeIds = filterSelect
-    .filter((item) => item.type === 'employee')
-    .map((item) => item.value);
-  const selectedDepartmentIds = filterSelect
-    .filter((item) => item.type === 'department')
-    .map((item) => item.value);
-
   const month = selectedMonth ? selectedMonth.getMonth() + 1 : new Date().getMonth() + 1;
   const year = selectedMonth ? selectedMonth.getFullYear() : new Date().getFullYear();
+
+  const isEmployeeOnly = !isAdmin && !isManager;
+
+  const employeeIdFilter = useMemo(() => {
+    if (isEmployeeOnly) {
+      return currentEmployeeId ? [currentEmployeeId] : undefined;
+    }
+    if (showMyRequests && currentEmployeeId) {
+      return [currentEmployeeId];
+    }
+    if (selectedEmployees.length > 0) {
+      return selectedEmployees;
+    }
+    return undefined;
+  }, [isEmployeeOnly, showMyRequests, currentEmployeeId, selectedEmployees]);
 
   const {
     data: leaveData,
@@ -99,9 +111,10 @@ export default function LeaveRequestsPage() {
     error,
     refetch,
   } = useGetLeaveRequests({
-    status: selectedStatusIds.length ? selectedStatusIds.join(',') : undefined,
-    employee_id: selectedEmployeeIds.length ? selectedEmployeeIds.join(',') : undefined,
-    department_id: selectedDepartmentIds.length ? selectedDepartmentIds.join(',') : undefined,
+    status: selectedStatuses.length ? selectedStatuses.join(',') : undefined,
+    employee_id: employeeIdFilter ? employeeIdFilter.join(',') : undefined,
+    department_id: selectedDepartments.length ? selectedDepartments.join(',') : undefined,
+    leave_type: selectedLeaveTypes.length ? selectedLeaveTypes.join(',') : undefined,
     month,
     year,
     pageIndex: page,
@@ -110,8 +123,6 @@ export default function LeaveRequestsPage() {
   const isLoading = useDelayedLoading(_loading);
   const requests = leaveData?.data ?? [];
   const total = leaveData?.count ?? 0;
-
-  const isEmployeeOnly = !isAdmin && !isManager;
 
   const { data: empData } = useGetEmployees(
     {
@@ -132,7 +143,9 @@ export default function LeaveRequestsPage() {
     [empData, isEmployeeOnly],
   );
 
-  const { data: deptData, isLoading: isDeptLoading } = useGetAllDepartments();
+  const { data: deptData } = useGetAllDepartments({
+    enabled: isAdmin && !isEmployeeOnly,
+  });
 
   const createMutation = useCreateLeaveRequest();
   const updateMutation = useUpdateLeaveStatus();
@@ -415,6 +428,24 @@ export default function LeaveRequestsPage() {
     },
   ];
 
+  const hasActiveFilters =
+    selectedStatuses.length > 0 ||
+    selectedLeaveTypes.length > 0 ||
+    selectedEmployees.length > 0 ||
+    selectedDepartments.length > 0 ||
+    showMyRequests;
+
+  const handleClearFilters = () => {
+    setSelectedStatuses([]);
+    setSelectedLeaveTypes([]);
+    setSelectedEmployees([]);
+    setSelectedDepartments([]);
+    if (showMyRequests) {
+      setShowMyRequests(false);
+    }
+    setPage(1);
+  };
+
   if (error) return <ErrorState message={error.message} onRetry={refetch} />;
 
   return (
@@ -423,54 +454,285 @@ export default function LeaveRequestsPage() {
         title="Leave Requests"
         description="Manage employee leave requests"
         right={
-          <Group gap="sm" wrap="wrap" align="center">
+          <Group gap="sm">
             <Button leftSection={<IconPlus size={18} />} onClick={handleOpen}>
               Add Leave Request
             </Button>
-            <MonthNavigator value={selectedMonth} onChange={setSelectedMonth} />
-
-            {!isEmployeeOnly && (
-              <FilterTreeSelect
-                value={filterSelect}
-                onChange={(value) => {
-                  setFilterSelect(value);
-                  setPage(1);
-                }}
-                w={isAdmin ? 280 : 200}
-                employeeOptions={isManager && !isAdmin ? [] : employeeOptions}
-                departments={isManager && !isAdmin ? [] : (deptData?.data ?? [])}
-                statusOptions={LEAVE_STATUS_OPTIONS}
-                isLoading={_loading || isDeptLoading}
-              />
-            )}
-
-            {someSelected && (
-              <Group gap={6}>
-                <Text size="sm" c="dimmed">
-                  {selectedIndices.size} selected
-                </Text>
-                <Button
-                  size="xs"
-                  color="green"
-                  leftSection={<IconChecks size={14} />}
-                  onClick={() => handleBulkAction(LEAVE_STATUS.APPROVED)}
-                >
-                  Approve all
-                </Button>
-                <Button
-                  size="xs"
-                  color="red"
-                  variant="light"
-                  leftSection={<IconX size={14} />}
-                  onClick={() => handleBulkAction(LEAVE_STATUS.REJECTED)}
-                >
-                  Reject all
-                </Button>
-              </Group>
-            )}
           </Group>
         }
       />
+
+      <Paper p="md" withBorder>
+        <Stack gap="md">
+          <Group gap="sm" wrap="nowrap" align="center">
+            <MonthNavigator value={selectedMonth} onChange={setSelectedMonth} />
+
+            <Tooltip
+              label={
+                selectedStatuses.length > 0
+                  ? selectedStatuses
+                      .map((s) => LEAVE_STATUS_LABEL[s as keyof typeof LEAVE_STATUS_LABEL])
+                      .join(', ')
+                  : ''
+              }
+              disabled={selectedStatuses.length === 0}
+              multiline
+              w={200}
+            >
+              <Box>
+                <MultiSelect
+                  placeholder="Status"
+                  data={LEAVE_STATUS_OPTIONS}
+                  value={selectedStatuses}
+                  onChange={(value) => {
+                    setSelectedStatuses(value);
+                    setPage(1);
+                  }}
+                  clearable
+                  searchable
+                  w={160}
+                  size="sm"
+                  leftSection={<IconFilter size={16} />}
+                  hidePickedOptions
+                  styles={{
+                    input: {
+                      minHeight: 36,
+                      maxHeight: 36,
+                      overflowX: 'auto',
+                      overflowY: 'hidden',
+                      scrollbarWidth: 'thin',
+                    },
+                    pill: {
+                      flexShrink: 0,
+                    },
+                  }}
+                />
+              </Box>
+            </Tooltip>
+
+            <Tooltip
+              label={
+                selectedLeaveTypes.length > 0
+                  ? selectedLeaveTypes
+                      .map((t) => LEAVE_TYPE_LABEL[t as keyof typeof LEAVE_TYPE_LABEL])
+                      .join(', ')
+                  : ''
+              }
+              disabled={selectedLeaveTypes.length === 0}
+              multiline
+              w={220}
+            >
+              <Box>
+                <MultiSelect
+                  placeholder="Leave Type"
+                  data={LEAVE_TYPE_OPTIONS}
+                  value={selectedLeaveTypes}
+                  onChange={(value) => {
+                    setSelectedLeaveTypes(value);
+                    setPage(1);
+                  }}
+                  clearable
+                  searchable
+                  w={180}
+                  size="sm"
+                  leftSection={<IconFilter size={16} />}
+                  hidePickedOptions
+                  styles={{
+                    input: {
+                      minHeight: 36,
+                      maxHeight: 36,
+                      overflowX: 'auto',
+                      overflowY: 'hidden',
+                      scrollbarWidth: 'thin',
+                    },
+                    pill: {
+                      flexShrink: 0,
+                    },
+                  }}
+                />
+              </Box>
+            </Tooltip>
+
+            {!isEmployeeOnly && (
+              <Box
+                style={{
+                  width: showMyRequests ? 0 : 200,
+                  overflow: 'hidden',
+                  transition: 'width 0.2s',
+                }}
+              >
+                {!showMyRequests && (
+                  <Tooltip
+                    label={
+                      selectedEmployees.length > 0
+                        ? selectedEmployees
+                            .map((id) => employeeOptions.find((e) => e.value === id)?.label || id)
+                            .join(', ')
+                        : ''
+                    }
+                    disabled={selectedEmployees.length === 0}
+                    multiline
+                    w={300}
+                  >
+                    <Box>
+                      <MultiSelect
+                        placeholder="Employee"
+                        data={employeeOptions}
+                        value={selectedEmployees}
+                        onChange={(value) => {
+                          setSelectedEmployees(value);
+                          setPage(1);
+                        }}
+                        clearable
+                        searchable
+                        w={200}
+                        size="sm"
+                        leftSection={<IconUser size={16} />}
+                        styles={{
+                          input: {
+                            minHeight: 36,
+                            maxHeight: 36,
+                            overflowX: 'auto',
+                            overflowY: 'hidden',
+                            scrollbarWidth: 'thin',
+                          },
+                          pill: {
+                            flexShrink: 0,
+                          },
+                        }}
+                      />
+                    </Box>
+                  </Tooltip>
+                )}
+              </Box>
+            )}
+
+            {isAdmin && (
+              <Box
+                style={{
+                  width: showMyRequests ? 0 : 180,
+                  overflow: 'hidden',
+                  transition: 'width 0.2s',
+                }}
+              >
+                {!showMyRequests && (
+                  <Tooltip
+                    label={
+                      selectedDepartments.length > 0
+                        ? selectedDepartments
+                            .map(
+                              (id) =>
+                                (deptData?.data ?? []).find((d) => d.id === id)?.department_name ||
+                                id,
+                            )
+                            .join(', ')
+                        : ''
+                    }
+                    disabled={selectedDepartments.length === 0}
+                    multiline
+                    w={250}
+                  >
+                    <Box>
+                      <MultiSelect
+                        placeholder="Department"
+                        data={(deptData?.data ?? []).map((d) => ({
+                          value: d.id,
+                          label: d.department_name,
+                        }))}
+                        value={selectedDepartments}
+                        onChange={(value) => {
+                          setSelectedDepartments(value);
+                          setPage(1);
+                        }}
+                        clearable
+                        searchable
+                        w={180}
+                        size="sm"
+                        leftSection={<IconFilter size={16} />}
+                        hidePickedOptions
+                        styles={{
+                          input: {
+                            minHeight: 36,
+                            maxHeight: 36,
+                            overflowX: 'auto',
+                            overflowY: 'hidden',
+                            scrollbarWidth: 'thin',
+                          },
+                          pill: {
+                            flexShrink: 0,
+                          },
+                        }}
+                      />
+                    </Box>
+                  </Tooltip>
+                )}
+              </Box>
+            )}
+
+            <Box style={{ flex: 1 }} />
+
+            {!isEmployeeOnly && (
+              <Button
+                variant={showMyRequests ? 'filled' : 'light'}
+                size="sm"
+                leftSection={<IconUserCheck size={16} />}
+                onClick={() => {
+                  setShowMyRequests(!showMyRequests);
+                  if (!showMyRequests) {
+                    setSelectedEmployees([]);
+                    setSelectedDepartments([]);
+                  }
+                  setPage(1);
+                }}
+                styles={{
+                  root: {
+                    minWidth: 130,
+                  },
+                }}
+              >
+                My Requests
+              </Button>
+            )}
+
+            {hasActiveFilters && (
+              <Tooltip label="Clear all filters" withArrow>
+                <ActionIcon variant="subtle" color="gray" size="lg" onClick={handleClearFilters}>
+                  <IconFilterOff size={18} />
+                </ActionIcon>
+              </Tooltip>
+            )}
+          </Group>
+
+          {someSelected && (
+            <Group
+              gap="sm"
+              p="xs"
+              style={{ background: 'var(--mantine-color-blue-0)', borderRadius: 6 }}
+            >
+              <Text size="sm" fw={500}>
+                {selectedIndices.size} selected
+              </Text>
+              <Button
+                size="xs"
+                color="green"
+                leftSection={<IconChecks size={14} />}
+                onClick={() => handleBulkAction(LEAVE_STATUS.APPROVED)}
+              >
+                Approve all
+              </Button>
+              <Button
+                size="xs"
+                color="red"
+                variant="light"
+                leftSection={<IconX size={14} />}
+                onClick={() => handleBulkAction(LEAVE_STATUS.REJECTED)}
+              >
+                Reject all
+              </Button>
+            </Group>
+          )}
+        </Stack>
+      </Paper>
 
       {isLoading ? (
         <TableSkeleton colWidths={[160, 100, 160, 200, 180, 90, 100]} />

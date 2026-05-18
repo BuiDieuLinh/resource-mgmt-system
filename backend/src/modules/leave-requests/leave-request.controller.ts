@@ -106,7 +106,7 @@ export class LeaveRequestController {
   }
 
   @Delete(':id')
-  @Roles(Role.HR, Role.ADMIN, Role.EMPLOYEE)
+  @Roles(Role.HR, Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
   remove(@Param('id') id: string) {
     return this.leaveRequestService.remove(id);
   }

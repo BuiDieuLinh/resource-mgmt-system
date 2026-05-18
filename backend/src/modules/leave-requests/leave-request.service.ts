@@ -65,6 +65,12 @@ export class LeaveRequestService {
       where.status =
         query.status.length === 1 ? query.status[0] : { in: query.status };
     }
+    if (query.leave_type?.length) {
+      where.leave_type =
+        query.leave_type.length === 1
+          ? query.leave_type[0]
+          : { in: query.leave_type };
+    }
     if (query.department_id?.length) {
       where.employee = {
         position: {

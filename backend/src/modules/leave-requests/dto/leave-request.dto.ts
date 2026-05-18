@@ -121,6 +121,20 @@ export class QueryLeaveRequestDto extends PaginationDto {
     return undefined;
   })
   @IsArray()
+  @IsEnum(LeaveType, { each: true })
+  leave_type?: LeaveType[];
+
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (Array.isArray(value))
+      return value.flatMap((item) =>
+        typeof item === 'string' ? item.split(',') : [],
+      );
+    if (typeof value === 'string')
+      return value.split(',').filter((item) => item);
+    return undefined;
+  })
+  @IsArray()
   @IsString({ each: true })
   department_id?: string;
 

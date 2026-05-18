@@ -8,6 +8,7 @@ interface GetLeaveRequestsParams {
   employee_id?: string;
   status?: string;
   department_id?: string;
+  leave_type?: string;
   pageIndex?: number;
   pageSize?: number;
   month?: number;
