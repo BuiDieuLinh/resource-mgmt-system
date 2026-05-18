@@ -21,6 +21,7 @@ export const API_ENDPOINTS = {
   ATTENDANCES: '/attendances',
   WORK_POLICIES: '/work-policies',
   LEAVE_REQUESTS: '/leave-requests',
+  PERFORMANCE: '/performance',
   HOLIDAYS: '/holidays',
 };
 

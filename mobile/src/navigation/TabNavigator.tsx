@@ -4,7 +4,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, shadow } from '../theme';
 
-// Screens - import trực tiếp
 import { HomeScreen } from '../modules/home/screens/HomeScreen';
 import { LeaveRequestsScreen } from '../modules/leave-requests/screens/LeaveRequestsScreen';
 import { ProfileScreen } from '../modules/profile/screens/ProfileScreen';
@@ -23,11 +22,13 @@ const TabIcon: React.FC<TabIconProps> = ({ name, focused, label }) => (
     <View style={[styles.iconWrapper, focused && styles.iconWrapperActive]}>
       <Ionicons
         name={focused ? name : (`${name}-outline` as any)}
-        size={22}
+        size={20}
         color={focused ? colors.primary : colors.gray400}
       />
     </View>
-    <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>{label}</Text>
+    <Text style={[styles.tabLabel, focused && styles.tabLabelActive]} numberOfLines={1}>
+      {label}
+    </Text>
   </View>
 );
 
@@ -54,11 +55,7 @@ export const TabNavigator = () => {
         component={CheckInScreen}
         options={{
           tabBarIcon: ({ focused }: { focused: boolean }) => (
-            <View style={styles.checkInTab}>
-              <View style={[styles.checkInIcon, focused && styles.checkInIconActive]}>
-                <Ionicons name="finger-print" size={26} color={colors.white} />
-              </View>
-            </View>
+            <TabIcon name="finger-print" focused={focused} label="Check-In" />
           ),
         }}
       />
@@ -95,10 +92,11 @@ const styles = StyleSheet.create({
   },
   tabItem: {
     alignItems: 'center',
-    gap: 3,
+    justifyContent: 'center',
+    width: 80,
   },
   iconWrapper: {
-    width: 44,
+    width: 40,
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
@@ -108,9 +106,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primarySurface,
   },
   tabLabel: {
-    fontSize: 10,
+    fontSize: 9,
     color: colors.gray400,
     fontWeight: '500',
+    marginTop: 2,
+    textAlign: 'center',
   },
   tabLabelActive: {
     color: colors.primary,

@@ -10,22 +10,14 @@ import {
   TextInput,
   ScrollView,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { apiClient } from '../../../lib/api';
-import { Card, Badge, Button } from '../../../components';
-import { colors, gradients, spacing, radius, shadow } from '../../../theme';
-
-interface LeaveRequest {
-  id: string;
-  leave_type: string;
-  start_date: string;
-  end_date: string;
-  reason?: string;
-  status: 'pending' | 'approved' | 'rejected';
-  created_at: string;
-}
+import { Calendar } from 'react-native-calendars';
+import { Card, Badge, Button, GradientHeader } from '@/components';
+import { colors, spacing, radius } from '@/theme';
+import { getMyLeaveRequests, createLeaveRequest } from '../api';
+import type { LeaveRequest } from '@/models/leave-requests';
+import { useGetEmployeeByUser } from '@/modules/employees/api';
 
 const statusConfig = {
   pending: { label: 'Pending', variant: 'warning' as const, icon: 'time-outline' },
@@ -53,20 +45,23 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
 
   // Form state
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [showStartCalendar, setShowStartCalendar] = useState(false);
+  const [showEndCalendar, setShowEndCalendar] = useState(false);
+  const [leaveStartTime, setLeaveStartTime] = useState('');
+  const [leaveEndTime, setLeaveEndTime] = useState('');
   const [reason, setReason] = useState('');
   const [leaveType, setLeaveType] = useState('annual');
+  const { data: employee } = useGetEmployeeByUser();
 
   const fetchRequests = async () => {
     try {
-      const res = await apiClient.get('/leave-requests/my', {
-        params: filterStatus ? { status: filterStatus } : {},
-      });
-      const data = res.data?.data ?? res.data;
+      const response = await getMyLeaveRequests(filterStatus || undefined);
+      const data = response.data;
       setRequests(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Fetch leave requests error:', err);
+      console.error('[LeaveRequests] Fetch error:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -79,29 +74,63 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
 
   const handleSubmit = async () => {
     if (!startDate || !endDate || !reason) {
-      Alert.alert('Missing Fields', 'Please fill in all required fields');
+      Alert.alert('Missing Fields', 'Please fill in Start Date, End Date, and Reason');
       return;
     }
+
+    if (submitting) return;
     setSubmitting(true);
+
     try {
-      await apiClient.post('/leave-requests', {
+      const payload: any = {
+        employee_id: employee?.data?.id ?? '',
         start_date: startDate,
         end_date: endDate,
         reason,
-        leave_type: leaveType,
-      });
+        leave_type: leaveType as any,
+      };
+
+      if (leaveStartTime) {
+        payload.leave_start_minutes = parseInt(leaveStartTime);
+      }
+      if (leaveEndTime) {
+        payload.leave_end_minutes = parseInt(leaveEndTime);
+      }
+
+      await createLeaveRequest(payload);
+      console.log('[LeaveRequest] Success');
+
       Alert.alert('✅ Submitted', 'Your leave request has been submitted successfully');
       setShowModal(false);
       setStartDate('');
       setEndDate('');
+      setLeaveStartTime('');
+      setLeaveEndTime('');
       setReason('');
       setLeaveType('annual');
-      fetchRequests();
+      await fetchRequests();
     } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.message || 'Failed to submit');
+      console.error('[LeaveRequest] Error:', err);
+      const message = err.response?.data?.message || err.message || 'Failed to submit';
+      Alert.alert('Submission Failed', message);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const formatDisplayDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  const getTodayString = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
   };
 
   const filters = [
@@ -115,9 +144,37 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
     { label: 'Annual', value: 'annual' },
     { label: 'Sick', value: 'sick' },
     { label: 'Unpaid', value: 'unpaid' },
+    { label: 'Maternity', value: 'maternity' },
+    { label: 'Paternity', value: 'paternity' },
   ];
 
-  const renderItem = ({ item, index }: { item: LeaveRequest; index: number }) => {
+  // Time options (in minutes from midnight)
+  const timeOptions = [
+    { label: 'Full Day', value: '' },
+    { label: '08:00', value: '480' },
+    { label: '08:30', value: '510' },
+    { label: '09:00', value: '540' },
+    { label: '09:30', value: '570' },
+    { label: '10:00', value: '600' },
+    { label: '10:30', value: '630' },
+    { label: '11:00', value: '660' },
+    { label: '11:30', value: '690' },
+    { label: '12:00', value: '720' },
+    { label: '12:30', value: '750' },
+    { label: '13:00', value: '780' },
+    { label: '13:30', value: '810' },
+    { label: '14:00', value: '840' },
+    { label: '14:30', value: '870' },
+    { label: '15:00', value: '900' },
+    { label: '15:30', value: '930' },
+    { label: '16:00', value: '960' },
+    { label: '16:30', value: '990' },
+    { label: '17:00', value: '1020' },
+    { label: '17:30', value: '1050' },
+    { label: '18:00', value: '1080' },
+  ];
+
+  const renderItem = ({ item }: { item: LeaveRequest }) => {
     const cfg = statusConfig[item.status] ?? statusConfig.pending;
     return (
       <View>
@@ -151,14 +208,8 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      {/* Header */}
-      <LinearGradient
-        colors={gradients.primary}
-        style={styles.header}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
+    <View style={styles.container}>
+      <GradientHeader style={styles.header}>
         <View style={styles.headerRow}>
           <Text style={styles.headerTitle}>Leave Requests</Text>
           <TouchableOpacity style={styles.addBtn} onPress={() => setShowModal(true)}>
@@ -182,7 +233,7 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
             </TouchableOpacity>
           ))}
         </ScrollView>
-      </LinearGradient>
+      </GradientHeader>
 
       {/* List */}
       <FlatList
@@ -217,7 +268,7 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
 
           <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
             {/* Leave type */}
-            <Text style={styles.fieldLabel}>Leave Type</Text>
+            <Text style={styles.fieldLabel}>Leave Type *</Text>
             <View style={styles.typeRow}>
               {leaveTypes.map((t) => (
                 <TouchableOpacity
@@ -237,23 +288,131 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
               ))}
             </View>
 
-            <Text style={styles.fieldLabel}>Start Date (YYYY-MM-DD)</Text>
-            <TextInput
-              style={styles.input}
-              value={startDate}
-              onChangeText={setStartDate}
-              placeholder="2026-05-01"
-              placeholderTextColor={colors.gray400}
-            />
+            <Text style={styles.fieldLabel}>Start Date *</Text>
+            <TouchableOpacity
+              style={styles.dateInput}
+              onPress={() => setShowStartCalendar(!showStartCalendar)}
+            >
+              <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+              <Text style={[styles.dateInputText, !startDate && styles.placeholderText]}>
+                {startDate ? formatDisplayDate(startDate) : 'Select start date'}
+              </Text>
+              <Ionicons
+                name={showStartCalendar ? 'chevron-up' : 'chevron-down'}
+                size={18}
+                color={colors.gray400}
+              />
+            </TouchableOpacity>
+            {showStartCalendar && (
+              <Calendar
+                current={startDate || getTodayString()}
+                minDate={getTodayString()}
+                onDayPress={(day: any) => {
+                  setStartDate(day.dateString);
+                  setShowStartCalendar(false);
+                  // Reset end date if it's before new start date
+                  if (endDate && day.dateString > endDate) {
+                    setEndDate('');
+                  }
+                }}
+                markedDates={{
+                  [startDate]: {
+                    selected: true,
+                    selectedColor: colors.primary,
+                  },
+                }}
+                theme={{
+                  todayTextColor: colors.primary,
+                  selectedDayBackgroundColor: colors.primary,
+                  selectedDayTextColor: colors.white,
+                  arrowColor: colors.primary,
+                  monthTextColor: colors.textPrimary,
+                  textMonthFontWeight: '700',
+                }}
+                style={styles.calendar}
+              />
+            )}
 
-            <Text style={styles.fieldLabel}>End Date (YYYY-MM-DD)</Text>
-            <TextInput
-              style={styles.input}
-              value={endDate}
-              onChangeText={setEndDate}
-              placeholder="2026-05-03"
-              placeholderTextColor={colors.gray400}
-            />
+            <Text style={styles.fieldLabel}>End Date *</Text>
+            <TouchableOpacity
+              style={styles.dateInput}
+              onPress={() => setShowEndCalendar(!showEndCalendar)}
+            >
+              <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+              <Text style={[styles.dateInputText, !endDate && styles.placeholderText]}>
+                {endDate ? formatDisplayDate(endDate) : 'Select end date'}
+              </Text>
+              <Ionicons
+                name={showEndCalendar ? 'chevron-up' : 'chevron-down'}
+                size={18}
+                color={colors.gray400}
+              />
+            </TouchableOpacity>
+            {showEndCalendar && (
+              <Calendar
+                current={endDate || startDate || getTodayString()}
+                minDate={startDate || getTodayString()}
+                onDayPress={(day: any) => {
+                  setEndDate(day.dateString);
+                  setShowEndCalendar(false);
+                }}
+                markedDates={{
+                  [endDate]: {
+                    selected: true,
+                    selectedColor: colors.primary,
+                  },
+                }}
+                theme={{
+                  todayTextColor: colors.primary,
+                  selectedDayBackgroundColor: colors.primary,
+                  selectedDayTextColor: colors.white,
+                  arrowColor: colors.primary,
+                  monthTextColor: colors.textPrimary,
+                  textMonthFontWeight: '700',
+                }}
+                style={styles.calendar}
+              />
+            )}
+
+            <Text style={styles.fieldLabel}>Leave From (Optional)</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timeScroll}>
+              {timeOptions.map((t) => (
+                <TouchableOpacity
+                  key={t.value}
+                  style={[styles.timeChip, leaveStartTime === t.value && styles.timeChipActive]}
+                  onPress={() => setLeaveStartTime(t.value)}
+                >
+                  <Text
+                    style={[
+                      styles.timeChipText,
+                      leaveStartTime === t.value && styles.timeChipTextActive,
+                    ]}
+                  >
+                    {t.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <Text style={styles.fieldLabel}>Leave Until (Optional)</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timeScroll}>
+              {timeOptions.map((t) => (
+                <TouchableOpacity
+                  key={t.value}
+                  style={[styles.timeChip, leaveEndTime === t.value && styles.timeChipActive]}
+                  onPress={() => setLeaveEndTime(t.value)}
+                >
+                  <Text
+                    style={[
+                      styles.timeChipText,
+                      leaveEndTime === t.value && styles.timeChipTextActive,
+                    ]}
+                  >
+                    {t.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
 
             <Text style={styles.fieldLabel}>Reason *</Text>
             <TextInput
@@ -278,18 +437,15 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
           </ScrollView>
         </SafeAreaView>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.background },
   header: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
     paddingBottom: spacing.lg,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
   },
   headerRow: {
     flexDirection: 'row',
@@ -365,6 +521,45 @@ const styles = StyleSheet.create({
   typeChipActive: { borderColor: colors.primary, backgroundColor: colors.primarySurface },
   typeChipText: { fontSize: 13, color: colors.textSecondary, fontWeight: '500' },
   typeChipTextActive: { color: colors.primary, fontWeight: '700' },
+  timeScroll: { marginBottom: 8 },
+  timeChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    marginRight: 8,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  timeChipActive: { borderColor: colors.primary, backgroundColor: colors.primarySurface },
+  timeChipText: { fontSize: 13, color: colors.textSecondary, fontWeight: '500' },
+  timeChipTextActive: { color: colors.primary, fontWeight: '700' },
+  dateInput: {
+    backgroundColor: colors.gray50,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  dateInputText: {
+    fontSize: 15,
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  placeholderText: {
+    color: colors.gray400,
+  },
+  calendar: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.sm,
+  },
   input: {
     backgroundColor: colors.gray50,
     borderRadius: radius.md,

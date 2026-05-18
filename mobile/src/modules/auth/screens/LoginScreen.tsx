@@ -12,11 +12,11 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../../../contexts/AuthContext';
-import { useForm } from '../../../hooks/useForm';
-import { validateEmail, validatePassword } from '../../../utils';
-import { Button, Input } from '../../../components/ui';
-import { colors, gradients, spacing, radius, shadow } from '../../../theme';
+import { useAuth } from '@/contexts/AuthContext';
+import { useForm } from '@/hooks/useForm';
+import { validateEmail, validatePassword } from '@/utils';
+import { Button, Input } from '@/components/ui';
+import { colors, spacing, shadow } from '@/theme';
 
 interface LoginFormData {
   email: string;

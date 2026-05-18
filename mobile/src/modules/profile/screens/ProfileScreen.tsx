@@ -1,11 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../../../hooks';
-import { Card } from '../../../components';
-import { colors, gradients, spacing, radius } from '../../../theme';
+import { useAuth } from '@/hooks';
+import { Card, GradientHeader } from '@/components';
+import { colors, spacing, radius } from '@/theme';
 
 interface MenuRow {
   icon: any;
@@ -52,94 +50,100 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <LinearGradient
-          colors={gradients.primary}
-          style={styles.header}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <Text style={styles.headerTitle}>Profile</Text>
-          <View style={styles.avatarSection}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initials}</Text>
-            </View>
-            <Text style={styles.userName}>{displayName}</Text>
-            <Text style={styles.userEmail}>{user?.email}</Text>
-            <View style={styles.rolesRow}>
-              {(user?.roles ?? []).map((role) => (
-                <View key={role} style={styles.roleChip}>
-                  <Text style={styles.roleText}>{role}</Text>
-                </View>
-              ))}
-            </View>
+    <View style={styles.container}>
+      <GradientHeader style={styles.header}>
+        <View style={styles.avatarSection}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{initials}</Text>
           </View>
-        </LinearGradient>
-
-        <View style={styles.content}>
-          {/* Account section */}
-          <View>
-            <Text style={styles.sectionLabel}>Account</Text>
-            <Card style={styles.menuCard}>
-              <MenuRow icon="person-outline" label="Edit Profile" onPress={() => {}} />
-              <View style={styles.divider} />
-              <MenuRow icon="lock-closed-outline" label="Change Password" onPress={() => {}} />
-              <View style={styles.divider} />
-              <MenuRow icon="notifications-outline" label="Notifications" onPress={() => {}} />
-            </Card>
+          <Text style={styles.userName}>{displayName}</Text>
+          <Text style={styles.userEmail}>{user?.email}</Text>
+          <View style={styles.rolesRow}>
+            {(user?.roles ?? []).map((role) => (
+              <View key={role} style={styles.roleChip}>
+                <Text style={styles.roleText}>{role}</Text>
+              </View>
+            ))}
           </View>
-
-          {/* Work section */}
-          <View>
-            <Text style={styles.sectionLabel}>Work</Text>
-            <Card style={styles.menuCard}>
-              <MenuRow
-                icon="calendar-outline"
-                label="My Timesheet"
-                onPress={() => navigation.getParent()?.navigate('Timesheet')}
-              />
-              <View style={styles.divider} />
-              <MenuRow
-                icon="calendar-clear-outline"
-                label="Leave Requests"
-                onPress={() => navigation.navigate('Leave')}
-              />
-            </Card>
-          </View>
-
-          {/* App section */}
-          <View>
-            <Text style={styles.sectionLabel}>App</Text>
-            <Card style={styles.menuCard}>
-              <MenuRow icon="information-circle-outline" label="About" onPress={() => {}} />
-              <View style={styles.divider} />
-              <MenuRow
-                icon="log-out-outline"
-                label="Sign Out"
-                onPress={handleLogout}
-                color={colors.error}
-                showArrow={false}
-              />
-            </Card>
-          </View>
-
-          <Text style={styles.version}>RMS Core v1.0.0</Text>
         </View>
+      </GradientHeader>
+
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>
+        {/* Account section */}
+        <View>
+          <Text style={styles.sectionLabel}>Account</Text>
+          <Card style={styles.menuCard}>
+            <MenuRow
+              icon="person-outline"
+              label="My Profile"
+              onPress={() => navigation.getParent()?.navigate('MyProfile')}
+            />
+            <View style={styles.divider} />
+            <MenuRow icon="lock-closed-outline" label="Change Password" onPress={() => {}} />
+            <View style={styles.divider} />
+            <MenuRow icon="notifications-outline" label="Notifications" onPress={() => {}} />
+          </Card>
+        </View>
+
+        {/* Work section */}
+        <View>
+          <Text style={styles.sectionLabel}>Work</Text>
+          <Card style={styles.menuCard}>
+            <MenuRow
+              icon="calendar-outline"
+              label="My Timesheet"
+              onPress={() => navigation.getParent()?.navigate('Timesheet')}
+            />
+            <View style={styles.divider} />
+            <MenuRow
+              icon="calendar-clear-outline"
+              label="Leave Requests"
+              onPress={() => navigation.navigate('Leave')}
+            />
+            <View style={styles.divider} />
+            <MenuRow
+              icon="star-outline"
+              label="My Reviews"
+              onPress={() => navigation.getParent()?.navigate('MyReviews')}
+              color="#9333EA"
+            />
+            <View style={styles.divider} />
+            <MenuRow
+              icon="trophy-outline"
+              label="My Awards"
+              onPress={() => navigation.getParent()?.navigate('MyAwards')}
+              color="#F59E0B"
+            />
+          </Card>
+        </View>
+
+        {/* App section */}
+        <View>
+          <Text style={styles.sectionLabel}>App</Text>
+          <Card style={styles.menuCard}>
+            <MenuRow icon="information-circle-outline" label="About" onPress={() => {}} />
+            <View style={styles.divider} />
+            <MenuRow
+              icon="log-out-outline"
+              label="Sign Out"
+              onPress={handleLogout}
+              color={colors.error}
+              showArrow={false}
+            />
+          </Card>
+        </View>
+
+        <Text style={styles.version}>RMS Core v1.0.0</Text>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.background },
   header: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
     paddingBottom: spacing.xxl,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
   },
   headerTitle: { fontSize: 18, fontWeight: '700', color: colors.white, marginBottom: spacing.lg },
   avatarSection: { alignItems: 'center', gap: 8 },
@@ -164,7 +168,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
   },
   roleText: { fontSize: 11, color: colors.white, fontWeight: '600', textTransform: 'capitalize' },
-  content: { padding: spacing.lg, gap: spacing.sm },
+  content: { padding: spacing.lg, gap: spacing.sm, flex: 1 },
   sectionLabel: {
     fontSize: 12,
     fontWeight: '700',

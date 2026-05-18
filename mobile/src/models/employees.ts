@@ -1,14 +1,10 @@
-/**
- * Employee Models
- */
-
 import type { Department } from './departments';
-import type { Position } from './positions';
 
 export interface Employee {
   id: string;
   email: string;
   full_name: string;
+  display_name?: string;
   avatar_url?: string;
   phone?: string;
   date_of_birth?: string;
@@ -16,12 +12,26 @@ export interface Employee {
   address?: string;
   employee_code: string;
   department: Department;
-  position: Position;
   status: 'active' | 'inactive' | 'on_leave';
   hire_date?: string;
   manager_id?: string;
   created_at?: string;
   updated_at?: string;
+  annual_leave_days?: number;
+  contract_type: 'full_time' | 'part_time' | 'contractor' | 'intern';
+  position: {
+    id: string;
+    position_name: string;
+    level: number;
+    department: {
+      id: string;
+      department_name: string;
+    };
+  };
+  manager?: {
+    id: string;
+    full_name: string;
+  } | null;
 }
 
 export interface EmployeeFilter {

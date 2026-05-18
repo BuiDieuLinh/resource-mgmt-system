@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../../../hooks';
-import { apiClient } from '../../../lib/api';
-import { Card, Badge } from '../../../components';
-import { colors, gradients, spacing, radius, shadow } from '../../../theme';
+import { useAuth } from '@/hooks';
+import { Card, GradientHeader } from '@/components';
+import { colors, gradients, spacing, radius, shadow } from '@/theme';
+import { getMyLeaveRequests } from '../../leave-requests/api';
+import { useGetMyAttendance } from '../../attendances/api/get-my-attendance';
+import type { IAttendance } from '@/models/attendances';
 
 interface MenuItem {
   label: string;
@@ -28,41 +29,44 @@ const formatTime = (iso?: string | null) => {
 
 export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { user } = useAuth();
-  const [todayRecord, setTodayRecord] = useState<any>(null);
+  const [todayRecord, setTodayRecord] = useState<IAttendance | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [pendingLeaves, setPendingLeaves] = useState(0);
 
-  const fetchData = async () => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const [attRes, leaveRes] = await Promise.allSettled([
-        apiClient.get('/attendances/my', {
-          params: { month: new Date().getMonth() + 1, year: new Date().getFullYear() },
-        }),
-        apiClient.get('/leave-requests/my', { params: { status: 'pending' } }),
-      ]);
+  const today = new Date().toISOString().split('T')[0];
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
 
-      if (attRes.status === 'fulfilled') {
-        const records = attRes.value.data?.data?.records ?? [];
-        const rec = records.find((r: any) => r.work_date?.startsWith(today));
-        setTodayRecord(rec ?? null);
-      }
-      if (leaveRes.status === 'fulfilled') {
-        const leaves = leaveRes.value.data?.data ?? [];
-        setPendingLeaves(Array.isArray(leaves) ? leaves.length : 0);
-      }
+  // Use React Query for attendance
+  const { data: attendanceData, refetch: refetchAttendance } = useGetMyAttendance(
+    currentMonth,
+    currentYear,
+  );
+
+  useEffect(() => {
+    if (attendanceData?.records) {
+      const rec = attendanceData.records.find((r) => r.work_date?.startsWith(today));
+      setTodayRecord(rec ?? null);
+    }
+  }, [attendanceData, today]);
+
+  const fetchLeaveRequests = async () => {
+    try {
+      const response = await getMyLeaveRequests('pending');
+      const leaves = response.data;
+      setPendingLeaves(Array.isArray(leaves) ? leaves.length : 0);
     } catch (err) {
-      console.error('Fetch home data error:', err);
+      console.error('Fetch leave requests error:', err);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchLeaveRequests();
   }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchData();
+    await Promise.all([refetchAttendance(), fetchLeaveRequests()]);
     setRefreshing(false);
   };
 
@@ -71,7 +75,12 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   const handleNavigate = (screen: string) => {
     // Navigate to tab screens directly, use parent for stack screens
-    if (screen === 'Timesheet' || screen === 'Employees') {
+    if (
+      screen === 'Timesheet' ||
+      screen === 'Employees' ||
+      screen === 'MyReviews' ||
+      screen === 'MyAwards'
+    ) {
       navigation.getParent()?.navigate(screen);
     } else {
       navigation.navigate(screen);
@@ -102,6 +111,20 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       badge: pendingLeaves > 0 ? String(pendingLeaves) : undefined,
     },
     {
+      label: 'My Reviews',
+      icon: 'star-outline',
+      screen: 'MyReviews',
+      color: '#9333EA',
+      bg: '#F3E8FF',
+    },
+    {
+      label: 'My Awards',
+      icon: 'trophy-outline',
+      screen: 'MyAwards',
+      color: '#F59E0B',
+      bg: '#FEF3C7',
+    },
+    {
       label: 'My Profile',
       icon: 'person-outline',
       screen: 'Profile',
@@ -115,7 +138,50 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const displayName = user?.email?.split('@')[0] ?? 'there';
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View style={styles.container}>
+      <GradientHeader style={styles.header}>
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.greeting}>{greeting} 👋</Text>
+            <Text style={styles.userName}>{displayName}</Text>
+          </View>
+        </View>
+
+        {/* Today status card */}
+        <View style={styles.todayCard}>
+          <View style={styles.todayLeft}>
+            <Text style={styles.todayLabel}>Today's Status</Text>
+            <View style={styles.todayStatus}>
+              <View
+                style={[
+                  styles.statusDot,
+                  {
+                    backgroundColor: isCheckedOut
+                      ? colors.gray400
+                      : isCheckedIn
+                        ? colors.success
+                        : colors.warning,
+                  },
+                ]}
+              />
+              <Text style={styles.statusText}>
+                {isCheckedOut ? 'Shift ended' : isCheckedIn ? 'Working' : 'Not checked in'}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.todayTimes}>
+            <View style={styles.timeItem}>
+              <Ionicons name="log-in-outline" size={14} color={colors.success} />
+              <Text style={styles.timeValue}>{formatTime(todayRecord?.check_in_time)}</Text>
+            </View>
+            <View style={styles.timeItem}>
+              <Ionicons name="log-out-outline" size={14} color={colors.error} />
+              <Text style={styles.timeValue}>{formatTime(todayRecord?.check_out_time)}</Text>
+            </View>
+          </View>
+        </View>
+      </GradientHeader>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -126,55 +192,6 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           />
         }
       >
-        {/* Header */}
-        <LinearGradient
-          colors={gradients.primary}
-          style={styles.header}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <View style={styles.headerTop}>
-            <View>
-              <Text style={styles.greeting}>{greeting} 👋</Text>
-              <Text style={styles.userName}>{displayName}</Text>
-            </View>
-          </View>
-
-          {/* Today status card */}
-          <View style={styles.todayCard}>
-            <View style={styles.todayLeft}>
-              <Text style={styles.todayLabel}>Today's Status</Text>
-              <View style={styles.todayStatus}>
-                <View
-                  style={[
-                    styles.statusDot,
-                    {
-                      backgroundColor: isCheckedOut
-                        ? colors.gray400
-                        : isCheckedIn
-                          ? colors.success
-                          : colors.warning,
-                    },
-                  ]}
-                />
-                <Text style={styles.statusText}>
-                  {isCheckedOut ? 'Shift ended' : isCheckedIn ? 'Working' : 'Not checked in'}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.todayTimes}>
-              <View style={styles.timeItem}>
-                <Ionicons name="log-in-outline" size={14} color={colors.success} />
-                <Text style={styles.timeValue}>{formatTime(todayRecord?.check_in_time)}</Text>
-              </View>
-              <View style={styles.timeItem}>
-                <Ionicons name="log-out-outline" size={14} color={colors.error} />
-                <Text style={styles.timeValue}>{formatTime(todayRecord?.check_out_time)}</Text>
-              </View>
-            </View>
-          </View>
-        </LinearGradient>
-
         {/* Quick check-in CTA */}
         {!isCheckedIn && (
           <View style={styles.ctaWrapper}>
@@ -241,18 +258,15 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           </View>
         </Card>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.background },
   header: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
     paddingBottom: spacing.xl + 8,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
   },
   headerTop: {
     flexDirection: 'row',

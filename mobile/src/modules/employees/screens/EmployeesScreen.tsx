@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity } from 'r
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { apiClient } from '../../../lib/api';
-import { Card } from '../../../components';
-import { colors, gradients, spacing, radius } from '../../../theme';
+import { apiClient } from '@/lib/api';
+import { Card } from '@/components';
+import { colors, gradients, spacing, radius } from '@/theme';
 
 interface Employee {
   id: string;

@@ -1,78 +1,144 @@
-/**
- * Attendance Models
- */
-
-export enum AttendanceStatus {
-  PRESENT = 'present',
-  ABSENT = 'absent',
-  LATE = 'late',
-  EARLY_DEPARTURE = 'early_departure',
-  ON_LEAVE = 'on_leave',
-  REMOTE = 'remote',
-}
-
-export interface Attendance {
+export interface IAttendance {
   id: string;
   employee_id: string;
-  date: string;
-  check_in_time: string | null;
-  check_out_time: string | null;
-  status: AttendanceStatus | string;
-  working_hours?: number;
-  notes?: string;
-  created_at?: string;
-  updated_at?: string;
+  work_date: string;
+  scheduled_start?: number;
+  scheduled_end?: number;
+  break_start?: number | null;
+  break_end?: number | null;
+  check_in_time?: string;
+  check_out_time?: string;
+  check_in_lat?: number;
+  check_in_lng?: number;
+  check_out_lat?: number;
+  check_out_lng?: number;
+  check_in?: string;
+  check_out?: string;
+  check_in_place?: string;
+  check_out_place?: string;
+  late?: number;
+  early_leave?: number;
+  work_minutes?: number;
+  overtime?: number;
+  status?: 'pending' | 'approved' | 'rejected';
+  employee?: {
+    id: string;
+    full_name: string;
+  };
+  plan_day?: number;
+  actual_day?: number;
+  absent?: number;
+  annual_leave?: number;
+  unpaid_leave?: number;
+  over_time?: number;
+  logs: IAttendanceLogs[];
 }
 
-export interface CheckInRequest {
-  latitude?: number;
-  longitude?: number;
-  note?: string;
-}
-
-export interface CheckOutRequest {
-  latitude?: number;
-  longitude?: number;
-  note?: string;
-}
-
-export interface CheckInResponse {
+export interface IAttendanceLogs {
   id: string;
-  check_in_time: string;
-  message: string;
+  timestamp: Date;
+  attendance_id: string;
+  action: 'check_in' | 'check_out';
+  latitude: number;
+  longitude: number;
+  ip_address: string | null;
+  user_agent: string | null;
 }
 
-export interface CheckOutResponse {
+export interface ILeaveRequest {
   id: string;
-  check_out_time: string;
-  working_hours: number;
-  message: string;
+  employee_id: string;
+  leave_type: 'annual' | 'sick' | 'unpaid';
+  start_date: string;
+  end_date: string;
+  leave_start_minutes?: number | null;
+  leave_end_minutes?: number | null;
+  reason?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  approved_by?: string;
+  created_at: string;
 }
 
-export interface GetAttendancesRequest {
-  start_date?: string;
-  end_date?: string;
-  employee_id?: string;
-  status?: string;
-  page?: number;
-  limit?: number;
-}
-
-export interface GetAttendancesResponse {
-  data: Attendance[];
-  total: number;
-  page: number;
-  limit: number;
-  pages: number;
-}
-
-export interface AttendanceStats {
-  total_days: number;
-  present: number;
-  absent: number;
+export interface IAttendanceSummary {
+  plan_day: number;
+  actual_day: number;
   late: number;
-  early_departure: number;
-  on_leave: number;
-  remote: number;
-  working_hours: number;
+  absent: number;
+  over_time: number;
+}
+
+export interface IWorkSchedule {
+  id: string;
+  employee_id: string;
+  day_of_week: number;
+  start_time: number;
+  end_time: number;
+}
+
+export interface IWorkPolicy {
+  id: string;
+  is_flexible_enabled: boolean;
+  flexible_start?: number | null;
+  flexible_end?: number | null;
+  break_start?: number | null;
+  break_end?: number | null;
+  effective_from: string;
+  effective_to?: string | null;
+}
+
+export interface IHoliday {
+  id: string;
+  name: string;
+  holiday_date: string;
+  description?: string | null;
+  is_paid: boolean;
+}
+
+export interface IEmployeeAttendanceDetail {
+  employee: {
+    id: string;
+    full_name: string;
+    display_name?: string;
+    employee_code: string;
+    position: {
+      position_name: string;
+      department: {
+        department_name: string;
+      };
+    };
+  };
+  records: IAttendance[];
+  leave_requests: ILeaveRequest[];
+  work_schedules: IWorkSchedule[];
+  work_policy: IWorkPolicy | null;
+  holidays: IHoliday[];
+  summary: IAttendanceSummary;
+}
+
+export interface IAttendancePayload {
+  employee_id: string;
+  date: string;
+  check_in?: string;
+  check_in_lat?: number;
+  check_in_lng?: number;
+  check_out?: string;
+  check_out_lat?: number;
+  check_out_lng?: number;
+  status?: string;
+  late?: number;
+  device_id?: string;
+}
+
+export interface IAttendanceRequest {
+  employee_id: string;
+  work_date: string;
+  check_in_time?: string;
+  check_out_time?: string;
+  check_in_lat?: number;
+  check_in_lng?: number;
+  check_out_lat?: number;
+  check_out_lng?: number;
+  late?: number;
+  status?: string;
+  device_id?: string;
 }

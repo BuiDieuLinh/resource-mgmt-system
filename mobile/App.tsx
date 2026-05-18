@@ -8,11 +8,15 @@ import { View, ActivityIndicator } from 'react-native';
 
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { LoginScreen } from './src/modules/auth/screens/LoginScreen';
-import { TabNavigator } from './src/navigation/TabNavigator-simple';
+import { TabNavigator } from './src/navigation/TabNavigator';
 import { TimesheetScreen } from './src/modules/attendances/screens/TimesheetScreen';
 import { EmployeesScreen } from './src/modules/employees/screens/EmployeesScreen';
+import { MyReviewsScreen, MyAwardsScreen } from './src/modules/performance';
+import { MyProfileScreen } from './src/modules/profile/screens/MyProfileScreen';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const Stack = createNativeStackNavigator();
+const queryClient = new QueryClient();
 
 function AppNavigator() {
   const { isLoading, isLoggedIn } = useAuth();
@@ -41,6 +45,9 @@ function AppNavigator() {
           <Stack.Screen name="Main" component={TabNavigator} />
           <Stack.Screen name="Timesheet" component={TimesheetScreen} />
           <Stack.Screen name="Employees" component={EmployeesScreen} />
+          <Stack.Screen name="MyProfile" component={MyProfileScreen} />
+          <Stack.Screen name="MyReviews" component={MyReviewsScreen} />
+          <Stack.Screen name="MyAwards" component={MyAwardsScreen} />
         </>
       )}
     </Stack.Navigator>
@@ -51,10 +58,12 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <NavigationContainer>
-          <AppNavigator />
-          <StatusBar style="light" />
-        </NavigationContainer>
+        <QueryClientProvider client={queryClient}>
+          <NavigationContainer>
+            <AppNavigator />
+            <StatusBar style="light" />
+          </NavigationContainer>
+        </QueryClientProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );
