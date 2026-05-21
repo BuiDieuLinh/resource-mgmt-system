@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QueryAttendanceDto } from './dto/query-attendance.dto';
@@ -21,6 +22,7 @@ import { ResponseHelper } from '../../common/helpers/response.helper';
 import { WorkPolicyService } from '../work-policies/work-policy.service';
 import { CheckInDto } from './dto/check-in.dto';
 import { CheckOutDto } from './dto/check-out.dto';
+import { CheckInFaceDto } from './dto/check-in-face.dto';
 import { CreateAttendanceDto } from './dto/create-attendance.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
 import {
@@ -30,6 +32,13 @@ import {
   LeaveStatus,
   LeaveType,
 } from '@prisma/client';
+import {
+  compareFaces,
+  isValidFaceDescriptor,
+} from '../../common/utils/face-recognition.util';
+import { ConfigService } from '@nestjs/config';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { randomUUID } from 'crypto';
 import { Request } from 'express';
 import { parseUserAgent } from './utils/argent-parser';
 
@@ -49,12 +58,266 @@ function haversineMeters(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+function resolveFaceDistanceThreshold(config: ConfigService): number {
+  const configured =
+    config.get<string>('FACE_DISTANCE_THRESHOLD') ??
+    config.get<string>('FACE_SIMILARITY_THRESHOLD');
+  const parsed = configured ? Number(configured) : 0.45;
+
+  if (!Number.isFinite(parsed) || parsed <= 0) return 0.45;
+
+  // Values above 0.5 are too permissive for attendance verification.
+  return Math.min(parsed, 0.45);
+}
+
+function summarizeFaceDescriptor(descriptor: number[]) {
+  const length = descriptor.length;
+  const min = Math.min(...descriptor);
+  const max = Math.max(...descriptor);
+  const mean = descriptor.reduce((sum, value) => sum + value, 0) / length;
+  const norm = Math.sqrt(
+    descriptor.reduce((sum, value) => sum + value * value, 0),
+  );
+
+  return {
+    length,
+    min: Number(min.toFixed(6)),
+    max: Number(max.toFixed(6)),
+    mean: Number(mean.toFixed(6)),
+    norm: Number(norm.toFixed(6)),
+  };
+}
+
 @Injectable()
 export class AttendancesService {
+  private readonly logger = new Logger(AttendancesService.name);
+  private s3Client: S3Client;
+  private bucketName: string;
+  private publicUrl: string;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly workPolicyService: WorkPolicyService,
-  ) {}
+    private readonly config: ConfigService,
+  ) {
+    this.s3Client = new S3Client({
+      region: 'auto',
+      endpoint: this.config.get<string>('R2_ENDPOINT') || '',
+      credentials: {
+        accessKeyId: this.config.get<string>('R2_ACCESS_KEY') || '',
+        secretAccessKey: this.config.get<string>('R2_SECRET_KEY') || '',
+      },
+    });
+    this.bucketName = this.config.get<string>('R2_BUCKET_NAME') || '';
+    this.publicUrl = this.config.get<string>('R2_PUBLIC_URL') || '';
+  }
+
+  private async uploadSelfieToR2(
+    selfie: Express.Multer.File,
+    employeeId: string,
+  ): Promise<string> {
+    if (!selfie?.buffer?.length) {
+      throw new BadRequestException('Selfie image is required');
+    }
+
+    const extension = selfie.mimetype === 'image/png' ? 'png' : 'jpg';
+
+    const fileName = `selfies/${employeeId}/${randomUUID()}.${extension}`;
+
+    await this.s3Client.send(
+      new PutObjectCommand({
+        Bucket: this.bucketName,
+        Key: fileName,
+        Body: selfie.buffer,
+        ContentType: selfie.mimetype,
+      }),
+    );
+
+    return `${this.publicUrl}/${fileName}`;
+  }
+
+  async checkInWithFace(dto: CheckInFaceDto, selfie: Express.Multer.File) {
+    const timestamp = dto.timestamp ? new Date(dto.timestamp) : new Date();
+    const workDate = toLocalWorkDate(timestamp);
+
+    // 1. Get employee and validate face descriptor exists
+    const employee = await this.prisma.employees.findUnique({
+      where: { id: dto.employee_id },
+      select: { id: true, face_descriptor: true },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    if (!isValidFaceDescriptor(employee.face_descriptor)) {
+      throw new BadRequestException(
+        'No face descriptor registered. Please register your face first.',
+      );
+    }
+
+    // 2. Validate face descriptor format
+    if (!isValidFaceDescriptor(dto.face_descriptor)) {
+      throw new BadRequestException(
+        'Invalid face descriptor. Must be 128-dimensional vector.',
+      );
+    }
+
+    // 3. Compare faces
+    const threshold = resolveFaceDistanceThreshold(this.config);
+    const comparison = compareFaces(
+      employee.face_descriptor,
+      dto.face_descriptor,
+      threshold,
+    );
+    const similarity = 1 - comparison.distance;
+    const faceDebug = {
+      employeeId: dto.employee_id,
+      threshold,
+      distance: Number(comparison.distance.toFixed(6)),
+      similarity: Number(similarity.toFixed(6)),
+      matched: comparison.matched,
+      registeredDescriptor: summarizeFaceDescriptor(employee.face_descriptor),
+      capturedDescriptor: summarizeFaceDescriptor(dto.face_descriptor),
+    };
+
+    this.logger.log(`Face check-in comparison: ${JSON.stringify(faceDebug)}`);
+
+    if (!comparison.matched) {
+      throw new BadRequestException(
+        `Face verification failed. Distance: ${comparison.distance.toFixed(3)}. Please try again or contact HR.`,
+      );
+    }
+
+    // 4. Upload selfie to R2
+    let selfieUrl: string | null = null;
+    try {
+      selfieUrl = await this.uploadSelfieToR2(selfie, dto.employee_id);
+    } catch (error) {
+      throw new BadRequestException(
+        `Failed to upload selfie: ${error.message}`,
+      );
+    }
+
+    // 5. Continue with normal check-in flow (schedule, GPS, etc.)
+    const schedule = await this.prisma.employeeWorkSchedules.findFirst({
+      where: { employee_id: dto.employee_id },
+    });
+    if (!schedule)
+      throw new BadRequestException('No work schedule found for employee');
+
+    const checkInMinutes = dateToMinutes(timestamp);
+    // Temporarily allow check-in after scheduled work hours.
+    // if (checkInMinutes > schedule.end_time) {
+    //   throw new BadRequestException(
+    //     `Check-in not allowed after work hours end (${schedule.end_time} min). Current time: ${checkInMinutes} min.`,
+    //   );
+    // }
+
+    const policyRes = await this.workPolicyService.getActive(timestamp);
+    const policy = policyRes.data;
+
+    // GPS validation
+    if (
+      policy?.office_latitude != null &&
+      policy?.office_longitude != null &&
+      dto.latitude != null &&
+      dto.longitude != null
+    ) {
+      const dist = haversineMeters(
+        Number(dto.latitude),
+        Number(dto.longitude),
+        Number(policy.office_latitude),
+        Number(policy.office_longitude),
+      );
+      const maxDist = policy.max_distance_meters ?? 100;
+      if (dist > maxDist) {
+        throw new BadRequestException(
+          `You are too far from the office (${Math.round(dist)}m away, max ${maxDist}m allowed)`,
+        );
+      }
+    } else if (
+      policy?.office_latitude != null &&
+      (dto.latitude == null || dto.longitude == null)
+    ) {
+      throw new BadRequestException('GPS location is required for check-in');
+    }
+
+    const existing = await this.prisma.attendances.findUnique({
+      where: {
+        employee_id_work_date: {
+          employee_id: dto.employee_id,
+          work_date: workDate,
+        },
+      },
+    });
+    if (existing?.check_in_time) {
+      throw new BadRequestException('Already checked in today');
+    }
+
+    const attendance = await this.prisma.attendances.upsert({
+      where: {
+        employee_id_work_date: {
+          employee_id: dto.employee_id,
+          work_date: workDate,
+        },
+      },
+      create: {
+        employee_id: dto.employee_id,
+        work_date: workDate,
+        scheduled_start: schedule.start_time,
+        scheduled_end: schedule.end_time,
+        break_start: policy?.break_start ?? null,
+        break_end: policy?.break_end ?? null,
+        flexible_start: policy?.is_flexible_enabled
+          ? (policy.flexible_start_minutes ?? null)
+          : null,
+        flexible_end: policy?.is_flexible_enabled
+          ? (policy.flexible_end_minutes ?? null)
+          : null,
+        check_in_time: timestamp,
+        selfie_image_url: selfieUrl,
+        similarity_score: similarity,
+        status: AttendanceStatus.pending,
+      },
+      update: {
+        check_in_time: timestamp,
+        selfie_image_url: selfieUrl,
+        similarity_score: similarity,
+      },
+    });
+
+    await this.prisma.attendanceLogs.create({
+      data: {
+        attendance_id: attendance.id,
+        action: AttendanceAction.check_in,
+        timestamp,
+        latitude: dto.latitude ?? null,
+        longitude: dto.longitude ?? null,
+        ip_address: dto.ip_address ?? null,
+        user_agent: dto.user_agent ?? null,
+      },
+    });
+
+    const late = Math.max(0, checkInMinutes - schedule.start_time);
+
+    await this.prisma.attendances.update({
+      where: { id: attendance.id },
+      data: { late },
+    });
+
+    return ResponseHelper.success(
+      {
+        ...attendance,
+        late,
+        face_verified: true,
+        similarity_score: attendance.similarity_score,
+        face_distance: Number(comparison.distance.toFixed(6)),
+        face_threshold: threshold,
+      },
+      'Checked in successfully with face verification',
+    );
+  }
 
   async checkIn(dto: CheckInDto, req: Request) {
     const timestamp = dto.timestamp ? new Date(dto.timestamp) : new Date();
@@ -67,11 +330,12 @@ export class AttendancesService {
       throw new BadRequestException('No work schedule found for employee');
 
     const checkInMinutes = dateToMinutes(timestamp);
-    if (checkInMinutes > schedule.end_time) {
-      throw new BadRequestException(
-        `Check-in not allowed after work hours end (${schedule.end_time} min). Current time: ${checkInMinutes} min.`,
-      );
-    }
+    // Temporarily allow check-in after scheduled work hours.
+    // if (checkInMinutes > schedule.end_time) {
+    //   throw new BadRequestException(
+    //     `Check-in not allowed after work hours end (${schedule.end_time} min). Current time: ${checkInMinutes} min.`,
+    //   );
+    // }
 
     const policyRes = await this.workPolicyService.getActive(timestamp);
     const policy = policyRes.data;

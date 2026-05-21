@@ -13,6 +13,7 @@ import {
   Skeleton,
   Box,
   RingProgress,
+  Anchor,
 } from '@mantine/core';
 import {
   IconMapPin,
@@ -31,6 +32,9 @@ import { useCheckIn, useCheckOut } from '../api/check-in-out';
 import { useGetTodayAttendance } from '../api/get-today-attendance';
 import { useGPS } from '@/hooks/useGPS';
 import { minutesToTime } from '@/constant';
+import { FaceCheckInModal } from '../components/FaceCheckInModal';
+import { reverseGeocode } from '../api/reverse-geocode';
+import { myProfileUrl } from '@/routes/url';
 
 function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000;
@@ -50,19 +54,6 @@ function useNow() {
     return () => clearInterval(t);
   }, []);
   return now;
-}
-
-async function reverseGeocode(lat: number, lon: number): Promise<string> {
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
-      { headers: { 'Accept-Language': 'vi' } },
-    );
-    const data = await res.json();
-    return data.display_name ?? `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-  } catch {
-    return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-  }
 }
 
 export default function CheckInOutPage() {
@@ -85,6 +76,13 @@ export default function CheckInOutPage() {
   const { position, loading: gpsLoading, error: gpsError, getPosition } = useGPS();
   const checkInMutation = useCheckIn();
   const checkOutMutation = useCheckOut();
+
+  const [faceCheckInOpened, setFaceCheckInOpened] = useState(false);
+  const [_actionResult, setActionResult] = useState<{
+    status: 'success' | 'error';
+    label: string;
+    message: string;
+  } | null>(null);
 
   const [address, setAddress] = useState<string | null>(null);
   const [addressLoading, setAddressLoading] = useState(false);
@@ -115,30 +113,24 @@ export default function CheckInOutPage() {
 
   const workEnd = schedule?.end_time ?? 1020;
   const nowMin = now.getHours() * 60 + now.getMinutes();
-  const isPastWorkEnd = schedule != null && !hasCheckedIn && nowMin > workEnd;
+  // Temporarily allow check-in after scheduled work hours.
+  // const isPastWorkEnd = schedule != null && !hasCheckedIn && nowMin > workEnd;
+  const isPastWorkEnd = false;
 
   const handleCheckIn = async () => {
     if (!employee) return;
-    const notiId = notify.loading('Checking in...');
-    try {
-      const gps = await getPosition();
-      await checkInMutation.mutateAsync({
-        employee_id: employee.id,
-        latitude: gps.latitude,
-        longitude: gps.longitude,
-        timestamp: new Date().toISOString(),
-      });
-      await refetchToday();
-      notify.success(notiId, { message: 'Checked in successfully!' });
-    } catch (e: any) {
-      notify.error(notiId, {
-        message: e?.response?.data?.message || e?.message || 'Check-in failed',
-      });
-    }
+    // Open face check-in modal
+    setActionResult(null);
+    setFaceCheckInOpened(true);
+  };
+
+  const handleFaceCheckInSuccess = async () => {
+    await refetchToday();
   };
 
   const handleCheckOut = async () => {
     if (!employee) return;
+    setActionResult(null);
     const notiId = notify.loading('Checking out...');
     try {
       const gps = await getPosition();
@@ -149,10 +141,21 @@ export default function CheckInOutPage() {
         timestamp: new Date().toISOString(),
       });
       await refetchToday();
+      setActionResult({
+        status: 'success',
+        label: 'Check-out success',
+        message: 'Your check-out was recorded successfully.',
+      });
       notify.success(notiId, { message: 'Checked out successfully!' });
     } catch (e: any) {
+      const message = e?.response?.data?.message || e?.message || 'Check-out failed';
+      setActionResult({
+        status: 'error',
+        label: 'Check-out failed',
+        message,
+      });
       notify.error(notiId, {
-        message: e?.response?.data?.message || e?.message || 'Check-out failed',
+        message,
       });
     }
   };
@@ -188,6 +191,7 @@ export default function CheckInOutPage() {
       : 'Not checked in';
   const statusColor = hasCheckedOut ? '#94a3b8' : hasCheckedIn ? '#5eead4' : '#93c5fd';
 
+  const hasFaceRegistered = !!employee?.face_descriptor?.length;
   return (
     <Stack gap="md">
       <PageHeader
@@ -322,7 +326,13 @@ export default function CheckInOutPage() {
                     size="md"
                     radius="xl"
                     leftSection={<IconLogin size={18} />}
-                    disabled={hasCheckedIn || checkInMutation.isPending || !canAct || isPastWorkEnd}
+                    disabled={
+                      hasCheckedIn ||
+                      checkInMutation.isPending ||
+                      !canAct ||
+                      isPastWorkEnd ||
+                      !hasFaceRegistered
+                    }
                     loading={checkInMutation.isPending}
                     onClick={handleCheckIn}
                     style={{
@@ -342,7 +352,11 @@ export default function CheckInOutPage() {
                     radius="xl"
                     leftSection={<IconLogout size={18} />}
                     disabled={
-                      !hasCheckedIn || hasCheckedOut || checkOutMutation.isPending || !canAct
+                      !hasCheckedIn ||
+                      hasCheckedOut ||
+                      checkOutMutation.isPending ||
+                      !canAct ||
+                      !hasFaceRegistered
                     }
                     loading={checkOutMutation.isPending}
                     onClick={handleCheckOut}
@@ -369,6 +383,38 @@ export default function CheckInOutPage() {
                     Check-in unavailable — work hours ended at {minutesToTime(workEnd)}
                   </Text>
                 )}
+                {!hasFaceRegistered && (
+                  <Alert
+                    icon={<IconAlertCircle size={16} />}
+                    mt="md"
+                    p="sm"
+                    radius="md"
+                    styles={{
+                      root: {
+                        background: 'rgba(255,255,255,0.14)',
+                        borderColor: 'rgba(147,197,253,0.45)',
+                        backdropFilter: 'blur(8px)',
+                      },
+                      icon: { color: '#bfdbfe' },
+                      message: { color: 'white' },
+                    }}
+                  >
+                    <Text size="xs" c="white" mb={4}>
+                      You have not registered your face for check-in yet.
+                    </Text>
+
+                    <Anchor
+                      href={myProfileUrl}
+                      size="xs"
+                      mt={4}
+                      c="#bfdbfe"
+                      fw={600}
+                      style={{ display: 'inline-block' }}
+                    >
+                      Go to profile to register your face
+                    </Anchor>
+                  </Alert>
+                )}
               </Box>
             </Stack>
           </Card>
@@ -376,6 +422,12 @@ export default function CheckInOutPage() {
 
         {/* ── Right: Location ── */}
         <Grid.Col span={{ base: 12, md: 7 }}>
+          <Alert icon={<IconAlertCircle size={16} />} color="yellow" mb="md" p="sm" radius="md">
+            <Text size="xs">
+              For accurate attendance tracking, please allow location access and ensure GPS signal
+              is active.
+            </Text>
+          </Alert>
           <Stack gap="md" h="100%">
             <Card withBorder radius="xl" p="lg">
               <Group justify="space-between" mb="md">
@@ -509,6 +561,25 @@ export default function CheckInOutPage() {
           </Stack>
         </Grid.Col>
       </Grid>
+
+      {/* Face Check-In Modal */}
+      {employee && (
+        <FaceCheckInModal
+          opened={faceCheckInOpened}
+          onClose={() => setFaceCheckInOpened(false)}
+          employeeId={employee.id}
+          onSuccess={handleFaceCheckInSuccess}
+          onResult={(result) =>
+            setActionResult({
+              status: result.status,
+              label: result.status === 'success' ? 'Check-in success' : 'Check-in failed',
+              message: result.message,
+            })
+          }
+          latitude={position?.latitude}
+          longitude={position?.longitude}
+        />
+      )}
     </Stack>
   );
 }

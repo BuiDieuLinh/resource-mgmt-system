@@ -30,6 +30,7 @@ import {
   IconFileText,
   IconUserCheck,
   IconArrowLeft,
+  IconCamera,
 } from '@tabler/icons-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGetEmployee } from '../api/get-employee';
@@ -54,6 +55,8 @@ import {
 import { AwardRevealPage } from '../../performance/components/AwardRevealPage';
 import { useState } from 'react';
 import type { IAward } from '../../performance/types';
+import { FaceEnrollmentModal } from '../components/FaceEnrollmentModal';
+import { useGetEmployeeByUserId } from '../api/get-employee-by-user';
 
 function InfoRow({
   icon,
@@ -171,9 +174,11 @@ export default function EmployeeProfile() {
   const { id } = useParams<{ id: string }>();
 
   const { data, isLoading: _loading, error, refetch } = useGetEmployee(id!);
+  const { data: empData } = useGetEmployeeByUserId(); // Get current user's employee data
   const isLoading = useDelayedLoading(_loading);
   const { data: policyData } = useGetActivePolicy();
   const [previewAward, setPreviewAward] = useState<IAward | null>(null);
+  const [faceEnrollmentOpened, setFaceEnrollmentOpened] = useState(false);
 
   if (isLoading)
     return (
@@ -238,6 +243,11 @@ export default function EmployeeProfile() {
     return <ErrorState message="Employee not found" onRetry={() => navigate(employeeListUrl)} />;
 
   const employee = data.data;
+  const currentUserEmployee = empData?.data;
+  const hasFaceRegistered =
+    employee.face_descriptor &&
+    Array.isArray(employee.face_descriptor) &&
+    employee.face_descriptor.length > 0;
 
   return (
     <Stack gap="lg">
@@ -302,6 +312,33 @@ export default function EmployeeProfile() {
               )}
               <InfoRow icon={<IconId size={14} />} label="ID Card" value={employee.identify_card} />
             </Stack>
+
+            {/* Face Recognition Section - Only show for own profile */}
+            {employee && currentUserEmployee && employee.id === currentUserEmployee.id && (
+              <>
+                <Divider my="md" />
+                <Stack gap="xs">
+                  <Group justify="space-between">
+                    <div>
+                      <Text size="sm" fw={600}>
+                        Face Recognition
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        {hasFaceRegistered ? 'Registered' : 'Not registered'}
+                      </Text>
+                    </div>
+                    <Button
+                      size="xs"
+                      variant={hasFaceRegistered ? 'light' : 'filled'}
+                      leftSection={<IconCamera size={14} />}
+                      onClick={() => setFaceEnrollmentOpened(true)}
+                    >
+                      {hasFaceRegistered ? 'Update' : 'Register'}
+                    </Button>
+                  </Group>
+                </Stack>
+              </>
+            )}
           </Card>
         </Grid.Col>
 
@@ -642,6 +679,16 @@ export default function EmployeeProfile() {
           awards={[previewAward]}
           onClose={() => setPreviewAward(null)}
           previewMode
+        />
+      )}
+
+      {/* Face Enrollment Modal */}
+      {employee && (
+        <FaceEnrollmentModal
+          opened={faceEnrollmentOpened}
+          onClose={() => setFaceEnrollmentOpened(false)}
+          employeeId={employee.id}
+          employeeName={employee.full_name}
         />
       )}
     </Stack>

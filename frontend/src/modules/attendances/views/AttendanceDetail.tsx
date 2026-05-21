@@ -236,6 +236,7 @@ export default function AttendanceDetailPage() {
             workSchedules={data?.work_schedules ?? []}
             workStartMin={workStartMin}
             workEndMin={workEndMin}
+            canViewAttendanceDetails={isAdmin}
           />
         ))}
       </Stack>

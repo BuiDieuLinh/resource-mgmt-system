@@ -22,6 +22,9 @@ export interface IAttendance {
   late?: number;
   early_leave?: number;
   overtime?: number;
+  work_minutes?: number;
+  selfie_image_url?: string | null;
+  similarity_score?: number | null;
   status?: AttendanceStatus;
   employee?: {
     id: string;

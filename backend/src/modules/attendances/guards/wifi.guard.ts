@@ -1,7 +1,14 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 
 @Injectable()
 export class WifiGuard implements CanActivate {
+  constructor(private readonly logger: Logger) {}
+
   canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest();
 
@@ -13,8 +20,10 @@ export class WifiGuard implements CanActivate {
 
     ip = ip?.replace('::ffff:', '');
 
-    console.log('IP: ', ip);
+    this.logger.log(`Client IP: ${ip}`);
 
-    return ip === process.env.OFFICE_IP;
+    const allowedIps = [process.env.OFFICE_IP, '127.0.0.1', '::1'];
+
+    return allowedIps.includes(ip);
   }
 }

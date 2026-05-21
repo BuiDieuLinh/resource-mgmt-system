@@ -11,8 +11,12 @@ import {
   DefaultValuePipe,
   UseGuards,
   ForbiddenException,
+  UploadedFile,
+  UseInterceptors,
   Req,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { AttendancesService } from './attendances.service';
 import { QueryAttendanceDto } from './dto/query-attendance.dto';
 import { CURRENT_MONTH, CURRENT_YEAR } from 'src/common/constant';
@@ -26,12 +30,40 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from 'src/common/constant/roles';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { WifiGuard } from './guards/wifi.guard';
+import { CheckInFaceDto } from './dto/check-in-face.dto';
 import type { Request } from 'express';
 
 @Controller('attendances')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AttendancesController {
   constructor(private readonly attendancesService: AttendancesService) {}
+
+  @Post('check-in/face')
+  @UseGuards(WifiGuard)
+  @UseInterceptors(
+    FileInterceptor('selfie', {
+      storage: memoryStorage(),
+      fileFilter: (_req, file, callback) => {
+        if (!file.mimetype.match(/^image\/(jpeg|jpg|png)$/)) {
+          return callback(
+            new Error('Only JPG and PNG images are allowed'),
+            false,
+          );
+        }
+        callback(null, true);
+      },
+      limits: {
+        fileSize: 1024 * 1024,
+      },
+    }),
+  )
+  @Roles(Role.EMPLOYEE, Role.MANAGER, Role.HR, Role.ADMIN)
+  checkInWithFace(
+    @Body() dto: CheckInFaceDto,
+    @UploadedFile() selfie: Express.Multer.File,
+  ) {
+    return this.attendancesService.checkInWithFace(dto, selfie);
+  }
 
   @Post('check-in')
   @UseGuards(WifiGuard)

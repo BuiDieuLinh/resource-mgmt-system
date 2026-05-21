@@ -26,8 +26,23 @@ import { MailService } from 'src/modules/mail/mail.service';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { EmployeeStatus, EmploymentEventType } from '@prisma/client';
+import { UpdateFaceDescriptorDto } from './dto/update-face-descriptor.dto';
+import {
+  compareFaces,
+  isValidFaceDescriptor,
+} from 'src/common/utils/face-recognition.util';
 
 dayjs.extend(utc);
+
+function resolveFaceEnrollmentDistanceThreshold(config: ConfigService): number {
+  const configured =
+    config.get<string>('FACE_DISTANCE_THRESHOLD') ??
+    config.get<string>('FACE_SIMILARITY_THRESHOLD');
+  const parsed = configured ? Number(configured) : 0.45;
+
+  if (!Number.isFinite(parsed) || parsed <= 0) return 0.45;
+  return Math.min(parsed, 0.45);
+}
 
 @Injectable()
 export class EmployeeService {
@@ -770,5 +785,69 @@ export class EmployeeService {
       },
       'Import completed',
     );
+  }
+
+  async updateFaceDescriptor(id: string, dto: UpdateFaceDescriptorDto) {
+    const existing = await this.prisma.employees.findUnique({
+      where: { id },
+    });
+    if (!existing) throw new NotFoundException('Employee not found');
+
+    if (!isValidFaceDescriptor(dto.face_descriptor)) {
+      throw new BadRequestException(
+        'Face descriptor must be an array of 128 numbers',
+      );
+    }
+
+    const threshold = resolveFaceEnrollmentDistanceThreshold(this.config);
+    const registeredEmployees = await this.prisma.employees.findMany({
+      where: {
+        NOT: { id },
+      },
+      select: {
+        id: true,
+        employee_code: true,
+        full_name: true,
+        face_descriptor: true,
+      },
+    });
+
+    for (const employee of registeredEmployees) {
+      if (!isValidFaceDescriptor(employee.face_descriptor)) continue;
+
+      const comparison = compareFaces(
+        employee.face_descriptor,
+        dto.face_descriptor,
+        threshold,
+      );
+
+      if (comparison.matched) {
+        throw new BadRequestException(
+          `This face is already registered to employee ${employee.employee_code} - ${employee.full_name}. Distance: ${comparison.distance.toFixed(3)}.`,
+        );
+      }
+    }
+
+    const updated = await this.prisma.employees.update({
+      where: { id },
+      data: { face_descriptor: dto.face_descriptor },
+    });
+
+    return ResponseHelper.success(
+      { id: updated.id, has_face_descriptor: true },
+      'Face descriptor updated successfully',
+    );
+  }
+
+  async getFaceDescriptor(id: string) {
+    const employee = await this.prisma.employees.findUnique({
+      where: { id },
+      select: { id: true, face_descriptor: true },
+    });
+    if (!employee) throw new NotFoundException('Employee not found');
+    if (!employee.face_descriptor) {
+      throw new NotFoundException('No face descriptor found for this employee');
+    }
+    return ResponseHelper.success(employee);
   }
 }

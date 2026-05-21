@@ -27,6 +27,7 @@ import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from 'src/common/constant/roles';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { UpdateFaceDescriptorDto } from './dto/update-face-descriptor.dto';
 
 @Controller('employees')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -145,5 +146,30 @@ export class EmployeeController {
   @Roles(Role.HR, Role.ADMIN)
   remove(@Param('id') id: string) {
     return this.service.remove(id);
+  }
+
+  @Patch(':id/face-descriptor')
+  @Roles(Role.HR, Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
+  updateFaceDescriptor(
+    @Param('id') id: string,
+    @Body() dto: UpdateFaceDescriptorDto,
+    @CurrentUser() user: { employeeId: string; roles: string[] },
+  ) {
+    if (
+      !user.roles.includes(Role.HR) &&
+      !user.roles.includes(Role.ADMIN) &&
+      id !== user.employeeId
+    ) {
+      throw new ForbiddenException(
+        'You can only update your own face descriptor',
+      );
+    }
+    return this.service.updateFaceDescriptor(id, dto);
+  }
+
+  @Get(':id/face-descriptor')
+  @Roles(Role.HR, Role.ADMIN)
+  getFaceDescriptor(@Param('id') id: string) {
+    return this.service.getFaceDescriptor(id);
   }
 }

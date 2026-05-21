@@ -14,6 +14,7 @@ export interface IEmployee {
   date_of_birth: string;
   address: string;
   avatar_url?: string;
+  face_descriptor?: number[];
 
   contract_type?: string;
   hire_date: string;

@@ -48,6 +48,7 @@ model Employees {
   date_of_birth     DateTime       @db.Date
   address           String         @db.Text
   avatar_url        String?        @db.Text
+  face_descriptor   Float[]
   hire_date         DateTime       @db.Date
   contract_type     ContractType   @default(probation)
   terminated_at     DateTime?      @db.Date
@@ -198,6 +199,9 @@ model Attendances {
   early_leave  Int @default(0)
   overtime     Int @default(0)
   work_minutes Int @default(0)
+
+  selfie_image_url String?
+  similarity_score Float?
 
   status     AttendanceStatus @default(pending)
   created_at DateTime         @default(now())

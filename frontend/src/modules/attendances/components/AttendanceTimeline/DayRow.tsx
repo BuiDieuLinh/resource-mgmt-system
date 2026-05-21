@@ -1,26 +1,11 @@
-import {
-  Card,
-  Text,
-  Group,
-  Badge,
-  Tooltip,
-  Anchor,
-  Popover,
-  useMantineColorScheme,
-} from '@mantine/core';
+import { Card, Text, Group, Badge, Tooltip, useMantineColorScheme } from '@mantine/core';
 import { IconAlertCircle, IconStarFilled, IconMapPin } from '@tabler/icons-react';
-import type {
-  IAttendance,
-  IAttendanceLogs,
-  ILeaveRequest,
-  IHoliday,
-  IWorkSchedule,
-} from '../../types';
+import { useState } from 'react';
+import type { IAttendance, ILeaveRequest, IHoliday, IWorkSchedule } from '../../types';
 import { fmtTime, leaveOverlapsDay } from '../../utils/format';
 import { TimelineBar } from './TimelineBar';
 import { COL_DATE, COL_TIME, COL_BADGE } from './timeline.constants';
-import { useState } from 'react';
-import { reverseGeocode } from '../../api/reverse-geocode';
+import { AttendanceDetailModal } from '../AttendanceDetailModal';
 
 interface Props {
   day: Date;
@@ -31,8 +16,7 @@ interface Props {
   workSchedules?: IWorkSchedule[];
   workStartMin?: number;
   workEndMin?: number;
-  activePopoverId?: string | null;
-  onPopoverChange?: (id: string | null) => void;
+  canViewAttendanceDetails?: boolean;
 }
 
 const LEAVE_STATUS_COLOR: Record<string, string> = {
@@ -43,79 +27,6 @@ const LEAVE_STATUS_COLOR: Record<string, string> = {
 
 const DOW_MAP = [6, 0, 1, 2, 3, 4, 5];
 
-function LocationPopover({
-  id,
-  log,
-  label,
-  time,
-  activeId,
-  onOpen,
-  onClose,
-}: {
-  id: string;
-  log?: IAttendanceLogs;
-  label: string;
-  time?: string;
-  activeId: string | null;
-  onOpen: (id: string) => void;
-  onClose: () => void;
-}) {
-  const [address, setAddress] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const hasLocation = log && log.latitude != null && log.longitude != null;
-  const opened = activeId === id;
-
-  if (!time) return <span>–</span>;
-  if (!hasLocation) return <span>{time}</span>;
-
-  const handleOpen = async () => {
-    onOpen(id);
-    if (address || loading) return;
-    setLoading(true);
-    const result = await reverseGeocode(Number(log.latitude), Number(log.longitude));
-    setAddress(result);
-    setLoading(false);
-  };
-
-  return (
-    <Popover opened={opened} onClose={onClose} position="top" withArrow shadow="md" width={260}>
-      <Popover.Target>
-        <Text
-          component="span"
-          size="xs"
-          ff="monospace"
-          style={{ cursor: 'pointer', textDecoration: 'underline dotted', textUnderlineOffset: 3 }}
-          onClick={handleOpen}
-        >
-          {time}
-        </Text>
-      </Popover.Target>
-
-      <Popover.Dropdown p="sm">
-        <Group gap={6} mb={6}>
-          <IconMapPin size={13} color="var(--mantine-color-blue-6)" />
-          <Text size="xs" fw={600}>
-            {label} location
-          </Text>
-        </Group>
-        <Text size="xs" c="dimmed" lh={1.5}>
-          {loading ? 'Loading address...' : (address ?? '...')}
-        </Text>
-        <Anchor
-          size="xs"
-          href={`https://www.google.com/maps?q=${log.latitude},${log.longitude}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          mt={6}
-          display="block"
-        >
-          Open in Google Maps ↗
-        </Anchor>
-      </Popover.Dropdown>
-    </Popover>
-  );
-}
-
 export function DayRow({
   day,
   record,
@@ -125,9 +36,9 @@ export function DayRow({
   workSchedules = [],
   workStartMin,
   workEndMin,
-  activePopoverId = null,
-  onPopoverChange,
+  canViewAttendanceDetails = false,
 }: Props) {
+  const [detailOpened, setDetailOpened] = useState(false);
   const { colorScheme } = useMantineColorScheme();
   const dark = colorScheme === 'dark';
   const jsDay = day.getDay();
@@ -174,105 +85,113 @@ export function DayRow({
   const checkInTime = fmtTime(record?.check_in_time ?? record?.check_in);
   const checkOutTime = fmtTime(record?.check_out_time ?? record?.check_out);
 
-  // Unique IDs per record per action
-  const checkInId = record ? `${record.id}-checkin` : '';
-  const checkOutId = record ? `${record.id}-checkout` : '';
+  const canOpenDetail = canViewAttendanceDetails && !!record;
 
   return (
-    <Card withBorder p="xs" radius="sm" bg={bgColor} data-testid="day-row-timesheet">
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: `${COL_DATE}px ${COL_TIME}px 1fr ${COL_BADGE}px`,
-          alignItems: 'center',
-          gap: 8,
-        }}
-      >
-        <Group gap={4} wrap="nowrap">
-          <Text size="xs" fw={500} c={isWeekend || holiday ? 'dimmed' : undefined} truncate>
-            {dayLabel}
-          </Text>
-          {holiday && (
-            <Tooltip label={holiday.name} withArrow>
-              <IconStarFilled size={14} color="var(--mantine-color-orange-5)" />
-            </Tooltip>
-          )}
-        </Group>
-
-        <Group gap={4} wrap="nowrap" align="center">
-          {!isWeekend || record ? (
-            <Text size="xs" c="dimmed" ff="monospace" component="span">
-              <LocationPopover
-                id={checkInId}
-                log={checkInLog}
-                label="Check-in"
-                time={checkInTime}
-                activeId={activePopoverId}
-                onOpen={(id) => onPopoverChange?.(id)}
-                onClose={() => onPopoverChange?.(null)}
-              />
-              {' – '}
-              <LocationPopover
-                id={checkOutId}
-                log={checkOutLog}
-                label="Check-out"
-                time={checkOutTime}
-                activeId={activePopoverId}
-                onOpen={(id) => onPopoverChange?.(id)}
-                onClose={() => onPopoverChange?.(null)}
-              />
+    <>
+      <Card withBorder p="xs" radius="sm" bg={bgColor} data-testid="day-row-timesheet">
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `${COL_DATE}px ${COL_TIME}px 1fr ${COL_BADGE}px`,
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          <Group gap={4} wrap="nowrap">
+            <Text
+              size="xs"
+              fw={500}
+              c={isWeekend || holiday ? 'dimmed' : undefined}
+              truncate
+              role={canOpenDetail ? 'button' : undefined}
+              onClick={() => canOpenDetail && setDetailOpened(true)}
+              style={{
+                cursor: canOpenDetail ? 'pointer' : undefined,
+                textDecoration: canOpenDetail ? 'underline dotted' : undefined,
+                textUnderlineOffset: 3,
+              }}
+            >
+              {dayLabel}
             </Text>
-          ) : null}
-        </Group>
+            {holiday && (
+              <Tooltip label={holiday.name} withArrow>
+                <IconStarFilled size={14} color="var(--mantine-color-orange-5)" />
+              </Tooltip>
+            )}
+            {canOpenDetail && (
+              <Tooltip label="View attendance detail" withArrow>
+                <IconMapPin size={13} color="var(--mantine-color-blue-6)" />
+              </Tooltip>
+            )}
+          </Group>
 
-        {!isWeekend || record ? (
-          <TimelineBar record={record} workStartMin={workStartMin} workEndMin={workEndMin} />
-        ) : (
-          <TimelineBar record={record} hideWorkWindow />
-        )}
+          <Group gap={4} wrap="nowrap" align="center">
+            {!isWeekend || record ? (
+              <Text size="xs" c="dimmed" component="span">
+                {checkInTime || '–'} {' – '} {checkOutTime || '–'}
+              </Text>
+            ) : null}
+          </Group>
 
-        <Group gap={4} wrap="nowrap" justify="flex-end">
-          {holiday && (
-            <Badge size="xs" color="orange" variant="light">
-              {holiday.is_paid ? 'Holiday' : 'Unpaid'}
-            </Badge>
+          {!isWeekend || record ? (
+            <TimelineBar record={record} workStartMin={workStartMin} workEndMin={workEndMin} />
+          ) : (
+            <TimelineBar record={record} hideWorkWindow />
           )}
-          {lateMin > 0 && (
-            <Badge size="xs" color="red" variant="light">
-              +{lateMin}m
-            </Badge>
-          )}
-          {earlyLeaveMin > 0 && (
-            <Badge size="xs" color="yellow" variant="light">
-              -{earlyLeaveMin}m
-            </Badge>
-          )}
-          {overtimeMin > 0 && (
-            <Badge size="xs" color="blue" variant="light">
-              OT+{overtimeMin}m
-            </Badge>
-          )}
-          {!record && !isWeekend && !holiday && dayLeaves.length === 0 && (
-            <Badge size="xs" color="gray" variant="light">
-              –
-            </Badge>
-          )}
-          {dayLeaves.map((lr) => (
-            <Tooltip key={lr.id} label="View leave request" withArrow>
-              <Badge
-                size="xs"
-                color={LEAVE_STATUS_COLOR[lr.status] ?? 'gray'}
-                variant="filled"
-                style={{ cursor: 'pointer' }}
-                leftSection={<IconAlertCircle size={11} />}
-                onClick={() => onLeaveClick(lr)}
-              >
-                {lr.leave_type}
+
+          <Group gap={4} wrap="nowrap" justify="flex-end">
+            {holiday && (
+              <Badge size="xs" color="orange" variant="light">
+                {holiday.is_paid ? 'Holiday' : 'Unpaid'}
               </Badge>
-            </Tooltip>
-          ))}
-        </Group>
-      </div>
-    </Card>
+            )}
+            {lateMin > 0 && (
+              <Badge size="xs" color="red" variant="light">
+                +{lateMin}m
+              </Badge>
+            )}
+            {earlyLeaveMin > 0 && (
+              <Badge size="xs" color="yellow" variant="light">
+                -{earlyLeaveMin}m
+              </Badge>
+            )}
+            {overtimeMin > 0 && (
+              <Badge size="xs" color="blue" variant="light">
+                OT+{overtimeMin}m
+              </Badge>
+            )}
+            {!record && !isWeekend && !holiday && dayLeaves.length === 0 && (
+              <Badge size="xs" color="gray" variant="light">
+                –
+              </Badge>
+            )}
+            {dayLeaves.map((lr) => (
+              <Tooltip key={lr.id} label="View leave request" withArrow>
+                <Badge
+                  size="xs"
+                  color={LEAVE_STATUS_COLOR[lr.status] ?? 'gray'}
+                  variant="filled"
+                  style={{ cursor: 'pointer' }}
+                  leftSection={<IconAlertCircle size={11} />}
+                  onClick={() => onLeaveClick(lr)}
+                >
+                  {lr.leave_type}
+                </Badge>
+              </Tooltip>
+            ))}
+          </Group>
+        </div>
+      </Card>
+
+      <AttendanceDetailModal
+        opened={detailOpened}
+        onClose={() => setDetailOpened(false)}
+        dayLabel={dayLabel}
+        record={record}
+        checkInLog={checkInLog}
+        checkOutLog={checkOutLog}
+      />
+    </>
   );
 }
