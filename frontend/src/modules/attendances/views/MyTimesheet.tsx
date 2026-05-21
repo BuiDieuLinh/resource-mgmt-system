@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Stack, Group, Select, SegmentedControl } from '@mantine/core';
+import { Stack, Group, Select, SegmentedControl, Alert, Text } from '@mantine/core';
 import { IconCalendar, IconCalendarWeek } from '@tabler/icons-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { AttendanceSummaryCards } from '../components/AttendanceSummaryCards';
@@ -13,6 +13,7 @@ import { CheckInOutButton } from '../components/CheckInOutButton';
 import { getDaysInMonth, getWeeksInMonth } from '../utils/format';
 import { useGetMyAttendance } from '../api/get-my-attendance';
 import type { IAttendance, ILeaveRequest } from '../types';
+import { IconInfoCircle } from '@tabler/icons-react';
 
 export default function MyTimesheetPage() {
   const now = new Date();
@@ -81,6 +82,16 @@ export default function MyTimesheetPage() {
         description="Your personal attendance records"
         right={<CheckInOutButton />}
       />
+
+      {data?.annual_leave_balance && (
+        <Alert icon={<IconInfoCircle size={16} />} color="blue" variant="light">
+          <Text size="sm">
+            Annual leave available now:{' '}
+            <strong>{data.annual_leave_balance.year_end_remaining_days}</strong> /{' '}
+            {data.annual_leave_balance.annual_leave_days} day(s).
+          </Text>
+        </Alert>
+      )}
 
       {data?.summary && <AttendanceSummaryCards summary={data.summary} />}
 

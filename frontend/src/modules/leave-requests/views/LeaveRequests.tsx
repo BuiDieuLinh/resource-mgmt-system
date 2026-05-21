@@ -67,6 +67,7 @@ export default function LeaveRequestsPage() {
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
   const [opened, setOpened] = useState(false);
   const [editRequest, setEditRequest] = useState<ILeaveRequest | null>(null);
+  const [reviewRequest, setReviewRequest] = useState<ILeaveRequest | null>(null);
   const isAdmin = useHasRole(EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.HR);
   const isManager = useHasRole(EMPLOYEE_ROLE.MANAGER);
 
@@ -187,6 +188,10 @@ export default function LeaveRequestsPage() {
     setEditRequest(null);
   };
 
+  const handleCloseReview = () => {
+    setReviewRequest(null);
+  };
+
   const handleSubmit = async (payload: ILeaveRequestPayload) => {
     const notiId = notify.loading(isEdit ? 'Updating...' : 'Submitting...');
     try {
@@ -198,9 +203,10 @@ export default function LeaveRequestsPage() {
     }
   };
 
-  const handleStatus = (id: string, status: 'approved' | 'rejected') => {
-    setActionComment('');
-    setActionModal({ ids: [id], status });
+  const handleStatus = (id: string) => {
+    const request = requests.find((item) => item.id === id);
+    if (!request) return;
+    setReviewRequest(request);
   };
 
   const handleBulkAction = (status: 'approved' | 'rejected') => {
@@ -386,7 +392,7 @@ export default function LeaveRequestsPage() {
                     size="sm"
                     variant="subtle"
                     color="green"
-                    onClick={() => handleStatus(r.id, LEAVE_STATUS.APPROVED)}
+                    onClick={() => handleStatus(r.id)}
                   >
                     <IconCheck size={16} />
                   </ActionIcon>
@@ -396,7 +402,7 @@ export default function LeaveRequestsPage() {
                     size="sm"
                     variant="subtle"
                     color="red"
-                    onClick={() => handleStatus(r.id, LEAVE_STATUS.REJECTED)}
+                    onClick={() => handleStatus(r.id)}
                   >
                     <IconX size={16} />
                   </ActionIcon>
@@ -767,6 +773,31 @@ export default function LeaveRequestsPage() {
         initialValues={editRequest}
         onSubmit={handleSubmit}
         loading={createMutation.isPending}
+      />
+
+      <LeaveRequestFormModal
+        opened={!!reviewRequest}
+        onClose={handleCloseReview}
+        mode="review"
+        initialValues={reviewRequest}
+        onSubmit={() => {}}
+        onApprove={async (id, comment) => {
+          await updateMutation.mutateAsync({
+            id,
+            status: LEAVE_STATUS.APPROVED,
+            comment: comment.trim() || undefined,
+          });
+          setReviewRequest(null);
+        }}
+        onReject={async (id, comment) => {
+          await updateMutation.mutateAsync({
+            id,
+            status: LEAVE_STATUS.REJECTED,
+            comment: comment.trim() || undefined,
+          });
+          setReviewRequest(null);
+        }}
+        loading={updateMutation.isPending}
       />
 
       <Modal

@@ -1,4 +1,5 @@
 import type { AttendanceAction, AttendanceStatus, LeaveStatus, LeaveType } from '@/constant';
+import type { IAnnualLeaveBalance } from '@/modules/leave-requests/types';
 
 export interface IAttendance {
   id: string;
@@ -62,6 +63,7 @@ export interface ILeaveRequest {
   status: LeaveStatus;
   approved_by?: string;
   created_at: string;
+  annual_leave_balance?: IAnnualLeaveBalance | null;
 }
 
 export interface IAttendanceSummary {
@@ -117,6 +119,7 @@ export interface IEmployeeAttendanceDetail {
   work_schedules: IWorkSchedule[];
   work_policy: IWorkPolicy | null;
   holidays: IHoliday[];
+  annual_leave_balance?: IAnnualLeaveBalance | null;
   summary: IAttendanceSummary;
 }
 

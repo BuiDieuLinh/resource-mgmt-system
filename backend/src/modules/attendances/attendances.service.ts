@@ -88,6 +88,14 @@ function summarizeFaceDescriptor(descriptor: number[]) {
   };
 }
 
+function getQuarter(month: number) {
+  return Math.floor((month - 1) / 3) + 1;
+}
+
+function resolveQuarterEntitledDays(annualLeaveDays: number, quarter: number) {
+  return Number(((annualLeaveDays / 4) * quarter).toFixed(2));
+}
+
 @Injectable()
 export class AttendancesService {
   private readonly logger = new Logger(AttendancesService.name);
@@ -134,6 +142,152 @@ export class AttendancesService {
     );
 
     return `${this.publicUrl}/${fileName}`;
+  }
+
+  private calculateLeaveRequestDays(
+    leave: {
+      start_date: Date;
+      end_date: Date;
+      leave_start_minutes?: number | null;
+      leave_end_minutes?: number | null;
+    },
+    workingDows: Set<number>,
+    holidayDates: Set<string>,
+    dailyScheduleMinutes: Map<number, number>,
+  ) {
+    let totalDays = 0;
+
+    for (
+      const d = new Date(leave.start_date);
+      d <= leave.end_date;
+      d.setDate(d.getDate() + 1)
+    ) {
+      const day = new Date(d);
+      const iso = day.toISOString().slice(0, 10);
+      const jsDay = day.getDay();
+      const dow = jsDay === 0 ? 6 : jsDay - 1;
+
+      if (holidayDates.has(iso)) continue;
+      if (workingDows.size > 0 && !workingDows.has(dow)) continue;
+
+      let dayValue = 1;
+      const scheduleMinutes = dailyScheduleMinutes.get(dow);
+      const isSingleDay =
+        iso === leave.start_date.toISOString().slice(0, 10) &&
+        iso === leave.end_date.toISOString().slice(0, 10);
+
+      if (
+        isSingleDay &&
+        scheduleMinutes &&
+        leave.leave_start_minutes != null &&
+        leave.leave_end_minutes != null &&
+        leave.leave_end_minutes > leave.leave_start_minutes
+      ) {
+        const requestedMinutes =
+          leave.leave_end_minutes - leave.leave_start_minutes;
+        dayValue = Math.min(1, requestedMinutes / scheduleMinutes);
+      }
+
+      totalDays += dayValue;
+    }
+
+    return Number(totalDays.toFixed(2));
+  }
+
+  private async buildAnnualLeaveBalance(
+    employee: {
+      id: string;
+      annual_leave_days: number;
+      work_schedules: {
+        day_of_week: number;
+        start_time: number;
+        end_time: number;
+      }[];
+    },
+    referenceDate: Date,
+  ) {
+    const year = referenceDate.getFullYear();
+    const quarter = getQuarter(referenceDate.getMonth() + 1);
+    const entitledDays = resolveQuarterEntitledDays(
+      employee.annual_leave_days,
+      quarter,
+    );
+    const yearStart = new Date(year, 0, 1);
+    const yearEnd = new Date(year, 11, 31);
+    const approvedAnnualLeaves = await this.prisma.leaveRequests.findMany({
+      where: {
+        employee_id: employee.id,
+        leave_type: LeaveType.annual,
+        status: LeaveStatus.approved,
+        start_date: { lte: yearEnd },
+        end_date: { gte: yearStart },
+      },
+      select: {
+        start_date: true,
+        end_date: true,
+        leave_start_minutes: true,
+        leave_end_minutes: true,
+      },
+    });
+
+    const years = new Set<number>();
+    for (
+      const d = new Date(yearStart);
+      d <= yearEnd;
+      d.setDate(d.getDate() + 1)
+    ) {
+      years.add(d.getFullYear());
+    }
+
+    const holidayDates = new Set<string>();
+    for (const holidayYear of years) {
+      const set = await this.prisma.holidays.findMany({
+        where: {
+          holiday_date: {
+            gte: new Date(holidayYear, 0, 1),
+            lte: new Date(holidayYear, 11, 31),
+          },
+        },
+        select: { holiday_date: true },
+      });
+      set.forEach((holiday) =>
+        holidayDates.add(holiday.holiday_date.toISOString().slice(0, 10)),
+      );
+    }
+
+    const workingDows = new Set(
+      employee.work_schedules.map((schedule) => schedule.day_of_week),
+    );
+    const dailyScheduleMinutes = new Map(
+      employee.work_schedules.map((schedule) => [
+        schedule.day_of_week,
+        Math.max(1, schedule.end_time - schedule.start_time),
+      ]),
+    );
+
+    const usedDays = approvedAnnualLeaves.reduce(
+      (sum, leave) =>
+        sum +
+        this.calculateLeaveRequestDays(
+          leave,
+          workingDows,
+          holidayDates,
+          dailyScheduleMinutes,
+        ),
+      0,
+    );
+
+    return {
+      annual_leave_days: employee.annual_leave_days,
+      year,
+      quarter,
+      entitled_days: entitledDays,
+      used_days: Number(usedDays.toFixed(2)),
+      remaining_days: Number((entitledDays - usedDays).toFixed(2)),
+      year_end_remaining_days: Number(
+        (employee.annual_leave_days - usedDays).toFixed(2),
+      ),
+    };
   }
 
   async checkInWithFace(dto: CheckInFaceDto, selfie: Express.Multer.File) {
@@ -745,6 +899,14 @@ export class AttendancesService {
       throw new NotFoundException(`Employee ${employeeId} not found`);
 
     const work_policy = await this.workPolicyService.getActive(monthRange.gte);
+    const annualLeaveBalance = await this.buildAnnualLeaveBalance(
+      {
+        id: employee.id,
+        annual_leave_days: employee.annual_leave_days,
+        work_schedules: employee.work_schedules,
+      },
+      monthRange.lte,
+    );
 
     const planDay = getWorkingDaysInMonth(month, year);
     const actualDay = records.filter((r) => r.check_in_time).length;
@@ -756,6 +918,7 @@ export class AttendancesService {
       work_policy: work_policy?.data ?? null,
       holidays,
       leave_requests: leaveRequests,
+      annual_leave_balance: annualLeaveBalance,
       summary: {
         plan_day: planDay,
         actual_day: actualDay,

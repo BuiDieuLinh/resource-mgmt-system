@@ -1,4 +1,15 @@
-import { Modal, Stack, Select, Group, Button, Textarea, Text, Badge, Divider } from '@mantine/core';
+import {
+  Modal,
+  Stack,
+  Select,
+  Group,
+  Button,
+  Textarea,
+  Text,
+  Badge,
+  Divider,
+  SimpleGrid,
+} from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { useForm } from '@mantine/form';
 import { useEffect, useMemo, useState } from 'react';
@@ -9,6 +20,7 @@ import {
   LEAVE_TYPE_LABEL,
   formatDate,
   minutesToTime,
+  LEAVE_TYPE,
 } from '@/constant';
 import { useGetEmployee } from '@/modules/employees/api/get-employee';
 import { useGetEmployeeByUserId } from '@/modules/employees/api/get-employee-by-user';
@@ -141,10 +153,11 @@ export function LeaveRequestFormModal({
     if (!lr) return null;
     const isFinalized = lr.status !== 'pending';
     const canReview = mode === 'review' && !isFinalized;
+    const annualLeaveBalance = lr.annual_leave_balance;
 
     const InfoRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
       <Group justify="space-between" wrap="nowrap">
-        <Text size="sm" c="dimmed" w={120} style={{ flexShrink: 0 }}>
+        <Text size="xs" c="dimmed" w={150} style={{ flexShrink: 0 }}>
           {label}
         </Text>
         <Text size="sm" fw={500} ta="right">
@@ -160,7 +173,7 @@ export function LeaveRequestFormModal({
         title={
           <Group gap="xs">
             <Text size="lg" fw={700} c={PRIMARY_COLOR}>
-              Leave Request
+              LEAVE REQUEST
             </Text>
             <Badge color={STATUS_COLOR[lr.status] ?? 'gray'} variant="light" size="sm">
               {lr.status}
@@ -168,7 +181,7 @@ export function LeaveRequestFormModal({
           </Group>
         }
         centered
-        size="sm"
+        size="md"
         styles={{ header: { padding: '5px 15px' }, body: { paddingTop: 10 } }}
       >
         <Stack gap="sm">
@@ -184,6 +197,81 @@ export function LeaveRequestFormModal({
             />
           )}
           {lr.reason && <InfoRow label="Reason" value={lr.reason} />}
+          {lr.leave_type === LEAVE_TYPE.ANNUAL && annualLeaveBalance && (
+            <>
+              <Divider
+                label={`Annual leave balance - Q${annualLeaveBalance.quarter}/${annualLeaveBalance.year}`}
+                labelPosition="left"
+              />
+              <SimpleGrid cols={3} spacing="md" verticalSpacing="xs">
+                <div>
+                  <Text size="xs" c="dimmed">
+                    Allowed now
+                  </Text>
+                  <Text size="sm" fw={500}>
+                    {annualLeaveBalance.entitled_days} day(s)
+                  </Text>
+                </div>
+                <div>
+                  <Text size="xs" c="dimmed">
+                    Requested
+                  </Text>
+                  <Text size="sm" fw={500}>
+                    {annualLeaveBalance.requested_days ?? 0} day(s)
+                  </Text>
+                </div>
+                <div>
+                  <Text size="xs" c="dimmed">
+                    Used
+                  </Text>
+                  <Text size="sm" fw={500}>
+                    {annualLeaveBalance.used_days} day(s)
+                  </Text>
+                </div>
+              </SimpleGrid>
+              <SimpleGrid cols={3} spacing="md" verticalSpacing="xs">
+                <div>
+                  <Text size="xs" c="dimmed">
+                    Pending
+                  </Text>
+                  <Text size="sm" fw={500}>
+                    {annualLeaveBalance.pending_days ?? 0} day(s)
+                  </Text>
+                </div>
+                <div>
+                  <Text size="xs" c="dimmed">
+                    Remaining now
+                  </Text>
+                  <Text
+                    size="sm"
+                    fw={500}
+                    c={annualLeaveBalance.remaining_days < 0 ? 'red' : undefined}
+                  >
+                    {annualLeaveBalance.remaining_days} day(s)
+                  </Text>
+                </div>
+                <div>
+                  <Text size="xs" c="dimmed">
+                    Remaining after this
+                  </Text>
+                  <Text
+                    size="sm"
+                    fw={500}
+                    c={
+                      annualLeaveBalance.remaining_after_request != null &&
+                      annualLeaveBalance.remaining_after_request < 0
+                        ? 'red'
+                        : undefined
+                    }
+                  >
+                    {annualLeaveBalance.remaining_after_request ??
+                      annualLeaveBalance.remaining_days}{' '}
+                    day(s)
+                  </Text>
+                </div>
+              </SimpleGrid>
+            </>
+          )}
 
           {/* Approval history */}
           {(lr.approved_by_manager || lr.approved_by_admin) && (
@@ -238,7 +326,7 @@ export function LeaveRequestFormModal({
                 onChange={(e) => setReviewComment(e.currentTarget.value)}
               />
               <Group justify="flex-end" gap="xs">
-                <Button variant="subtle" color="gray" onClick={onClose}>
+                <Button variant="subtle" onClick={onClose}>
                   Cancel
                 </Button>
                 <Button
@@ -249,11 +337,7 @@ export function LeaveRequestFormModal({
                 >
                   Reject
                 </Button>
-                <Button
-                  color="green"
-                  loading={loading}
-                  onClick={() => onApprove?.(lr.id, reviewComment)}
-                >
+                <Button loading={loading} onClick={() => onApprove?.(lr.id, reviewComment)}>
                   Approve
                 </Button>
               </Group>

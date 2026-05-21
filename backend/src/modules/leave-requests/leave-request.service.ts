@@ -12,10 +12,27 @@ import {
   QueryLeaveRequestDto,
 } from './dto/leave-request.dto';
 import { HolidayService } from 'src/modules/holidays/holiday.service';
-import { EmployeeStatus, LeaveStatus, PositionLevel } from '@prisma/client';
+import {
+  EmployeeStatus,
+  LeaveStatus,
+  LeaveType,
+  PositionLevel,
+} from '@prisma/client';
 import { Role } from 'src/common/constant/roles';
 
 import { NotificationsService } from 'src/modules/notifications/notifications.service';
+
+type AnnualLeaveBalance = {
+  annual_leave_days: number;
+  year: number;
+  quarter: number;
+  entitled_days: number;
+  used_days: number;
+  pending_days: number;
+  requested_days: number;
+  remaining_days: number;
+  remaining_after_request: number;
+};
 
 @Injectable()
 export class LeaveRequestService {
@@ -35,11 +52,266 @@ export class LeaveRequestService {
 
   private readonly leaveInclude = {
     employee: {
-      select: { id: true, full_name: true, employee_code: true },
+      select: {
+        id: true,
+        full_name: true,
+        employee_code: true,
+        annual_leave_days: true,
+        work_schedules: true,
+      },
     },
     approver_manager: { select: { id: true, full_name: true } },
     approver_admin: { select: { id: true, full_name: true } },
   } as const;
+
+  private getQuarter(month: number) {
+    return Math.floor((month - 1) / 3) + 1;
+  }
+
+  private resolveQuarterEntitledDays(
+    annualLeaveDays: number,
+    quarter: number,
+  ): number {
+    return Number(((annualLeaveDays / 4) * quarter).toFixed(2));
+  }
+
+  private async getHolidayDateSetForRange(startDate: Date, endDate: Date) {
+    const years = new Set<number>();
+    for (
+      const d = new Date(startDate);
+      d <= endDate;
+      d.setDate(d.getDate() + 1)
+    ) {
+      years.add(d.getFullYear());
+    }
+
+    const holidayDates = new Set<string>();
+    for (const year of years) {
+      const set = await this.holidayService.getHolidayDateSet(year);
+      set.forEach((date) => holidayDates.add(date));
+    }
+
+    return holidayDates;
+  }
+
+  private calculateLeaveRequestDays(
+    leave: {
+      start_date: Date;
+      end_date: Date;
+      leave_start_minutes?: number | null;
+      leave_end_minutes?: number | null;
+    },
+    workingDows: Set<number>,
+    holidayDates: Set<string>,
+    dailyScheduleMinutes?: Map<number, number>,
+  ): number {
+    let totalDays = 0;
+
+    for (
+      const d = new Date(leave.start_date);
+      d <= leave.end_date;
+      d.setDate(d.getDate() + 1)
+    ) {
+      const day = new Date(d);
+      const iso = day.toISOString().slice(0, 10);
+      const jsDay = day.getDay();
+      const dow = jsDay === 0 ? 6 : jsDay - 1;
+
+      if (holidayDates.has(iso)) continue;
+      if (workingDows.size > 0 && !workingDows.has(dow)) continue;
+
+      let dayValue = 1;
+      const scheduleMinutes = dailyScheduleMinutes?.get(dow);
+      const isSingleDay =
+        iso === leave.start_date.toISOString().slice(0, 10) &&
+        iso === leave.end_date.toISOString().slice(0, 10);
+
+      if (
+        isSingleDay &&
+        scheduleMinutes &&
+        leave.leave_start_minutes != null &&
+        leave.leave_end_minutes != null &&
+        leave.leave_end_minutes > leave.leave_start_minutes
+      ) {
+        const requestedMinutes =
+          leave.leave_end_minutes - leave.leave_start_minutes;
+        dayValue = Math.min(1, requestedMinutes / scheduleMinutes);
+      }
+
+      totalDays += dayValue;
+    }
+
+    return Number(totalDays.toFixed(2));
+  }
+
+  private async computeAnnualLeaveBalance(
+    employeeId: string,
+    options?: {
+      leaveRequestId?: string;
+      request?: {
+        start_date: Date;
+        end_date: Date;
+        leave_start_minutes?: number | null;
+        leave_end_minutes?: number | null;
+      };
+    },
+  ): Promise<AnnualLeaveBalance | null> {
+    const employee = await this.prisma.employees.findUnique({
+      where: { id: employeeId },
+      select: {
+        annual_leave_days: true,
+        work_schedules: {
+          select: { day_of_week: true, start_time: true, end_time: true },
+        },
+      },
+    });
+
+    if (!employee) return null;
+
+    const request = options?.request;
+    const referenceDate = request?.end_date ?? new Date();
+    const year = referenceDate.getFullYear();
+    const quarter = this.getQuarter(referenceDate.getMonth() + 1);
+    const entitledDays = this.resolveQuarterEntitledDays(
+      employee.annual_leave_days,
+      quarter,
+    );
+
+    const workingDows = new Set(
+      employee.work_schedules.map((schedule) => schedule.day_of_week),
+    );
+    const dailyScheduleMinutes = new Map(
+      employee.work_schedules.map((schedule) => [
+        schedule.day_of_week,
+        Math.max(1, schedule.end_time - schedule.start_time),
+      ]),
+    );
+
+    const yearStart = new Date(year, 0, 1);
+    const yearEnd = new Date(year, 11, 31);
+    const approvedAnnualLeaves = await this.prisma.leaveRequests.findMany({
+      where: {
+        employee_id: employeeId,
+        leave_type: LeaveType.annual,
+        status: LeaveStatus.approved,
+        start_date: { lte: yearEnd },
+        end_date: { gte: yearStart },
+        ...(options?.leaveRequestId
+          ? { id: { not: options.leaveRequestId } }
+          : {}),
+      },
+      select: {
+        start_date: true,
+        end_date: true,
+        leave_start_minutes: true,
+        leave_end_minutes: true,
+      },
+    });
+
+    const pendingAnnualLeaves = await this.prisma.leaveRequests.findMany({
+      where: {
+        employee_id: employeeId,
+        leave_type: LeaveType.annual,
+        status: LeaveStatus.pending,
+        start_date: { lte: yearEnd },
+        end_date: { gte: yearStart },
+        ...(options?.leaveRequestId
+          ? { id: { not: options.leaveRequestId } }
+          : {}),
+      },
+      select: {
+        start_date: true,
+        end_date: true,
+        leave_start_minutes: true,
+        leave_end_minutes: true,
+      },
+    });
+
+    const holidayDates = await this.getHolidayDateSetForRange(
+      yearStart,
+      yearEnd,
+    );
+    const usedDays = approvedAnnualLeaves.reduce(
+      (sum, leave) =>
+        sum +
+        this.calculateLeaveRequestDays(
+          leave,
+          workingDows,
+          holidayDates,
+          dailyScheduleMinutes,
+        ),
+      0,
+    );
+    const pendingDays = pendingAnnualLeaves.reduce(
+      (sum, leave) =>
+        sum +
+        this.calculateLeaveRequestDays(
+          leave,
+          workingDows,
+          holidayDates,
+          dailyScheduleMinutes,
+        ),
+      0,
+    );
+    const requestedDays = request
+      ? this.calculateLeaveRequestDays(
+          request,
+          workingDows,
+          holidayDates,
+          dailyScheduleMinutes,
+        )
+      : 0;
+    const remainingDays = Number((entitledDays - usedDays).toFixed(2));
+    const remainingAfterRequest = Number(
+      (entitledDays - usedDays - requestedDays).toFixed(2),
+    );
+
+    return {
+      annual_leave_days: employee.annual_leave_days,
+      year,
+      quarter,
+      entitled_days: entitledDays,
+      used_days: Number(usedDays.toFixed(2)),
+      pending_days: Number(pendingDays.toFixed(2)),
+      requested_days: requestedDays,
+      remaining_days: remainingDays,
+      remaining_after_request: remainingAfterRequest,
+    };
+  }
+
+  private async enrichAnnualLeaveMetadata<
+    T extends {
+      id: string;
+      employee_id: string;
+      leave_type: LeaveType;
+      start_date: Date;
+      end_date: Date;
+      leave_start_minutes?: number | null;
+      leave_end_minutes?: number | null;
+    },
+  >(request: T) {
+    if (request.leave_type !== LeaveType.annual) {
+      return { ...request, annual_leave_balance: null };
+    }
+
+    const annualLeaveBalance = await this.computeAnnualLeaveBalance(
+      request.employee_id,
+      {
+        leaveRequestId: request.id,
+        request: {
+          start_date: request.start_date,
+          end_date: request.end_date,
+          leave_start_minutes: request.leave_start_minutes,
+          leave_end_minutes: request.leave_end_minutes,
+        },
+      },
+    );
+
+    return {
+      ...request,
+      annual_leave_balance: annualLeaveBalance,
+    };
+  }
 
   async findByEmployee(employeeId: string, status?: string) {
     const requests = await this.prisma.leaveRequests.findMany({
@@ -50,7 +322,10 @@ export class LeaveRequestService {
       include: this.leaveInclude,
       orderBy: { created_at: 'desc' },
     });
-    return ResponseHelper.success(requests);
+    const enriched = await Promise.all(
+      requests.map((request) => this.enrichAnnualLeaveMetadata(request)),
+    );
+    return ResponseHelper.success(enriched);
   }
 
   async findAll(query: QueryLeaveRequestDto) {
@@ -112,8 +387,12 @@ export class LeaveRequestService {
       this.prisma.leaveRequests.count({ where }),
     ]);
 
+    const enriched = await Promise.all(
+      requests.map((request) => this.enrichAnnualLeaveMetadata(request)),
+    );
+
     return ResponseHelper.success({
-      data: requests,
+      data: enriched,
       count,
       pageIndex,
       pageSize,
@@ -126,7 +405,9 @@ export class LeaveRequestService {
       include: this.leaveInclude,
     });
     if (!request) throw new NotFoundException(`Leave request ${id} not found`);
-    return ResponseHelper.success(request);
+    return ResponseHelper.success(
+      await this.enrichAnnualLeaveMetadata(request),
+    );
   }
 
   async create(dto: CreateLeaveRequestDto) {
@@ -356,9 +637,18 @@ export class LeaveRequestService {
       where: { id },
       data,
       include: {
-        employee: { select: { id: true, full_name: true } },
+        employee: {
+          select: {
+            id: true,
+            full_name: true,
+            annual_leave_days: true,
+            work_schedules: true,
+          },
+        },
       },
     });
+
+    const enrichedUpdated = await this.enrichAnnualLeaveMetadata(updated);
 
     if (data.status && updated.employee?.id) {
       await this.notificationsService.notifyLeaveStatusChanged({
@@ -371,7 +661,7 @@ export class LeaveRequestService {
     }
 
     return ResponseHelper.success(
-      updated,
+      enrichedUpdated,
       `Leave request ${data.status ?? 'reviewed'}`,
     );
   }

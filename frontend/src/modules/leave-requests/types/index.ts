@@ -1,5 +1,18 @@
 import type { LeaveType, LeaveStatus } from '../../../constant';
 
+export interface IAnnualLeaveBalance {
+  annual_leave_days: number;
+  year: number;
+  quarter: number;
+  entitled_days: number;
+  used_days: number;
+  pending_days?: number;
+  requested_days?: number;
+  remaining_days: number;
+  remaining_after_request?: number;
+  year_end_remaining_days?: number;
+}
+
 export interface ILeaveRequest {
   id: string;
   employee_id: string;
@@ -20,6 +33,7 @@ export interface ILeaveRequest {
   admin_approved_at?: string | null;
   admin_comment?: string | null;
   created_at: string;
+  annual_leave_balance?: IAnnualLeaveBalance | null;
 }
 
 export interface ILeaveRequestPayload {
