@@ -383,6 +383,7 @@ export default function LeaveRequestsPage() {
           !r.approved_by_admin &&
           !isSelf;
         const canAct = adminCanAct || managerCanAct;
+        const managerApproved = !!r.approved_by_manager;
         return (
           <Group gap={4} justify="center">
             {canAct && (
@@ -409,7 +410,7 @@ export default function LeaveRequestsPage() {
                 </Tooltip>
               </>
             )}
-            {isPending && isSelf && (
+            {isPending && isSelf && !managerApproved && (
               <>
                 <Tooltip label="Edit" withArrow>
                   <ActionIcon size="sm" variant="subtle" color="gray" onClick={() => handleEdit(r)}>
