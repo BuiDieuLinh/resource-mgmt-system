@@ -71,6 +71,7 @@ export function FaceEnrollmentModal({
   employeeId,
   employeeName,
 }: FaceEnrollmentModalProps) {
+  const updateRegisteredFaceDescriptor = useUpdateRegisteredFaceDescriptor();
   const [loading, setLoading] = useState(false);
   const [modelsLoading, setModelsLoading] = useState(true);
   const [activePoseIndex, setActivePoseIndex] = useState(0);
@@ -217,7 +218,7 @@ export function FaceEnrollmentModal({
 
     setLoading(true);
     try {
-      await useUpdateRegisteredFaceDescriptor().mutateAsync({
+      await updateRegisteredFaceDescriptor.mutateAsync({
         id: employeeId,
         payload: { face_descriptor: Array.from(faceDescriptor) },
       });
@@ -230,7 +231,7 @@ export function FaceEnrollmentModal({
       notify.success('Face registered', { message: 'Face registered successfully!' });
       handleClose();
     } catch (error: any) {
-      const message = error?.response?.data?.message || 'Failed to register face';
+      const message = error?.response?.data?.message || error?.message || 'Failed to register face';
       const isDuplicate = message.toLowerCase().includes('already registered');
       setSaveResult({
         status: 'error',
