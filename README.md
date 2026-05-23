@@ -145,13 +145,20 @@ npm run seed
 
 ## Screenshots
 
-```md
-![Login Page - Auth](image.png)
-![App Launcher](image-1.png)
-![Dashboard - RMS](image-2.png)
-![MyTimesheet - RMS](image-3.png)
-![LeaveRequest - RMS](image-4.png)
-```
+- LoginApp 
+<img width="2936" height="1426" alt="image" src="https://github.com/user-attachments/assets/7c5dee03-b4f4-4a2e-a3c4-ec8c995e8770" />
+
+- AppLauncher
+<img width="2932" height="1420" alt="image" src="https://github.com/user-attachments/assets/28d06685-ee4b-4166-b6bc-da4c2afa46c1" />
+
+- Dashboard
+<img width="2934" height="1430" alt="image" src="https://github.com/user-attachments/assets/a419ff3e-e2c7-4e06-a7cd-ad1d0486942f" />
+
+- Attendance
+<img width="2936" height="1430" alt="image" src="https://github.com/user-attachments/assets/1ab529ab-3e92-446f-a3f4-d35484c82028" />
+
+- LeaveRequests
+<img width="2936" height="1430" alt="image" src="https://github.com/user-attachments/assets/1ba39094-73d9-4a36-b0ea-d586962c8cc0" />
 
 ## Database
 
