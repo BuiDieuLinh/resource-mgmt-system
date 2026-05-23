@@ -40,6 +40,21 @@ export interface IReviewCycle {
   created_by: string;
   created_at: string;
   _count?: { reviews: number; awards: number; assignments: number };
+  reviews?: Array<{
+    id: string;
+    status: ReviewStatus;
+    total_score?: number;
+    comment?: string;
+    achievements?: string;
+    score_details?: Array<{ id: string }>;
+  }>;
+  assignments?: Array<{
+    id: string;
+    employee_id: string;
+    reviewer_id: string;
+    employee?: any;
+    reviewer?: { id: string; full_name: string; email?: string };
+  }>;
 }
 
 export interface IScoreDetail {

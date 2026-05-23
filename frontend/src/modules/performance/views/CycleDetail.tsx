@@ -18,6 +18,7 @@ import {
   Tooltip,
   Avatar,
   Flex,
+  Progress,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useParams } from 'react-router-dom';
@@ -35,7 +36,7 @@ import {
 } from '../api';
 import { AwardRevealPage } from '../components/AwardRevealPage';
 import { notify } from '@/components/Notification';
-import type { IAward } from '../types';
+import type { IAward, IPerformanceReview } from '../types';
 import { performanceCyclesUrl } from '@/routes/url';
 
 const RANK_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
@@ -48,6 +49,34 @@ const STATUS_COLOR: Record<string, string> = {
   submitted: 'blue',
   published: 'green',
 };
+
+function formatReviewScore(review: IPerformanceReview) {
+  const details = review.score_details;
+  if (details && details.length > 0) {
+    const scaleMax = details[0]?.max_score ?? 5;
+    const avg =
+      details.reduce((sum, sd) => sum + (sd.score / sd.max_score) * scaleMax, 0) / details.length;
+    return `${Math.round(avg * 10) / 10}/${scaleMax}`;
+  }
+
+  if (review.total_score == null) return '—';
+
+  const normalized = Math.round((review.total_score / 20) * 10) / 10;
+  return `${normalized}/5`;
+}
+
+function normalizeReviewScore(review: IPerformanceReview) {
+  const details = review.score_details;
+  if (details && details.length > 0) {
+    const scaleMax = details[0]?.max_score ?? 5;
+    return (
+      details.reduce((sum, sd) => sum + (sd.score / sd.max_score) * scaleMax, 0) / details.length
+    );
+  }
+
+  if (review.total_score == null) return 0;
+  return review.total_score / 20;
+}
 
 export default function CycleDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -117,14 +146,19 @@ export default function CycleDetailPage() {
     }
   };
 
-  const employeeOptions = reviews.map((r: any) => ({
+  const employeeOptions = reviews.map((r: IPerformanceReview) => ({
     value: r.employee_id,
     label: r.employee?.full_name ?? r.employee_id,
   }));
 
-  const submittedCount = reviews.filter((r: any) => r.status === 'submitted').length;
+  const submittedCount = reviews.filter((r: IPerformanceReview) => r.status === 'submitted').length;
+  const completedCount = reviews.filter((r: IPerformanceReview) =>
+    ['submitted', 'published'].includes(r.status),
+  ).length;
+  const totalReviews = reviews.length;
+  const completionRate = totalReviews > 0 ? Math.round((completedCount / totalReviews) * 100) : 0;
 
-  const reviewColumns: TableColumn<any>[] = [
+  const reviewColumns: TableColumn<IPerformanceReview>[] = [
     {
       key: 'employee',
       title: 'Employee',
@@ -151,19 +185,19 @@ export default function CycleDetailPage() {
     {
       key: 'reviewer',
       title: 'Reviewer',
-      render: (r) => <Text size="sm">{r.reviewer?.full_name}</Text>,
+      render: (r) => <Text size="sm">{r.assignment?.reviewer?.full_name ?? 'Unassigned'}</Text>,
     },
     {
       key: 'score',
       title: 'Score',
       align: 'center',
       sortable: true,
-      sortAccessor: (r) => r.score ?? 0,
+      sortAccessor: (r) => normalizeReviewScore(r),
       render: (r) => (
         <Group gap={4} justify="center">
           <IconStar size={15} color="#FFD700" fill="#FFD700" />
           <Text fw={600} size="sm">
-            {r.score}
+            {formatReviewScore(r)}
           </Text>
         </Group>
       ),
@@ -314,6 +348,18 @@ export default function CycleDetailPage() {
           </Group>
         }
       />
+
+      <Stack gap={8}>
+        <Group justify="space-between" gap="xs">
+          <Text size="sm" fw={500}>
+            Review completion
+          </Text>
+          <Text size="sm" fw={600}>
+            {completedCount}/{totalReviews} completed ({completionRate}%)
+          </Text>
+        </Group>
+        <Progress value={completionRate} color={completionRate === 100 ? 'green' : 'blue'} />
+      </Stack>
 
       <Tabs defaultValue="reviews" variant="outline">
         <Tabs.List mb="lg">

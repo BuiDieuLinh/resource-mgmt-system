@@ -21,4 +21,11 @@ export const performanceTemplatesUrl = '/performance/templates';
 export const performanceCyclesUrl = '/performance/cycles';
 export const performanceCycleDetailUrl = '/performance/cycles/:id';
 export const performanceReviewUrl = '/performance/review';
+export const buildPerformanceReviewUrl = (cycleId?: string, employeeId?: string) => {
+  const params = new URLSearchParams();
+  if (cycleId) params.set('cycleId', cycleId);
+  if (employeeId) params.set('employeeId', employeeId);
+  const query = params.toString();
+  return query ? `${performanceReviewUrl}?${query}` : performanceReviewUrl;
+};
 export const myReviewsUrl = '/my/reviews';

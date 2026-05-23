@@ -3,7 +3,7 @@ import { apiClient } from '@/lib/api';
 
 export interface ReminderSetting {
   id: string;
-  trigger_type: 'cycle_deadline' | 'cycle_unreviewed' | 'contract_ending';
+  trigger_type: 'cycle_deadline' | 'contract_ending';
   channel: 'inapp' | 'email' | 'dashboard';
   is_enabled: boolean;
   days_before: number | null;
@@ -12,7 +12,7 @@ export interface ReminderSetting {
 }
 
 export interface DashboardReminder {
-  type: 'cycle_deadline' | 'cycle_unreviewed' | 'contract_ending';
+  type: 'cycle_deadline' | 'contract_ending';
   employee_id: string;
   employee_name: string;
   contract_type: string;

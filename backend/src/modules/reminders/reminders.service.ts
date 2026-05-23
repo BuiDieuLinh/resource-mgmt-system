@@ -19,6 +19,7 @@ export class RemindersService {
 
   async getSettings() {
     const settings = await this.prisma.notificationSettings.findMany({
+      where: { trigger_type: { in: ['cycle_deadline', 'contract_ending'] } },
       orderBy: [{ trigger_type: 'asc' }, { channel: 'asc' }],
     });
     return ResponseHelper.success(settings);
@@ -113,22 +114,14 @@ export class RemindersService {
     });
 
     for (const emp of contractEndingEmployees) {
-      const hasReview = await this.prisma.performanceReviews.findFirst({
-        where: {
-          employee_id: emp.id,
-          status: { in: ['submitted', 'published'] },
-        },
+      const daysLeft = dayjs(emp.terminated_at).diff(dayjs.utc(), 'day');
+      results.push({
+        type: 'contract_ending',
+        employee_id: emp.id,
+        employee_name: emp.full_name,
+        contract_type: emp.contract_type,
+        days_remaining: daysLeft,
       });
-      if (!hasReview) {
-        const daysLeft = dayjs(emp.terminated_at).diff(dayjs.utc(), 'day');
-        results.push({
-          type: 'contract_ending',
-          employee_id: emp.id,
-          employee_name: emp.full_name,
-          contract_type: emp.contract_type,
-          days_remaining: daysLeft,
-        });
-      }
     }
 
     const cycleDeadlineThreshold = dayjs
@@ -152,40 +145,6 @@ export class RemindersService {
         cycle_id: cycle.id,
         cycle_title: cycle.title,
       });
-    }
-
-    const activeCycles = await this.prisma.reviewCycles.findMany({
-      where: { announce_date: { gte: now } },
-      include: {
-        assignments: {
-          include: {
-            employee: {
-              include: { position: { include: { department: true } } },
-            },
-          },
-        },
-        reviews: true,
-      },
-    });
-
-    for (const cycle of activeCycles) {
-      for (const assignment of cycle.assignments) {
-        const emp = assignment.employee;
-        if (managerScope && emp.manager_id !== employeeId) continue;
-
-        const hasReview = cycle.reviews.find((r) => r.employee_id === emp.id);
-        if (!hasReview) {
-          results.push({
-            type: 'cycle_unreviewed',
-            employee_id: emp.id,
-            employee_name: emp.full_name,
-            contract_type: emp.contract_type,
-            days_remaining: null,
-            cycle_id: cycle.id,
-            cycle_title: cycle.title,
-          });
-        }
-      }
     }
 
     return ResponseHelper.success(results);
@@ -272,14 +231,6 @@ export class RemindersService {
             recipients,
             now,
           );
-        } else if (trigger_type === 'cycle_unreviewed') {
-          await this.generateCycleUnreviewedLogs(
-            channel,
-            cfg.days_before,
-            cfg.repeat_interval_days,
-            recipients,
-            now,
-          );
         } else if (trigger_type === 'contract_ending') {
           await this.generateContractEndingLogs(
             channel,
@@ -338,62 +289,6 @@ export class RemindersService {
     }
   }
 
-  private async generateCycleUnreviewedLogs(
-    channel: ReminderChannel,
-    daysBefore: number,
-    repeatIntervalDays: number,
-    recipients: any[],
-    now: dayjs.Dayjs,
-  ) {
-    const threshold = now.add(daysBefore, 'day').toDate();
-    const activeCycles = await this.prisma.reviewCycles.findMany({
-      where: { announce_date: { gte: now.toDate(), lte: threshold } },
-      include: {
-        assignments: { include: { employee: true } },
-        reviews: true,
-      },
-    });
-
-    for (const cycle of activeCycles) {
-      const unreviewedEmployees = cycle.assignments.filter(
-        (a) => !cycle.reviews.find((r) => r.employee_id === a.employee_id),
-      );
-
-      for (const assignment of unreviewedEmployees) {
-        for (const recipient of recipients) {
-          const lastSent = await this.prisma.notificationLogs.findFirst({
-            where: {
-              trigger_type: 'cycle_unreviewed',
-              channel,
-              recipient_id: recipient.id,
-              target_id: assignment.employee_id,
-              cycle_id: cycle.id,
-              status: 'sent',
-            },
-            orderBy: { sent_at: 'desc' },
-          });
-
-          if (lastSent?.sent_at) {
-            const daysSinceLast = now.diff(dayjs(lastSent.sent_at), 'day');
-            if (daysSinceLast < repeatIntervalDays) continue;
-          }
-
-          await this.prisma.notificationLogs.create({
-            data: {
-              trigger_type: 'cycle_unreviewed',
-              channel,
-              recipient_id: recipient.id,
-              target_id: assignment.employee_id,
-              cycle_id: cycle.id,
-              scheduled_at: now.toDate(),
-              status: 'pending',
-            },
-          });
-        }
-      }
-    }
-  }
-
   private async generateContractEndingLogs(
     channel: ReminderChannel,
     daysBefore: number,
@@ -411,14 +306,6 @@ export class RemindersService {
     });
 
     for (const emp of employees) {
-      const hasReview = await this.prisma.performanceReviews.findFirst({
-        where: {
-          employee_id: emp.id,
-          status: { in: ['submitted', 'published'] },
-        },
-      });
-      if (hasReview) continue;
-
       for (const recipient of recipients) {
         const lastSent = await this.prisma.notificationLogs.findFirst({
           where: {
@@ -520,8 +407,7 @@ export class RemindersService {
     const link = this.buildLink(log);
 
     await this.mailService.sendReminderEmail({
-      // to: recipientEmp.email,
-      to: 'buthidieulinh.1004@gmal.com',
+      to: recipientEmp.email,
       recipientName: recipientEmp.full_name,
       subject: `[Nhắc nhở] ${title}`,
       body,
@@ -543,22 +429,15 @@ export class RemindersService {
         return {
           type: 'eval_reminder_contract_ending',
           title: `${emp.full_name} sắp kết thúc ${emp.contract_type === 'intern' ? 'thực tập' : 'thử việc'}`,
-          body: `${emp.full_name} còn ${displayDays} ngày trước khi kết thúc ${emp.contract_type === 'intern' ? 'thực tập' : 'thử việc'} và chưa có đánh giá.`,
-          link: `performance/review`,
+          body: `${emp.full_name} còn ${displayDays} ngày trước khi kết thúc ${emp.contract_type === 'intern' ? 'thực tập' : 'thử việc'}.`,
+          link: `employees/${emp.id}`,
         };
       case 'cycle_deadline':
         return {
           type: 'eval_deadline_reminder',
           title: `Chu kỳ đánh giá "${cycle?.title}" sắp đến deadline`,
           body: `Chu kỳ "${cycle?.title}" còn ${displayDays} ngày trước deadline. Hãy hoàn thành các đánh giá còn lại.`,
-          link: `performance/cycles`,
-        };
-      case 'cycle_unreviewed':
-        return {
-          type: 'eval_deadline_reminder',
-          title: `${emp.full_name} chưa được đánh giá trong chu kỳ "${cycle?.title}"`,
-          body: `Nhân viên ${emp.full_name} chưa có đánh giá trong chu kỳ "${cycle?.title}". Vui lòng tạo đánh giá.`,
-          link: `performance/review`,
+          link: `/performance/cycles/${cycle?.id}`,
         };
       default:
         return {
@@ -572,8 +451,11 @@ export class RemindersService {
 
   private buildLink(log: any): string {
     if (log.trigger_type === 'cycle_deadline' && log.cycle_id) {
-      return `performance/cycles`;
+      return `/performance/cycles/${log.cycle_id}`;
     }
-    return `performance/review`;
+    if (log.trigger_type === 'contract_ending' && log.target_id) {
+      return `/employees/${log.target_id}`;
+    }
+    return `/performance/review`;
   }
 }

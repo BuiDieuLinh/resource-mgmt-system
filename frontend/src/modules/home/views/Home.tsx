@@ -42,7 +42,6 @@ import type { AlertInsight } from '../api/hr-reports';
 import { EMPLOYEE_ROLE } from '@/constant';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useQuery } from '@tanstack/react-query';
-import { ReminderWidget } from '@/modules/reminders/components/ReminderWidget';
 
 const now = new Date();
 const CURRENT_YEAR = now.getFullYear();
@@ -118,8 +117,6 @@ function AdminDashboard() {
           Comprehensive workforce insights and trends
         </Text>
       </Stack>
-
-      <ReminderWidget />
 
       <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
         <Card withBorder radius="md" p="md">

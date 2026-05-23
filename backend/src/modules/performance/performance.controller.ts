@@ -20,6 +20,7 @@ import { CreateReviewDto, SubmitReviewDto } from './dto/create-review.dto';
 import { CreateAwardDto } from './dto/create-award.dto';
 import { CreateTemplateDto, UpdateTemplateDto } from './dto/template.dto';
 import { CreateCriteriaDto, UpdateCriteriaDto } from './dto/criteria.dto';
+import { UpdateCycleDto } from './dto/update-cycle.dto';
 
 @Controller('performance')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -86,6 +87,16 @@ export class PerformanceController {
     return this.svc.createCycle(dto, user.employeeId);
   }
 
+  @Patch('cycles/:id')
+  @Roles(Role.HR, Role.ADMIN)
+  updateCycle(
+    @Param('id') id: string,
+    @Body() dto: UpdateCycleDto,
+    @CurrentUser() user: { employeeId: string },
+  ) {
+    return this.svc.updateCycle(id, dto, user.employeeId);
+  }
+
   @Get('cycles')
   @Roles(Role.HR, Role.MANAGER, Role.ADMIN)
   getCycles() {
@@ -105,8 +116,11 @@ export class PerformanceController {
 
   @Post('reviews')
   @Roles(Role.HR, Role.MANAGER, Role.ADMIN)
-  createReview(@Body() dto: CreateReviewDto) {
-    return this.svc.createReview(dto);
+  createReview(
+    @Body() dto: CreateReviewDto,
+    @CurrentUser() user: { employeeId: string },
+  ) {
+    return this.svc.createReview(dto, user.employeeId);
   }
 
   @Patch('reviews/:id/submit')
@@ -131,8 +145,10 @@ export class PerformanceController {
     @Param('id') id: string,
     @CurrentUser() user: { employeeId: string; roles: string[] },
   ) {
-    const isAdmin = user.roles.some((r) => [Role.ADMIN].includes(r as Role));
-    return this.svc.getReviewsByCycle(id, user.employeeId, isAdmin);
+    const isPrivileged = user.roles.some((r) =>
+      [Role.ADMIN, Role.HR].includes(r as Role),
+    );
+    return this.svc.getReviewsByCycle(id, user.employeeId, isPrivileged);
   }
 
   @Get('cycles/:id/my-review')

@@ -15,12 +15,11 @@ import {
 import {
   IconBell,
   IconMail,
+  IconSend,
   IconCalendarClock,
-  IconUserCheck,
   IconAlertTriangle,
   IconChevronDown,
   IconChevronRight,
-  IconSend,
   IconClock,
   IconRepeat,
 } from '@tabler/icons-react';
@@ -43,15 +42,9 @@ const TRIGGER_META: Record<
     icon: <IconCalendarClock size={16} />,
     color: 'blue',
   },
-  cycle_unreviewed: {
-    label: 'Unreviewed Employees',
-    description: 'Remind when employees in an active cycle have no review yet',
-    icon: <IconUserCheck size={16} />,
-    color: 'orange',
-  },
   contract_ending: {
     label: 'Expiring Intern / Probation',
-    description: 'Remind when an intern or probation contract is about to end without a review',
+    description: 'Remind when an intern or probation contract is about to end',
     icon: <IconAlertTriangle size={16} />,
     color: 'yellow',
   },
@@ -276,7 +269,7 @@ export function ReminderSettings() {
             color: 'blue',
             label: 'Reminder email',
             description:
-              'Sent when a reminder log is dispatched (cycle deadline, contract ending, unreviewed employees).',
+              'Sent when a reminder log is dispatched (cycle deadline, contract ending).',
             badge: 'Based on reminder settings above',
           },
         ].map((item, i, arr) => (

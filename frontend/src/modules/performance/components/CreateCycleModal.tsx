@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Modal,
   Stack,
@@ -44,6 +44,8 @@ interface CreateCycleModalProps {
   templates: IEvaluationTemplate[];
   employees: any[];
   isLoading: boolean;
+  mode?: 'create' | 'update';
+  initialValues?: any | null;
 }
 
 export function CreateCycleModal({
@@ -53,6 +55,8 @@ export function CreateCycleModal({
   templates,
   employees,
   isLoading,
+  mode = 'create',
+  initialValues = null,
 }: CreateCycleModalProps) {
   const [activeStep, setActiveStep] = useState(0);
   const [expandedDepts, setExpandedDepts] = useState<Set<string>>(new Set());
@@ -85,6 +89,39 @@ export function CreateCycleModal({
       announce_date: (v) => (!v ? 'Required' : null),
     },
   });
+
+  useEffect(() => {
+    if (!opened) return;
+
+    if (!initialValues) {
+      form.reset();
+      setActiveStep(0);
+      return;
+    }
+
+    form.setValues({
+      title: initialValues.title ?? '',
+      period_type: initialValues.period_type ?? 'monthly',
+      period_year: initialValues.period_year ?? new Date().getFullYear(),
+      period_seq: initialValues.period_seq ?? new Date().getMonth() + 1,
+      announce_date: initialValues.announce_date ? new Date(initialValues.announce_date) : null,
+      template_id: initialValues.template_id ?? undefined,
+      assignments:
+        initialValues.assignments?.map((assignment: any) => ({
+          employee_id: assignment.employee_id,
+          reviewer_id: assignment.reviewer_id ?? '',
+        })) ?? [],
+      customCriteria: false,
+      criteria:
+        initialValues.template?.criteria?.map((c: any) => ({
+          criterion: c.criterion,
+          weight: c.weight,
+          max_score: c.max_score,
+          score_type: c.score_type,
+        })) ?? [],
+    });
+    setActiveStep(0);
+  }, [opened, initialValues]);
 
   const handleTemplateChange = (templateId: string | null) => {
     form.setFieldValue('template_id', templateId ?? undefined);
@@ -235,7 +272,13 @@ export function CreateCycleModal({
   const isWeightValid = totalWeight === 100;
 
   return (
-    <Modal opened={opened} onClose={handleClose} title="CREATE REVIEW CYCLE" size="xl" centered>
+    <Modal
+      opened={opened}
+      onClose={handleClose}
+      title={mode === 'create' ? 'CREATE REVIEW CYCLE' : 'UPDATE REVIEW CYCLE'}
+      size="xl"
+      centered
+    >
       <Stepper active={activeStep} onStepClick={setActiveStep} allowNextStepsSelect={false}>
         {/* Step 1: Basic Info */}
         <Stepper.Step label="Basic Info" description="Cycle details">
@@ -273,7 +316,6 @@ export function CreateCycleModal({
               label="Announce Date"
               placeholder="Pick announcement date"
               required
-              minDate={new Date()}
               description="Date when results will be published to employees"
               {...form.getInputProps('announce_date')}
             />
@@ -713,7 +755,7 @@ export function CreateCycleModal({
             loading={isLoading}
             disabled={form.values.customCriteria && !isWeightValid}
           >
-            Create Cycle
+            {mode === 'create' ? 'Create Cycle' : 'Update Cycle'}
           </Button>
         )}
       </Group>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Stack,
   Group,
@@ -35,6 +35,7 @@ import {
   IconDeviceFloppy,
 } from '@tabler/icons-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
+import { useUrlParams } from '@/hooks/useUrlParams';
 import {
   useGetCycles,
   useGetReviewsByCycle,
@@ -44,7 +45,9 @@ import {
 } from '../api';
 import { useGetEmployeeByUserId } from '@/modules/employees/api/get-employee-by-user';
 import { notify } from '@/components/Notification';
+import { useAuth } from '@/modules/auth/context/AuthContext';
 import {
+  EMPLOYEE_ROLE,
   REVIEW_STATUS_COLOR,
   REVIEW_STATUS_LABEL,
   PROBATION_RESULT_LABEL,
@@ -140,20 +143,49 @@ function pickActiveCycle(cycles: IReviewCycle[]): IReviewCycle | null {
 }
 
 export default function PerformanceReviewPage() {
+  const { user } = useAuth();
+  const { get, set } = useUrlParams();
   const { data: cycles = [] } = useGetCycles();
   const { data: myEmpData } = useGetEmployeeByUserId();
   const myEmployeeId = myEmpData?.data?.id;
   const { colorScheme } = useMantineColorScheme();
   const isDark = colorScheme === 'dark';
+  const isPrivilegedViewer = user?.roles?.some((role) =>
+    [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.HR].includes(role as any),
+  );
 
   const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
+  const isManualCycleChangeRef = useRef(false);
+  const requestedCycleId = get('cycleId');
+  const requestedEmployeeId = get('employeeId');
 
   useEffect(() => {
-    if (cycles.length && !selectedCycleId) {
+    if (!cycles.length) return;
+
+    if (isManualCycleChangeRef.current) {
+      if (requestedCycleId === selectedCycleId) {
+        isManualCycleChangeRef.current = false;
+      }
+      return;
+    }
+
+    if (
+      requestedCycleId &&
+      (cycles as IReviewCycle[]).some((cycle) => cycle.id === requestedCycleId)
+    ) {
+      if (selectedCycleId !== requestedCycleId) {
+        setSelectedCycleId(requestedCycleId);
+        setSelectedEmployeeId(null);
+        form.reset();
+      }
+      return;
+    }
+
+    if (!requestedCycleId && !selectedCycleId) {
       const active = pickActiveCycle(cycles as IReviewCycle[]);
       if (active) setSelectedCycleId(active.id);
     }
-  }, [cycles, selectedCycleId]);
+  }, [cycles, requestedCycleId, selectedCycleId]);
 
   const selectedCycle = (cycles as IReviewCycle[]).find((c) => c.id === selectedCycleId) ?? null;
 
@@ -168,6 +200,7 @@ export default function PerformanceReviewPage() {
   const submitReview = useSubmitReview();
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [highlightedEmployeeId, setHighlightedEmployeeId] = useState<string | null>(null);
 
   const existingReview = (reviews as IPerformanceReview[]).find(
     (r) => r.employee_id === selectedEmployeeId,
@@ -175,9 +208,16 @@ export default function PerformanceReviewPage() {
   const isPublished = existingReview?.status === 'published';
   const isSubmitted = existingReview?.status === 'submitted';
   const isDone = isPublished || isSubmitted;
-
   const selectedEmpData = existingReview?.employee;
   const contractType = selectedEmpData?.contract_type;
+  const canPrivilegedEditCurrentReview = Boolean(
+    isPrivilegedViewer &&
+    myEmployeeId &&
+    existingReview &&
+    (existingReview.assignment?.reviewer_id === myEmployeeId ||
+      existingReview.employee?.manager_id === myEmployeeId),
+  );
+  const isReadOnly = Boolean((isPrivilegedViewer && !canPrivilegedEditCurrentReview) || isDone);
 
   const form = useForm<FormValues>({
     initialValues: {
@@ -212,6 +252,8 @@ export default function PerformanceReviewPage() {
 
   const handleSelectEmployee = (empId: string) => {
     setSelectedEmployeeId(empId);
+    setHighlightedEmployeeId(empId);
+    set({ employeeId: empId });
     const existing = (reviews as IPerformanceReview[]).find((r) => r.employee_id === empId);
     if (existing) {
       form.setValues({
@@ -326,11 +368,39 @@ export default function PerformanceReviewPage() {
     calculatedRaw ? calculatedRaw.max : 100,
   );
 
+  useEffect(() => {
+    if (!reviews.length) return;
+
+    if (
+      requestedEmployeeId &&
+      (reviews as IPerformanceReview[]).some((review) => review.employee_id === requestedEmployeeId)
+    ) {
+      if (selectedEmployeeId !== requestedEmployeeId) {
+        handleSelectEmployee(requestedEmployeeId);
+      }
+      return;
+    }
+
+    if (!selectedEmployeeId) {
+      handleSelectEmployee((reviews as IPerformanceReview[])[0].employee_id);
+    }
+  }, [requestedEmployeeId, reviews]);
+
+  useEffect(() => {
+    if (!highlightedEmployeeId) return;
+    const timeout = window.setTimeout(() => setHighlightedEmployeeId(null), 2500);
+    return () => window.clearTimeout(timeout);
+  }, [highlightedEmployeeId]);
+
   return (
     <Stack gap="md">
       <PageHeader
         title="Performance Review"
-        description="Evaluate your team's performance for the current cycle"
+        description={
+          isPrivilegedViewer && !canPrivilegedEditCurrentReview
+            ? 'View assigned review results by cycle'
+            : 'Evaluate only the employees assigned to you in the selected cycle'
+        }
       />
 
       <Card withBorder p="sm">
@@ -344,8 +414,10 @@ export default function PerformanceReviewPage() {
               data={cycleOptions}
               value={selectedCycleId}
               onChange={(val) => {
+                isManualCycleChangeRef.current = true;
                 setSelectedCycleId(val);
                 setSelectedEmployeeId(null);
+                set({ cycleId: val, employeeId: null });
                 form.reset();
               }}
               checkIconPosition="right"
@@ -421,6 +493,7 @@ export default function PerformanceReviewPage() {
                 <Stack gap={0}>
                   {(reviews as IPerformanceReview[]).map((r, i) => {
                     const isSelected = r.employee_id === selectedEmployeeId;
+                    const isHighlighted = r.employee_id === highlightedEmployeeId;
                     const done = r.status === 'submitted' || r.status === 'published';
                     const draft = r.status === 'draft';
 
@@ -435,10 +508,15 @@ export default function PerformanceReviewPage() {
                               ? isDark
                                 ? 'var(--mantine-color-blue-9)'
                                 : 'var(--mantine-color-blue-0)'
-                              : 'transparent',
+                              : isHighlighted
+                                ? 'var(--mantine-color-yellow-0)'
+                                : 'transparent',
                             borderLeft: isSelected
                               ? '3px solid var(--mantine-color-blue-5)'
-                              : '3px solid transparent',
+                              : isHighlighted
+                                ? '3px solid var(--mantine-color-yellow-5)'
+                                : '3px solid transparent',
+                            transition: 'background-color 0.2s ease, border-color 0.2s ease',
                           }}
                           onClick={() => handleSelectEmployee(r.employee_id)}
                         >
@@ -529,7 +607,9 @@ export default function PerformanceReviewPage() {
                   <Stack align="center" gap="xs">
                     <IconUser size={40} color="var(--mantine-color-dimmed)" />
                     <Text c="dimmed" size="sm">
-                      Select an employee from the list to start reviewing
+                      {isPrivilegedViewer && !canPrivilegedEditCurrentReview
+                        ? 'Select an employee from the list to view review details'
+                        : 'Select an employee from the list to start reviewing'}
                     </Text>
                   </Stack>
                 </Center>
@@ -682,7 +762,7 @@ export default function PerformanceReviewPage() {
                                       step={0.1}
                                       decimalScale={1}
                                       fixedDecimalScale
-                                      disabled={isDone}
+                                      disabled={isReadOnly}
                                       size="xs"
                                       style={{ width: 100 }}
                                       rightSection={
@@ -705,7 +785,7 @@ export default function PerformanceReviewPage() {
                                         variant={scoreEntry?.score === 0 ? 'filled' : 'light'}
                                         color="red"
                                         size="xs"
-                                        disabled={isDone}
+                                        disabled={isReadOnly}
                                         onClick={() =>
                                           form.setFieldValue(
                                             `criteriaScores.${scoreIndex}.score`,
@@ -723,7 +803,7 @@ export default function PerformanceReviewPage() {
                                         }
                                         color="green"
                                         size="xs"
-                                        disabled={isDone}
+                                        disabled={isReadOnly}
                                         onClick={() =>
                                           form.setFieldValue(
                                             `criteriaScores.${scoreIndex}.score`,
@@ -742,7 +822,7 @@ export default function PerformanceReviewPage() {
                                   placeholder="Note for this criterion (optional)..."
                                   size="xs"
                                   rows={1}
-                                  disabled={isDone}
+                                  disabled={isReadOnly}
                                   {...form.getInputProps(`criteriaScores.${scoreIndex}.note`)}
                                 />
                               )}
@@ -764,7 +844,7 @@ export default function PerformanceReviewPage() {
                         step={0.1}
                         decimalScale={1}
                         fixedDecimalScale
-                        disabled={isDone}
+                        disabled={isReadOnly}
                         size="sm"
                         style={{ width: 120 }}
                         rightSection={
@@ -802,7 +882,7 @@ export default function PerformanceReviewPage() {
                         placeholder="Select result..."
                         data={probationResultOptions}
                         required
-                        disabled={isDone}
+                        disabled={isReadOnly}
                         value={form.values.result || null}
                         onChange={(val) => form.setFieldValue('result', val ?? '')}
                         leftSection={<IconAlertCircle size={14} />}
@@ -814,7 +894,7 @@ export default function PerformanceReviewPage() {
                         placeholder="Select result..."
                         data={internResultOptions}
                         required
-                        disabled={isDone}
+                        disabled={isReadOnly}
                         value={form.values.result || null}
                         onChange={(val) => form.setFieldValue('result', val ?? '')}
                         leftSection={<IconAlertCircle size={14} />}
@@ -824,21 +904,21 @@ export default function PerformanceReviewPage() {
                       label="Key Achievements"
                       placeholder="Outstanding work, notable projects, contributions..."
                       rows={3}
-                      disabled={isDone}
+                      disabled={isReadOnly}
                       {...form.getInputProps('achievements')}
                     />
                     <Textarea
                       label="General Feedback"
                       placeholder="Performance, attitude, areas for improvement..."
                       rows={3}
-                      disabled={isDone}
+                      disabled={isReadOnly}
                       {...form.getInputProps('comment')}
                     />
                   </Stack>
                 </Card>
 
                 {/* Actions */}
-                {!isDone && (
+                {!isReadOnly && (
                   <Group justify="flex-end">
                     <Tooltip label="Save as draft — you can continue editing later">
                       <Button
@@ -860,7 +940,14 @@ export default function PerformanceReviewPage() {
                   </Group>
                 )}
 
-                {isDone && (
+                {isPrivilegedViewer && !canPrivilegedEditCurrentReview && (
+                  <Alert icon={<IconAlertCircle size={16} />} color="blue" variant="light">
+                    You can only edit reviews for employees you directly manage or are assigned to
+                    review.
+                  </Alert>
+                )}
+
+                {(!isPrivilegedViewer || canPrivilegedEditCurrentReview) && isDone && (
                   <Alert icon={<IconCheck size={16} />} color="green" variant="light">
                     This review has been {existingReview?.status}. No further edits allowed.
                   </Alert>
