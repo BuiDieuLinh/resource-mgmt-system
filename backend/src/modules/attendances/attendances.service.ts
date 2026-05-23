@@ -96,6 +96,15 @@ function resolveQuarterEntitledDays(annualLeaveDays: number, quarter: number) {
   return Number(((annualLeaveDays / 4) * quarter).toFixed(2));
 }
 
+function toSafeFilePart(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
+}
+
 @Injectable()
 export class AttendancesService {
   private readonly logger = new Logger(AttendancesService.name);
@@ -122,15 +131,15 @@ export class AttendancesService {
 
   private async uploadSelfieToR2(
     selfie: Express.Multer.File,
-    employeeId: string,
+    employeeName: string,
   ): Promise<string> {
     if (!selfie?.buffer?.length) {
       throw new BadRequestException('Selfie image is required');
     }
 
     const extension = selfie.mimetype === 'image/png' ? 'png' : 'jpg';
-
-    const fileName = `selfies/${employeeId}/${randomUUID()}.${extension}`;
+    const safeEmployeeName = toSafeFilePart(employeeName) || 'unknown-employee';
+    const fileName = `selfies/${safeEmployeeName}/${randomUUID()}.${extension}`;
 
     await this.s3Client.send(
       new PutObjectCommand({
@@ -297,7 +306,7 @@ export class AttendancesService {
     // 1. Get employee and validate face descriptor exists
     const employee = await this.prisma.employees.findUnique({
       where: { id: dto.employee_id },
-      select: { id: true, face_descriptor: true },
+      select: { id: true, full_name: true, face_descriptor: true },
     });
 
     if (!employee) {
@@ -346,7 +355,7 @@ export class AttendancesService {
     // 4. Upload selfie to R2
     let selfieUrl: string | null = null;
     try {
-      selfieUrl = await this.uploadSelfieToR2(selfie, dto.employee_id);
+      selfieUrl = await this.uploadSelfieToR2(selfie, employee.full_name);
     } catch (error) {
       throw new BadRequestException(
         `Failed to upload selfie: ${error.message}`,
