@@ -25,10 +25,8 @@ import {
   IconWifiOff,
 } from '@tabler/icons-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
-import { notify } from '@/components/Notification';
 import { useGetEmployeeByUserId } from '@/modules/employees/api/get-employee-by-user';
 import { useGetActivePolicy } from '@/modules/work-policies/api/get-work-policies';
-import { useCheckIn, useCheckOut } from '../api/check-in-out';
 import { useGetTodayAttendance } from '../api/get-today-attendance';
 import { useGPS } from '@/hooks/useGPS';
 import { minutesToTime } from '@/constant';
@@ -74,10 +72,8 @@ export default function CheckInOutPage() {
   const checkInTime = todayRecord?.check_in_time ? new Date(todayRecord.check_in_time) : null;
 
   const { position, loading: gpsLoading, error: gpsError, getPosition } = useGPS();
-  const checkInMutation = useCheckIn();
-  const checkOutMutation = useCheckOut();
-
   const [faceCheckInOpened, setFaceCheckInOpened] = useState(false);
+  const [faceCheckMode, setFaceCheckMode] = useState<'check-in' | 'check-out'>('check-in');
   const [_actionResult, setActionResult] = useState<{
     status: 'success' | 'error';
     label: string;
@@ -119,45 +115,37 @@ export default function CheckInOutPage() {
 
   const handleCheckIn = async () => {
     if (!employee) return;
-    // Open face check-in modal
     setActionResult(null);
+    setFaceCheckMode('check-in');
     setFaceCheckInOpened(true);
   };
 
-  const handleFaceCheckInSuccess = async () => {
-    await refetchToday();
+  const handleFaceCheckResult = async (result: {
+    status: 'success' | 'error';
+    message: string;
+  }) => {
+    if (result.status === 'success') {
+      await refetchToday();
+    }
+    setActionResult({
+      status: result.status,
+      label:
+        faceCheckMode === 'check-out'
+          ? result.status === 'success'
+            ? 'Check-out success'
+            : 'Check-out failed'
+          : result.status === 'success'
+            ? 'Check-in success'
+            : 'Check-in failed',
+      message: result.message,
+    });
   };
 
   const handleCheckOut = async () => {
     if (!employee) return;
     setActionResult(null);
-    const notiId = notify.loading('Checking out...');
-    try {
-      const gps = await getPosition();
-      await checkOutMutation.mutateAsync({
-        employee_id: employee.id,
-        latitude: gps.latitude,
-        longitude: gps.longitude,
-        timestamp: new Date().toISOString(),
-      });
-      await refetchToday();
-      setActionResult({
-        status: 'success',
-        label: 'Check-out success',
-        message: 'Your check-out was recorded successfully.',
-      });
-      notify.success(notiId, { message: 'Checked out successfully!' });
-    } catch (e: any) {
-      const message = e?.response?.data?.message || e?.message || 'Check-out failed';
-      setActionResult({
-        status: 'error',
-        label: 'Check-out failed',
-        message,
-      });
-      notify.error(notiId, {
-        message,
-      });
-    }
+    setFaceCheckMode('check-out');
+    setFaceCheckInOpened(true);
   };
 
   const timeStr = now.toLocaleTimeString('vi-VN', {
@@ -326,14 +314,7 @@ export default function CheckInOutPage() {
                     size="md"
                     radius="xl"
                     leftSection={<IconLogin size={18} />}
-                    disabled={
-                      hasCheckedIn ||
-                      checkInMutation.isPending ||
-                      !canAct ||
-                      isPastWorkEnd ||
-                      !hasFaceRegistered
-                    }
-                    loading={checkInMutation.isPending}
+                    disabled={hasCheckedIn || !canAct || isPastWorkEnd || !hasFaceRegistered}
                     onClick={handleCheckIn}
                     style={{
                       background:
@@ -351,14 +332,7 @@ export default function CheckInOutPage() {
                     size="md"
                     radius="xl"
                     leftSection={<IconLogout size={18} />}
-                    disabled={
-                      !hasCheckedIn ||
-                      hasCheckedOut ||
-                      checkOutMutation.isPending ||
-                      !canAct ||
-                      !hasFaceRegistered
-                    }
-                    loading={checkOutMutation.isPending}
+                    disabled={!hasCheckedIn || hasCheckedOut || !canAct || !hasFaceRegistered}
                     onClick={handleCheckOut}
                     style={{
                       background:
@@ -568,16 +542,13 @@ export default function CheckInOutPage() {
           opened={faceCheckInOpened}
           onClose={() => setFaceCheckInOpened(false)}
           employeeId={employee.id}
-          onSuccess={handleFaceCheckInSuccess}
-          onResult={(result) =>
-            setActionResult({
-              status: result.status,
-              label: result.status === 'success' ? 'Check-in success' : 'Check-in failed',
-              message: result.message,
-            })
-          }
+          onSuccess={async () => {
+            await refetchToday();
+          }}
+          onResult={handleFaceCheckResult}
           latitude={position?.latitude}
           longitude={position?.longitude}
+          action={faceCheckMode}
         />
       )}
     </Stack>

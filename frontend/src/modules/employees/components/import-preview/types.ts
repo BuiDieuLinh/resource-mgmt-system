@@ -8,6 +8,7 @@ export interface PreviewEmployee {
   gender: string;
   date_of_birth: string;
   hire_date: string;
+  contract_type: string;
   department_name: string;
   position_name: string;
   address?: string;
@@ -33,6 +34,7 @@ export const COLUMNS: ColumnDef[] = [
   { key: 'gender', label: 'Gender', width: 80 },
   { key: 'date_of_birth', label: 'Date of Birth', width: 120 },
   { key: 'hire_date', label: 'Hire Date', width: 110 },
+  { key: 'contract_type', label: 'Contract Type', width: 110 },
   { key: 'department_name', label: 'Department', required: true, width: 130 },
   { key: 'position_name', label: 'Position', required: true, width: 130 },
   { key: 'address', label: 'Address', width: 160 },

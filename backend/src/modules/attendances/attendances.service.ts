@@ -31,79 +31,20 @@ import {
   EmployeeStatus,
   LeaveStatus,
   LeaveType,
+  WorkPolicies,
 } from '@prisma/client';
-import {
-  compareFaces,
-  isValidFaceDescriptor,
-} from '../../common/utils/face-recognition.util';
+import { FaceVerificationService } from './services/face-verification.service';
+import { AttendanceValidationService } from './services/attendance-validate.service';
+import { DeviceInfoService } from './services/device-info.service';
 import { ConfigService } from '@nestjs/config';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import { Request } from 'express';
-import { parseUserAgent } from './utils/argent-parser';
-
-function haversineMeters(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
-  const R = 6371000;
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function resolveFaceDistanceThreshold(config: ConfigService): number {
-  const configured =
-    config.get<string>('FACE_DISTANCE_THRESHOLD') ??
-    config.get<string>('FACE_SIMILARITY_THRESHOLD');
-  const parsed = configured ? Number(configured) : 0.45;
-
-  if (!Number.isFinite(parsed) || parsed <= 0) return 0.45;
-
-  // Values above 0.5 are too permissive for attendance verification.
-  return Math.min(parsed, 0.45);
-}
-
-function summarizeFaceDescriptor(descriptor: number[]) {
-  const length = descriptor.length;
-  const min = Math.min(...descriptor);
-  const max = Math.max(...descriptor);
-  const mean = descriptor.reduce((sum, value) => sum + value, 0) / length;
-  const norm = Math.sqrt(
-    descriptor.reduce((sum, value) => sum + value * value, 0),
-  );
-
-  return {
-    length,
-    min: Number(min.toFixed(6)),
-    max: Number(max.toFixed(6)),
-    mean: Number(mean.toFixed(6)),
-    norm: Number(norm.toFixed(6)),
-  };
-}
-
-function getQuarter(month: number) {
-  return Math.floor((month - 1) / 3) + 1;
-}
-
-function resolveQuarterEntitledDays(annualLeaveDays: number, quarter: number) {
-  return Number(((annualLeaveDays / 4) * quarter).toFixed(2));
-}
-
-function toSafeFilePart(value: string) {
-  return value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .toLowerCase();
-}
+import {
+  getQuarter,
+  resolveQuarterEntitledDays,
+  toSafeFilePart,
+} from './utils/checkin-with-face';
 
 @Injectable()
 export class AttendancesService {
@@ -115,6 +56,9 @@ export class AttendancesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly workPolicyService: WorkPolicyService,
+    private readonly attendanceValidationService: AttendanceValidationService,
+    private readonly deviceInfoService: DeviceInfoService,
+    private readonly faceVerificationService: FaceVerificationService,
     private readonly config: ConfigService,
   ) {
     this.s3Client = new S3Client({
@@ -299,11 +243,14 @@ export class AttendancesService {
     };
   }
 
-  async checkInWithFace(dto: CheckInFaceDto, selfie: Express.Multer.File) {
+  async checkInWithFace(
+    dto: CheckInFaceDto,
+    selfie: Express.Multer.File,
+    req: Request,
+  ) {
     const timestamp = dto.timestamp ? new Date(dto.timestamp) : new Date();
     const workDate = toLocalWorkDate(timestamp);
 
-    // 1. Get employee and validate face descriptor exists
     const employee = await this.prisma.employees.findUnique({
       where: { id: dto.employee_id },
       select: { id: true, full_name: true, face_descriptor: true },
@@ -313,46 +260,11 @@ export class AttendancesService {
       throw new NotFoundException('Employee not found');
     }
 
-    if (!isValidFaceDescriptor(employee.face_descriptor)) {
-      throw new BadRequestException(
-        'No face descriptor registered. Please register your face first.',
-      );
-    }
-
-    // 2. Validate face descriptor format
-    if (!isValidFaceDescriptor(dto.face_descriptor)) {
-      throw new BadRequestException(
-        'Invalid face descriptor. Must be 128-dimensional vector.',
-      );
-    }
-
-    // 3. Compare faces
-    const threshold = resolveFaceDistanceThreshold(this.config);
-    const comparison = compareFaces(
+    const faceResult = this.faceVerificationService.verify(
       employee.face_descriptor,
       dto.face_descriptor,
-      threshold,
     );
-    const similarity = 1 - comparison.distance;
-    const faceDebug = {
-      employeeId: dto.employee_id,
-      threshold,
-      distance: Number(comparison.distance.toFixed(6)),
-      similarity: Number(similarity.toFixed(6)),
-      matched: comparison.matched,
-      registeredDescriptor: summarizeFaceDescriptor(employee.face_descriptor),
-      capturedDescriptor: summarizeFaceDescriptor(dto.face_descriptor),
-    };
 
-    this.logger.log(`Face check-in comparison: ${JSON.stringify(faceDebug)}`);
-
-    if (!comparison.matched) {
-      throw new BadRequestException(
-        `Face verification failed. Distance: ${comparison.distance.toFixed(3)}. Please try again or contact HR.`,
-      );
-    }
-
-    // 4. Upload selfie to R2
     let selfieUrl: string | null = null;
     try {
       selfieUrl = await this.uploadSelfieToR2(selfie, employee.full_name);
@@ -362,49 +274,35 @@ export class AttendancesService {
       );
     }
 
-    // 5. Continue with normal check-in flow (schedule, GPS, etc.)
+    const dayOfWeek = workDate.getDay() === 0 ? 6 : workDate.getDay() - 1;
     const schedule = await this.prisma.employeeWorkSchedules.findFirst({
-      where: { employee_id: dto.employee_id },
+      where: {
+        employee_id: dto.employee_id,
+        day_of_week: dayOfWeek,
+      },
     });
     if (!schedule)
-      throw new BadRequestException('No work schedule found for employee');
+      throw new BadRequestException(
+        'No work schedule found for employee today',
+      );
 
     const checkInMinutes = dateToMinutes(timestamp);
-    // Temporarily allow check-in after scheduled work hours.
-    // if (checkInMinutes > schedule.end_time) {
-    //   throw new BadRequestException(
-    //     `Check-in not allowed after work hours end (${schedule.end_time} min). Current time: ${checkInMinutes} min.`,
-    //   );
-    // }
+    if (checkInMinutes > schedule.end_time) {
+      throw new BadRequestException(
+        `Check-in not allowed after work hours end (${schedule.end_time} min). Current time: ${checkInMinutes} min.`,
+      );
+    }
 
     const policyRes = await this.workPolicyService.getActive(timestamp);
     const policy = policyRes.data;
 
-    // GPS validation
-    if (
-      policy?.office_latitude != null &&
-      policy?.office_longitude != null &&
-      dto.latitude != null &&
-      dto.longitude != null
-    ) {
-      const dist = haversineMeters(
-        Number(dto.latitude),
-        Number(dto.longitude),
-        Number(policy.office_latitude),
-        Number(policy.office_longitude),
-      );
-      const maxDist = policy.max_distance_meters ?? 100;
-      if (dist > maxDist) {
-        throw new BadRequestException(
-          `You are too far from the office (${Math.round(dist)}m away, max ${maxDist}m allowed)`,
-        );
-      }
-    } else if (
-      policy?.office_latitude != null &&
-      (dto.latitude == null || dto.longitude == null)
-    ) {
-      throw new BadRequestException('GPS location is required for check-in');
-    }
+    this.attendanceValidationService.validateGps(
+      policy as WorkPolicies,
+      dto.latitude,
+      dto.longitude,
+    );
+
+    const ipAddress = this.deviceInfoService.extract(req);
 
     const existing = await this.prisma.attendances.findUnique({
       where: {
@@ -439,14 +337,10 @@ export class AttendancesService {
           ? (policy.flexible_end_minutes ?? null)
           : null,
         check_in_time: timestamp,
-        selfie_image_url: selfieUrl,
-        similarity_score: similarity,
         status: AttendanceStatus.pending,
       },
       update: {
         check_in_time: timestamp,
-        selfie_image_url: selfieUrl,
-        similarity_score: similarity,
       },
     });
 
@@ -457,8 +351,10 @@ export class AttendancesService {
         timestamp,
         latitude: dto.latitude ?? null,
         longitude: dto.longitude ?? null,
-        ip_address: dto.ip_address ?? null,
-        user_agent: dto.user_agent ?? null,
+        ip_address: ipAddress.ip_address ?? null,
+        user_agent: ipAddress.user_agent ?? null,
+        selfie_image_url: selfieUrl,
+        similarity_score: faceResult.similarity,
       },
     });
 
@@ -474,11 +370,111 @@ export class AttendancesService {
         ...attendance,
         late,
         face_verified: true,
-        similarity_score: attendance.similarity_score,
-        face_distance: Number(comparison.distance.toFixed(6)),
-        face_threshold: threshold,
+        similarity_score: faceResult.similarity,
+        face_distance: Number(faceResult.comparison.distance.toFixed(6)),
+        face_threshold: faceResult.threshold,
       },
       'Checked in successfully with face verification',
+    );
+  }
+
+  async checkOutWithFace(
+    dto: CheckOutDto,
+    selfie: Express.Multer.File,
+    req: Request,
+  ) {
+    const timestamp = dto.timestamp ? new Date(dto.timestamp) : new Date();
+    const workDate = toLocalWorkDate(timestamp);
+
+    const attendance = await this.prisma.attendances.findUnique({
+      where: {
+        employee_id_work_date: {
+          employee_id: dto.employee_id,
+          work_date: workDate,
+        },
+      },
+    });
+    if (!attendance) throw new NotFoundException('No check-in found for today');
+    if (!attendance.check_in_time)
+      throw new BadRequestException('Must check-in first');
+    if (attendance.check_out_time)
+      throw new BadRequestException('Already checked out today');
+
+    const employee = await this.prisma.employees.findUnique({
+      where: { id: dto.employee_id },
+      select: { id: true, full_name: true, face_descriptor: true },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    const faceResult = this.faceVerificationService.verify(
+      employee.face_descriptor,
+      dto.face_descriptor,
+    );
+
+    let selfieUrl: string | null = null;
+    try {
+      selfieUrl = await this.uploadSelfieToR2(selfie, employee.full_name);
+    } catch (error) {
+      throw new BadRequestException(
+        `Failed to upload selfie: ${error.message}`,
+      );
+    }
+
+    const deviceInfo = this.deviceInfoService.extract(req);
+
+    await this.prisma.attendanceLogs.create({
+      data: {
+        attendance_id: attendance.id,
+        action: AttendanceAction.check_out,
+        timestamp,
+        latitude: dto.latitude ?? null,
+        longitude: dto.longitude ?? null,
+        ip_address: deviceInfo.ip_address,
+        user_agent: deviceInfo.user_agent,
+        selfie_image_url: selfieUrl,
+        similarity_score: faceResult.similarity,
+      },
+    });
+
+    const checkInMin = dateToMinutes(attendance.check_in_time);
+    const checkOutMin = dateToMinutes(timestamp);
+    const gross = Math.max(0, checkOutMin - checkInMin);
+
+    let breakDeduction = 0;
+    if (attendance.break_start != null && attendance.break_end != null) {
+      breakDeduction = overlapMinutes(
+        checkInMin,
+        checkOutMin,
+        attendance.break_start,
+        attendance.break_end,
+      );
+    }
+    const workMinutes = Math.max(0, gross - breakDeduction);
+    const earlyLeave = Math.max(0, attendance.scheduled_end - checkOutMin);
+    const overtime = Math.max(0, checkOutMin - attendance.scheduled_end);
+
+    const updated = await this.prisma.attendances.update({
+      where: { id: attendance.id },
+      data: {
+        check_out_time: timestamp,
+        work_minutes: workMinutes,
+        early_leave: earlyLeave,
+        overtime,
+      },
+    });
+
+    return ResponseHelper.success(
+      {
+        ...updated,
+        face_verified: true,
+        similarity_score: faceResult.similarity,
+        face_distance: Number(faceResult.comparison.distance.toFixed(6)),
+        face_threshold: faceResult.threshold,
+      },
+      'Checked out successfully',
     );
   }
 
@@ -486,11 +482,14 @@ export class AttendancesService {
     const timestamp = dto.timestamp ? new Date(dto.timestamp) : new Date();
     const workDate = toLocalWorkDate(timestamp);
 
+    const dayOfWeek = workDate.getDay() === 0 ? 6 : workDate.getDay() - 1;
     const schedule = await this.prisma.employeeWorkSchedules.findFirst({
-      where: { employee_id: dto.employee_id },
+      where: { employee_id: dto.employee_id, day_of_week: dayOfWeek },
     });
     if (!schedule)
-      throw new BadRequestException('No work schedule found for employee');
+      throw new BadRequestException(
+        'No work schedule found for employee today',
+      );
 
     const checkInMinutes = dateToMinutes(timestamp);
     // Temporarily allow check-in after scheduled work hours.
@@ -503,31 +502,11 @@ export class AttendancesService {
     const policyRes = await this.workPolicyService.getActive(timestamp);
     const policy = policyRes.data;
 
-    // GPS validation
-    if (
-      policy?.office_latitude != null &&
-      policy?.office_longitude != null &&
-      dto.latitude != null &&
-      dto.longitude != null
-    ) {
-      const dist = haversineMeters(
-        Number(dto.latitude),
-        Number(dto.longitude),
-        Number(policy.office_latitude),
-        Number(policy.office_longitude),
-      );
-      const maxDist = policy.max_distance_meters ?? 100;
-      if (dist > maxDist) {
-        throw new BadRequestException(
-          `You are too far from the office (${Math.round(dist)}m away, max ${maxDist}m allowed)`,
-        );
-      }
-    } else if (
-      policy?.office_latitude != null &&
-      (dto.latitude == null || dto.longitude == null)
-    ) {
-      throw new BadRequestException('GPS location is required for check-in');
-    }
+    this.attendanceValidationService.validateGps(
+      policy as WorkPolicies,
+      dto.latitude,
+      dto.longitude,
+    );
 
     const existing = await this.prisma.attendances.findUnique({
       where: {
@@ -541,13 +520,7 @@ export class AttendancesService {
       throw new BadRequestException('Already checked in today');
     }
 
-    const ip_address = Array.isArray(req.headers['x-forwarded-for'])
-      ? req.headers['x-forwarded-for'][0]
-      : req.headers['x-forwarded-for'] ||
-        req.socket.remoteAddress ||
-        '127.0.0.1';
-    const user_agent = req.headers['user-agent'] || 'unknown';
-    const parsedUserAgent = parseUserAgent(user_agent);
+    const deviceInfo = this.deviceInfoService.extract(req);
 
     const isFlexibleEnabled = !!policy?.is_flexible_enabled;
 
@@ -584,13 +557,8 @@ export class AttendancesService {
         timestamp,
         latitude: dto.latitude ?? null,
         longitude: dto.longitude ?? null,
-        ip_address: ip_address,
-        user_agent:
-          parsedUserAgent.browser +
-          ' ' +
-          parsedUserAgent.os +
-          ' ' +
-          parsedUserAgent.device,
+        ip_address: deviceInfo.ip_address,
+        user_agent: deviceInfo.user_agent,
       },
     });
 
@@ -622,14 +590,10 @@ export class AttendancesService {
     if (!attendance) throw new NotFoundException('No check-in found for today');
     if (!attendance.check_in_time)
       throw new BadRequestException('Must check-in first');
+    if (attendance.check_out_time)
+      throw new BadRequestException('Already checked out today');
 
-    const ip_address = Array.isArray(req.headers['x-forwarded-for'])
-      ? req.headers['x-forwarded-for'][0]
-      : req.headers['x-forwarded-for'] ||
-        req.socket.remoteAddress ||
-        '127.0.0.1';
-    const user_agent = req.headers['user-agent'] || 'unknown';
-    const parsedUserAgent = parseUserAgent(user_agent);
+    const deviceInfo = this.deviceInfoService.extract(req);
 
     await this.prisma.attendanceLogs.create({
       data: {
@@ -638,13 +602,8 @@ export class AttendancesService {
         timestamp,
         latitude: dto.latitude ?? null,
         longitude: dto.longitude ?? null,
-        ip_address: ip_address,
-        user_agent:
-          parsedUserAgent.browser +
-          ' ' +
-          parsedUserAgent.os +
-          ' ' +
-          parsedUserAgent.device,
+        ip_address: deviceInfo.ip_address,
+        user_agent: deviceInfo.user_agent,
       },
     });
 

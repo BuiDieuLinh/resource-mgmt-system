@@ -200,9 +200,6 @@ model Attendances {
   overtime     Int @default(0)
   work_minutes Int @default(0)
 
-  selfie_image_url String?
-  similarity_score Float?
-
   status     AttendanceStatus @default(pending)
   created_at DateTime         @default(now())
 
@@ -228,6 +225,8 @@ model AttendanceLogs {
   longitude     Decimal?         @db.Decimal(10, 6)
   ip_address    String?          @db.VarChar(50)
   user_agent    String?
+  selfie_image_url String?
+  similarity_score Float?
 
   attendance Attendances @relation(fields: [attendance_id], references: [id])
 

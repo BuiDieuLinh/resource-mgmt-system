@@ -61,8 +61,9 @@ export class AttendancesController {
   checkInWithFace(
     @Body() dto: CheckInFaceDto,
     @UploadedFile() selfie: Express.Multer.File,
+    @Req() req: Request,
   ) {
-    return this.attendancesService.checkInWithFace(dto, selfie);
+    return this.attendancesService.checkInWithFace(dto, selfie, req);
   }
 
   @Post('check-in')
@@ -70,6 +71,33 @@ export class AttendancesController {
   @Roles(Role.EMPLOYEE, Role.MANAGER, Role.HR, Role.ADMIN)
   checkIn(@Body() dto: CheckInDto, @Req() req: Request) {
     return this.attendancesService.checkIn(dto, req);
+  }
+
+  @Post('check-out/face')
+  @UseInterceptors(
+    FileInterceptor('selfie', {
+      storage: memoryStorage(),
+      fileFilter: (_req, file, callback) => {
+        if (!file.mimetype.match(/^image\/(jpeg|jpg|png)$/)) {
+          return callback(
+            new Error('Only JPG and PNG images are allowed'),
+            false,
+          );
+        }
+        callback(null, true);
+      },
+      limits: {
+        fileSize: 1024 * 1024,
+      },
+    }),
+  )
+  @Roles(Role.EMPLOYEE, Role.MANAGER, Role.HR, Role.ADMIN)
+  checkOutWithFace(
+    @Body() dto: CheckOutDto,
+    @UploadedFile() selfie: Express.Multer.File,
+    @Req() req: Request,
+  ) {
+    return this.attendancesService.checkOutWithFace(dto, selfie, req);
   }
 
   @Post('check-out')

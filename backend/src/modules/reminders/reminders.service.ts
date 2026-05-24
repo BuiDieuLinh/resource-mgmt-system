@@ -430,7 +430,7 @@ export class RemindersService {
           type: 'eval_reminder_contract_ending',
           title: `${emp.full_name} sắp kết thúc ${emp.contract_type === 'intern' ? 'thực tập' : 'thử việc'}`,
           body: `${emp.full_name} còn ${displayDays} ngày trước khi kết thúc ${emp.contract_type === 'intern' ? 'thực tập' : 'thử việc'}.`,
-          link: `employees/${emp.id}`,
+          link: `employees/${emp.id}/profile`,
         };
       case 'cycle_deadline':
         return {
@@ -454,7 +454,7 @@ export class RemindersService {
       return `/performance/cycles/${log.cycle_id}`;
     }
     if (log.trigger_type === 'contract_ending' && log.target_id) {
-      return `/employees/${log.target_id}`;
+      return `/employees/${log.target_id}/profile`;
     }
     return `/performance/review`;
   }

@@ -12,6 +12,7 @@ export interface PreviewEmployee {
   gender: string;
   date_of_birth: string;
   hire_date: string;
+  contract_type: string;
   department_name: string;
   position_name: string;
 }

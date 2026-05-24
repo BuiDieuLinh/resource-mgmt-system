@@ -31,19 +31,9 @@ import {
   compareFaces,
   isValidFaceDescriptor,
 } from 'src/common/utils/face-recognition.util';
+import { resolveFaceEnrollmentDistanceThreshold } from './utils/face-enroll-distance-threshold';
 
 dayjs.extend(utc);
-
-function resolveFaceEnrollmentDistanceThreshold(config: ConfigService): number {
-  const configured =
-    config.get<string>('FACE_DISTANCE_THRESHOLD') ??
-    config.get<string>('FACE_SIMILARITY_THRESHOLD');
-  const parsed = configured ? Number(configured) : 0.45;
-
-  if (!Number.isFinite(parsed) || parsed <= 0) return 0.45;
-  return Math.min(parsed, 0.45);
-}
-
 @Injectable()
 export class EmployeeService {
   constructor(
@@ -502,6 +492,7 @@ export class EmployeeService {
       { header: 'Gender', key: 'gender', width: 10 },
       { header: 'Date of Birth', key: 'date_of_birth', width: 15 },
       { header: 'Hire Date', key: 'hire_date', width: 15 },
+      { header: 'Contract Type', key: 'contract_type', width: 15 },
       { header: 'Department', key: 'department', width: 20 },
       { header: 'Position', key: 'position', width: 20 },
       { header: 'Status', key: 'status', width: 12 },
@@ -528,6 +519,7 @@ export class EmployeeService {
           ? dayjs.utc(emp.date_of_birth).format('YYYY-MM-DD')
           : '',
         hire_date: dayjs.utc(emp.hire_date).format('YYYY-MM-DD'),
+        contract_type: emp.contract_type,
         department: emp.position.department.department_name,
         position: emp.position.position_name,
         status: emp.status,
@@ -608,9 +600,10 @@ export class EmployeeService {
           gender: getCellValue(row.getCell(7)),
           date_of_birth: getCellValue(row.getCell(8)),
           hire_date: getCellValue(row.getCell(9)),
-          department_name: getCellValue(row.getCell(10)),
-          position_name: getCellValue(row.getCell(11)),
-          address: getCellValue(row.getCell(12)) || '',
+          contract_type: getCellValue(row.getCell(10)),
+          department_name: getCellValue(row.getCell(11)),
+          position_name: getCellValue(row.getCell(12)),
+          address: getCellValue(row.getCell(13)) || '',
         };
 
         if (
@@ -748,7 +741,7 @@ export class EmployeeService {
         const authUser = await this.authCoreService.createUser(empData.email);
         authUserId = authUser.id;
 
-        await this.prisma.employees.create({
+        const created = await this.prisma.employees.create({
           data: {
             employee_code: empData.employee_code,
             full_name: empData.full_name,
@@ -760,10 +753,19 @@ export class EmployeeService {
             address: empData.address || '',
             date_of_birth: dateOfBirth,
             hire_date: hireDate,
+            contract_type: empData.contract_type,
             position_id: position.id,
             auth_user_id: authUser.id,
           },
         });
+
+        await this.workScheduleService.setSchedule(created.id, [
+          { day_of_week: 0, start_time: 480, end_time: 1020 },
+          { day_of_week: 1, start_time: 480, end_time: 1020 },
+          { day_of_week: 2, start_time: 480, end_time: 1020 },
+          { day_of_week: 3, start_time: 480, end_time: 1020 },
+          { day_of_week: 4, start_time: 480, end_time: 1020 },
+        ]);
 
         imported.push(empData.employee_code);
       } catch (error) {

@@ -23,9 +23,9 @@ export class RemindersScheduler {
   }
 
   /**
-   * Every minute — process pending logs and dispatch notifications
+   * Every 30 minutes — process pending logs and dispatch notifications
    */
-  @Cron('*/1 * * * *', { timeZone: process.env.APP_TIMEZONE })
+  @Cron('30 * * * *', { timeZone: process.env.APP_TIMEZONE })
   async processPendingReminders() {
     this.logger.log('[Reminder] Processing pending reminder logs...');
     try {

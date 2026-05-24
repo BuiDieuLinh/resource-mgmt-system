@@ -20,7 +20,7 @@ import {
   captureCanvasFromVideo,
   canvasToImageBlob,
 } from '@/utils/face-api.util';
-import { apiClient } from '@/lib/api';
+import { useFaceCheckIn, useFaceCheckOut } from '../api/face-check';
 
 interface FaceCheckInModalProps {
   opened: boolean;
@@ -30,6 +30,7 @@ interface FaceCheckInModalProps {
   onResult?: (result: { status: 'success' | 'error'; message: string }) => void;
   latitude?: number;
   longitude?: number;
+  action?: 'check-in' | 'check-out';
 }
 
 export function FaceCheckInModal({
@@ -40,8 +41,13 @@ export function FaceCheckInModal({
   onResult,
   latitude,
   longitude,
+  action = 'check-in',
 }: FaceCheckInModalProps) {
   const [loading, setLoading] = useState(false);
+  const isCheckOut = action === 'check-out';
+  const modalTitle = isCheckOut ? 'Face Verification Check-Out' : 'Face Verification Check-In';
+  const successTitle = isCheckOut ? 'Check-out successful' : 'Check-in successful';
+  const failTitle = isCheckOut ? 'Check-out failed' : 'Check-in failed';
   const [modelsLoading, setModelsLoading] = useState(true);
   const [cameraReady, setCameraReady] = useState(false);
   const [capturing, setCapturing] = useState(false);
@@ -52,6 +58,8 @@ export function FaceCheckInModal({
     message: string;
     detail?: string;
   } | null>(null);
+  const faceCheckInMutation = useFaceCheckIn();
+  const faceCheckOutMutation = useFaceCheckOut();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -138,15 +146,15 @@ export function FaceCheckInModal({
       formData.append('employee_id', employeeId);
       formData.append('timestamp', new Date().toISOString());
       formData.append('face_descriptor', JSON.stringify(Array.from(descriptor)));
-      formData.append('selfie', selfieBlob, 'check-in-selfie.jpg');
+      formData.append('selfie', selfieBlob, 'face-selfie.jpg');
       if (latitude != null) formData.append('latitude', String(latitude));
       if (longitude != null) formData.append('longitude', String(longitude));
 
-      const response = await apiClient.post('/attendances/check-in/face', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const response = await (isCheckOut
+        ? faceCheckOutMutation.mutateAsync(formData)
+        : faceCheckInMutation.mutateAsync(formData));
 
-      const data = response.data?.data;
+      const data = response.data;
       const distance =
         typeof data?.face_distance === 'number' ? data.face_distance.toFixed(3) : null;
       const threshold =
@@ -154,11 +162,11 @@ export function FaceCheckInModal({
       const detail = distance && threshold ? `Distance ${distance} / threshold ${threshold}` : '';
       const message = detail
         ? `Face matched. ${detail}.`
-        : 'Face matched and check-in was recorded.';
+        : `${action === 'check-out' ? 'Check-out' : 'Check-in'} was recorded successfully.`;
 
       setVerificationResult({
         status: 'success',
-        title: 'Check-in successful',
+        title: successTitle,
         message,
         detail,
       });
@@ -166,14 +174,14 @@ export function FaceCheckInModal({
       onSuccess();
       onResult?.({ status: 'success', message });
     } catch (error: any) {
-      const errorMsg = error?.response?.data?.message || error?.message || 'Check-in failed';
+      const errorMsg = error?.response?.data?.message || error?.message || failTitle;
       setVerificationResult({
         status: 'error',
-        title: 'Check-in failed',
+        title: failTitle,
         message: errorMsg,
       });
       onResult?.({ status: 'error', message: errorMsg });
-      notify.error('Check-in failed', { message: errorMsg });
+      notify.error(failTitle, { message: errorMsg });
       setLoading(false);
       setCapturing(false);
     } finally {
@@ -186,7 +194,7 @@ export function FaceCheckInModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      title="Face Verification Check-In"
+      title={modalTitle}
       size="lg"
       centered
       closeOnClickOutside={!loading}
@@ -195,11 +203,7 @@ export function FaceCheckInModal({
       <Stack gap="md">
         <Alert icon={<IconAlertCircle size={16} />} color="blue" variant="light">
           <Text size="sm">
-            <strong>Instructions:</strong>
-            <br />• Position your face in the center of the frame
-            <br />• Look straight at the camera
-            <br />• Ensure good lighting
-            <br />• Remove mask or sunglasses
+            Keep your face centered, well lit and still until the capture completes.
           </Text>
         </Alert>
 
@@ -293,7 +297,7 @@ export function FaceCheckInModal({
             disabled={loading || capturing}
             leftSection={<IconX size={16} />}
           >
-            Cancel
+            Close
           </Button>
           <Button
             leftSection={<IconCamera size={16} />}
@@ -301,7 +305,7 @@ export function FaceCheckInModal({
             disabled={!cameraReady || loading || capturing}
             loading={loading || capturing}
           >
-            {capturing ? 'Capturing...' : 'Capture & Check In'}
+            {capturing ? 'Capturing...' : isCheckOut ? 'Capture & Check Out' : 'Capture & Check In'}
           </Button>
         </Group>
       </Stack>

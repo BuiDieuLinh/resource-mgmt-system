@@ -19,6 +19,7 @@ const COLUMN_ERROR_MAP: Record<string, string[]> = {
   position_name: ['position'],
   date_of_birth: ['date of birth', 'dob'],
   hire_date: ['hire date'],
+  contract_type: ['contract_type'],
   phone: ['phone'],
   gender: ['gender'],
   display_name: ['display name'],

@@ -46,5 +46,5 @@ export class CheckInFaceDto {
     }
   })
   @IsArray()
-  face_descriptor: number[]; // Float32Array converted to number[]
+  face_descriptor: number[];
 }

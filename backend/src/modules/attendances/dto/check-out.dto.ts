@@ -1,3 +1,3 @@
-import { CheckInDto } from './check-in.dto';
+import { CheckInFaceDto } from './check-in-face.dto';
 
-export class CheckOutDto extends CheckInDto {}
+export class CheckOutDto extends CheckInFaceDto {}
