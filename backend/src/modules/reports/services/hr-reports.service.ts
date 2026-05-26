@@ -12,6 +12,16 @@ import {
 export class HrReportsService {
   constructor(private prisma: PrismaService) {}
 
+  private buildDepartmentFilter(departmentId?: string) {
+    return departmentId
+      ? {
+          position: {
+            department_id: departmentId,
+          },
+        }
+      : {};
+  }
+
   async getHrStructure(
     query: HrStructureQueryDto,
   ): Promise<HrStructureResponse> {
@@ -24,6 +34,7 @@ export class HrReportsService {
         hire_date: {
           lte: referenceDate,
         },
+        ...this.buildDepartmentFilter(query.departmentId),
       },
       include: {
         position: {
@@ -137,6 +148,7 @@ export class HrReportsService {
   async getTurnoverReport(query: TurnoverQueryDto): Promise<TurnoverResponse> {
     const period = query.period || ReportPeriod.MONTH;
     const year = query.year || new Date().getFullYear();
+    const departmentFilter = this.buildDepartmentFilter(query.departmentId);
 
     let periods: { start: Date; end: Date; label: string }[] = [];
 
@@ -181,6 +193,7 @@ export class HrReportsService {
               gte: p.start,
               lte: p.end,
             },
+            ...departmentFilter,
           },
         });
 
@@ -191,6 +204,7 @@ export class HrReportsService {
               gte: p.start,
               lte: p.end,
             },
+            ...departmentFilter,
           },
         });
 
@@ -206,6 +220,7 @@ export class HrReportsService {
                 terminated_at: { gte: p.start },
               },
             ],
+            ...departmentFilter,
           },
         });
 
@@ -215,6 +230,7 @@ export class HrReportsService {
               lte: p.end,
             },
             status: 'active',
+            ...departmentFilter,
           },
         });
 
@@ -235,7 +251,10 @@ export class HrReportsService {
     );
 
     const activeEmployees = await this.prisma.employees.findMany({
-      where: { status: 'active' },
+      where: {
+        status: 'active',
+        ...departmentFilter,
+      },
       select: { hire_date: true },
     });
 

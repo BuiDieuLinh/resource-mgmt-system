@@ -1,32 +1,50 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AlertInsight } from '../../alerts/dto/alerts.dto';
+import { InsightsQueryDto } from '../dto/hr-reports.dto';
 
 @Injectable()
 export class InsightsService {
   constructor(private prisma: PrismaService) {}
 
-  async getInsights(): Promise<AlertInsight[]> {
+  async getInsights(query: InsightsQueryDto = {}): Promise<AlertInsight[]> {
     const insights: AlertInsight[] = [];
 
-    const lateKPIInsight = await this.analyzeLateVsKPI();
+    const lateKPIInsight = await this.analyzeLateVsKPI(query.departmentId);
     if (lateKPIInsight) insights.push(lateKPIInsight);
 
-    const turnoverKPIInsight = await this.analyzeTurnoverVsKPI();
+    const turnoverKPIInsight = await this.analyzeTurnoverVsKPI(
+      query.departmentId,
+    );
     if (turnoverKPIInsight) insights.push(turnoverKPIInsight);
 
-    const tenureTurnoverInsight = await this.analyzeTenureVsTurnover();
+    const tenureTurnoverInsight = await this.analyzeTenureVsTurnover(
+      query.departmentId,
+    );
     if (tenureTurnoverInsight) insights.push(tenureTurnoverInsight);
 
     return insights;
   }
 
-  private async analyzeLateVsKPI(): Promise<AlertInsight | null> {
+  private async analyzeLateVsKPI(
+    departmentId?: string,
+  ): Promise<AlertInsight | null> {
     const latestCycle = await this.prisma.reviewCycles.findFirst({
       orderBy: { created_at: 'desc' },
       include: {
         reviews: {
-          where: { status: 'published' },
+          where: {
+            status: 'published',
+            ...(departmentId
+              ? {
+                  employee: {
+                    position: {
+                      department_id: departmentId,
+                    },
+                  },
+                }
+              : {}),
+          },
         },
       },
     });
@@ -70,7 +88,9 @@ export class InsightsService {
     return null;
   }
 
-  private async analyzeTurnoverVsKPI(): Promise<AlertInsight | null> {
+  private async analyzeTurnoverVsKPI(
+    departmentId?: string,
+  ): Promise<AlertInsight | null> {
     const now = new Date();
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
 
@@ -86,6 +106,7 @@ export class InsightsService {
     if (!latestCycle) return null;
 
     const departments = await this.prisma.departments.findMany({
+      where: departmentId ? { id: departmentId } : undefined,
       include: {
         positions: {
           include: {
@@ -196,13 +217,22 @@ export class InsightsService {
     return null;
   }
 
-  private async analyzeTenureVsTurnover(): Promise<AlertInsight | null> {
+  private async analyzeTenureVsTurnover(
+    departmentId?: string,
+  ): Promise<AlertInsight | null> {
     const now = new Date();
 
     const terminatedEmployees = await this.prisma.employees.findMany({
       where: {
         status: 'inactive',
         terminated_at: { not: null },
+        ...(departmentId
+          ? {
+              position: {
+                department_id: departmentId,
+              },
+            }
+          : {}),
       },
       select: {
         hire_date: true,

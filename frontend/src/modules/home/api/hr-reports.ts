@@ -73,6 +73,7 @@ export interface AlertInsight {
 export const getHrStructure = async (params?: {
   startDate?: string;
   endDate?: string;
+  departmentId?: string;
 }): Promise<{ data: HrStructureResponse }> => {
   const response = await apiClient.get('/reports/hr/structure', { params });
   return response.data;
@@ -83,12 +84,15 @@ export const getTurnoverReport = async (params?: {
   year?: number;
   month?: number;
   quarter?: number;
+  departmentId?: string;
 }): Promise<{ data: TurnoverResponse }> => {
   const response = await apiClient.get('/reports/hr/turnover', { params });
   return response.data;
 };
 
-export const getInsights = async (): Promise<{ data: AlertInsight[] }> => {
-  const response = await apiClient.get('/reports/insights');
+export const getInsights = async (params?: {
+  departmentId?: string;
+}): Promise<{ data: AlertInsight[] }> => {
+  const response = await apiClient.get('/reports/insights', { params });
   return response.data;
 };

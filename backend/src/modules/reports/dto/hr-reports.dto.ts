@@ -1,5 +1,12 @@
-import { IsOptional, IsDateString, IsEnum } from 'class-validator';
+import {
+  IsOptional,
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsString,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export enum ReportPeriod {
   MONTH = 'month',
@@ -17,6 +24,11 @@ export class HrStructureQueryDto {
   @IsOptional()
   @IsDateString()
   endDate?: string;
+
+  @ApiPropertyOptional({ description: 'ID phòng ban' })
+  @IsOptional()
+  @IsString()
+  departmentId?: string;
 }
 
 export class TurnoverQueryDto {
@@ -27,15 +39,33 @@ export class TurnoverQueryDto {
 
   @ApiPropertyOptional({ description: 'Năm' })
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
   year?: number;
 
   @ApiPropertyOptional({ description: 'Tháng (1-12)' })
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
   month?: number;
 
   @ApiPropertyOptional({ description: 'Quý (1-4)' })
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
   quarter?: number;
+
+  @ApiPropertyOptional({ description: 'ID phòng ban' })
+  @IsOptional()
+  @IsString()
+  departmentId?: string;
+}
+
+export class InsightsQueryDto {
+  @ApiPropertyOptional({ description: 'ID phòng ban' })
+  @IsOptional()
+  @IsString()
+  departmentId?: string;
 }
 
 export interface HrStructureByDepartment {

@@ -5,7 +5,11 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { HrReportsService } from './services/hr-reports.service';
 import { InsightsService } from './services/insights.service';
-import { HrStructureQueryDto, TurnoverQueryDto } from './dto/hr-reports.dto';
+import {
+  HrStructureQueryDto,
+  InsightsQueryDto,
+  TurnoverQueryDto,
+} from './dto/hr-reports.dto';
 import { Role } from 'src/common/constant/roles';
 
 @ApiTags('Reports')
@@ -37,8 +41,8 @@ export class ReportsController {
   @Get('insights')
   @Roles(Role.ADMIN, Role.HR)
   @ApiOperation({ summary: 'Lấy insights tương quan tự động' })
-  async getInsights() {
-    const data = await this.insightsService.getInsights();
+  async getInsights(@Query() query: InsightsQueryDto) {
+    const data = await this.insightsService.getInsights(query);
     return { data };
   }
 }
