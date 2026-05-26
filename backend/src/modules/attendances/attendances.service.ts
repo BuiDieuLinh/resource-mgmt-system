@@ -260,20 +260,6 @@ export class AttendancesService {
       throw new NotFoundException('Employee not found');
     }
 
-    const faceResult = this.faceVerificationService.verify(
-      employee.face_descriptor,
-      dto.face_descriptor,
-    );
-
-    let selfieUrl: string | null = null;
-    try {
-      selfieUrl = await this.uploadSelfieToR2(selfie, employee.full_name);
-    } catch (error) {
-      throw new BadRequestException(
-        `Failed to upload selfie: ${error.message}`,
-      );
-    }
-
     const dayOfWeek = workDate.getDay() === 0 ? 6 : workDate.getDay() - 1;
     const schedule = await this.prisma.employeeWorkSchedules.findFirst({
       where: {
@@ -302,8 +288,6 @@ export class AttendancesService {
       dto.longitude,
     );
 
-    const ipAddress = this.deviceInfoService.extract(req);
-
     const existing = await this.prisma.attendances.findUnique({
       where: {
         employee_id_work_date: {
@@ -315,6 +299,22 @@ export class AttendancesService {
     if (existing?.check_in_time) {
       throw new BadRequestException('Already checked in today');
     }
+
+    const faceResult = this.faceVerificationService.verify(
+      employee.face_descriptor,
+      dto.face_descriptor,
+    );
+
+    let selfieUrl: string | null = null;
+    try {
+      selfieUrl = await this.uploadSelfieToR2(selfie, employee.full_name);
+    } catch (error) {
+      throw new BadRequestException(
+        `Failed to upload selfie: ${error.message}`,
+      );
+    }
+
+    const ipAddress = this.deviceInfoService.extract(req);
 
     const attendance = await this.prisma.attendances.upsert({
       where: {

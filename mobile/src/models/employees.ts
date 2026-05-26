@@ -4,6 +4,14 @@ export interface Employee {
   id: string;
   email: string;
   full_name: string;
+  face_descriptor?: number[];
+  work_schedules?: Array<{
+    id: string;
+    day_of_week: number;
+    start_time: number;
+    end_time: number;
+    employee_id: string;
+  }>;
   display_name?: string;
   avatar_url?: string;
   phone?: string;
