@@ -126,6 +126,7 @@ export default function CheckInOutPage() {
   }) => {
     if (result.status === 'success') {
       await refetchToday();
+      setFaceCheckInOpened(false);
     }
     setActionResult({
       status: result.status,

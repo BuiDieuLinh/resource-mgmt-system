@@ -70,7 +70,8 @@ export function minutesToTime(minutes: number): string {
 
 /** DateTime → minutes from midnight (local) */
 export function dateToMinutes(date: Date): number {
-  return date.getHours() * 60 + date.getMinutes();
+  const local = dayjs(date).tz(APP_TZ);
+  return local.hour() * 60 + local.minute();
 }
 
 /**
