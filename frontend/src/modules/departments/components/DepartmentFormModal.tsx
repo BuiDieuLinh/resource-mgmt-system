@@ -1,9 +1,10 @@
 import { Modal, Button, Group, TextInput, Stack, Text, Textarea } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useEffect } from 'react';
-import { departmentValidationRules } from '../rule-form/department-validation';
+import { getDepartmentValidationRules } from '../rule-form/department-validation';
 import type { DepartmentFormValues } from '../types';
 import { PRIMARY_COLOR } from '@/theme';
+import { useTranslation } from 'react-i18next';
 
 interface DepartmentFormModalProps {
   opened: boolean;
@@ -24,6 +25,8 @@ export function DepartmentFormModal({
   onSubmit,
   loading = false,
 }: DepartmentFormModalProps) {
+  const { t } = useTranslation();
+  const departmentValidationRules = getDepartmentValidationRules(t);
   const form = useForm<DepartmentFormValues>({
     initialValues: {
       department_code: '',
@@ -63,7 +66,9 @@ export function DepartmentFormModal({
       onClose={handleClose}
       title={
         <Text size="xl" fw={700} c={PRIMARY_COLOR}>
-          {mode === 'edit' ? 'EDIT DEPARTMENT' : 'ADD DEPARTMENT'}
+          {mode === 'edit'
+            ? t('department.modal.editDepartment')
+            : t('department.modal.addDepartment')}
         </Text>
       }
       size="lg"
@@ -80,23 +85,23 @@ export function DepartmentFormModal({
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack gap="sm">
           <TextInput
-            label="Department Code"
-            placeholder="e.g., DEP-001"
+            label={t('department.code')}
+            placeholder={t('department.modal.departmentCodePlaceholder')}
             required
             disabled={mode === 'edit'}
             {...form.getInputProps('department_code')}
           />
 
           <TextInput
-            label="Department Name"
-            placeholder="Enter department name"
+            label={t('department.name')}
+            placeholder={t('department.modal.departmentNamePlaceholder')}
             required
             {...form.getInputProps('department_name')}
           />
 
           <Textarea
-            label="Description"
-            placeholder="Enter department description (optional)"
+            label={t('department.description')}
+            placeholder={t('department.modal.descriptionPlaceholder')}
             rows={3}
             {...form.getInputProps('description')}
           />
@@ -104,10 +109,10 @@ export function DepartmentFormModal({
 
         <Group justify="flex-end" mt="md">
           <Button variant="subtle" onClick={handleClose} disabled={loading}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" loading={loading}>
-            {mode === 'edit' ? 'Update' : 'Create'}
+            {mode === 'edit' ? t('common.update') : t('common.add')}
           </Button>
         </Group>
       </form>

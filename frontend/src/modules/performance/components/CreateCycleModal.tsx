@@ -29,13 +29,12 @@ import {
   IconChevronUp,
 } from '@tabler/icons-react';
 import type { CycleFormValues, IEvaluationTemplate } from '../types';
+import { useTranslation } from 'react-i18next';
 
 const SCORE_TYPE_OPTIONS = [
   { value: 'rating', label: 'Rating' },
   { value: 'binary', label: 'Binary' },
 ];
-
-const PERIOD_LABEL: Record<string, string> = { monthly: 'Monthly', quarterly: 'Quarterly' };
 
 interface CreateCycleModalProps {
   opened: boolean;
@@ -58,6 +57,7 @@ export function CreateCycleModal({
   mode = 'create',
   initialValues = null,
 }: CreateCycleModalProps) {
+  const { t } = useTranslation();
   const [activeStep, setActiveStep] = useState(0);
   const [expandedDepts, setExpandedDepts] = useState<Set<string>>(new Set());
 
@@ -85,8 +85,8 @@ export function CreateCycleModal({
       criteria: [],
     },
     validate: {
-      title: (v) => (!v ? 'Required' : null),
-      announce_date: (v) => (!v ? 'Required' : null),
+      title: (v) => (!v ? t('common.required') : null),
+      announce_date: (v) => (!v ? t('common.required') : null),
     },
   });
 
@@ -173,7 +173,7 @@ export function CreateCycleModal({
   const groupedEmployees = useMemo(() => {
     const groups: Record<string, typeof filteredEmployeesForAssignment> = {};
     filteredEmployeesForAssignment.forEach((emp) => {
-      const deptName = emp.position?.department?.department_name || 'No Department';
+      const deptName = emp.position?.department?.department_name || t('employee.noDepartment');
       if (!groups[deptName]) groups[deptName] = [];
       groups[deptName].push(emp);
     });
@@ -275,57 +275,66 @@ export function CreateCycleModal({
     <Modal
       opened={opened}
       onClose={handleClose}
-      title={mode === 'create' ? 'CREATE REVIEW CYCLE' : 'UPDATE REVIEW CYCLE'}
+      title={
+        mode === 'create' ? t('performance.createCycleTitle') : t('performance.updateCycleTitle')
+      }
       size="xl"
       centered
     >
       <Stepper active={activeStep} onStepClick={setActiveStep} allowNextStepsSelect={false}>
         {/* Step 1: Basic Info */}
-        <Stepper.Step label="Basic Info" description="Cycle details">
+        <Stepper.Step
+          label={t('performance.basicInfo')}
+          description={t('performance.cycleDetails')}
+        >
           <Stack gap="md" mt="md">
             <TextInput
-              label="Cycle Name"
-              placeholder="e.g. Q1 2026 Performance Review"
+              label={t('performance.cycleName')}
+              placeholder={t('performance.cycleNamePlaceholder')}
               required
               {...form.getInputProps('title')}
             />
             <Select
-              label="Period Type"
+              label={t('performance.periodType')}
               data={[
-                { value: 'monthly', label: 'Monthly' },
-                { value: 'quarterly', label: 'Quarterly' },
+                { value: 'monthly', label: t('performance.periodMonthly') },
+                { value: 'quarterly', label: t('performance.periodQuarterly') },
               ]}
               checkIconPosition="right"
               {...form.getInputProps('period_type')}
             />
             <Group grow>
               <NumberInput
-                label="Year"
+                label={t('common.year')}
                 min={2020}
                 max={2100}
                 {...form.getInputProps('period_year')}
               />
               <NumberInput
-                label={form.values.period_type === 'monthly' ? 'Month (1-12)' : 'Quarter (1-4)'}
+                label={
+                  form.values.period_type === 'monthly'
+                    ? t('performance.monthRange')
+                    : t('performance.quarterRange')
+                }
                 min={1}
                 max={form.values.period_type === 'monthly' ? 12 : 4}
                 {...form.getInputProps('period_seq')}
               />
             </Group>
             <DateInput
-              label="Announce Date"
-              placeholder="Pick announcement date"
+              label={t('performance.announceDate')}
+              placeholder={t('performance.pickAnnouncementDate')}
               required
-              description="Date when results will be published to employees"
+              description={t('performance.announceDateDescription')}
               {...form.getInputProps('announce_date')}
             />
             <Select
-              label="Evaluation Template"
-              placeholder="Select template (optional)"
+              label={t('performance.evaluationTemplate')}
+              placeholder={t('performance.selectTemplateOptional')}
               data={templateOptions}
               clearable
               searchable
-              description="Choose a template to define evaluation criteria"
+              description={t('performance.selectTemplateDescription')}
               checkIconPosition="right"
               value={form.values.template_id}
               onChange={handleTemplateChange}
@@ -333,18 +342,18 @@ export function CreateCycleModal({
 
             {form.values.template_id && form.values.criteria.length > 0 && (
               <Checkbox
-                label="Customize criteria for this cycle"
-                description="Modify the template criteria specifically for this cycle"
+                label={t('performance.customizeCriteria')}
+                description={t('performance.customizeCriteriaDescription')}
                 {...form.getInputProps('customCriteria', { type: 'checkbox' })}
               />
             )}
 
             {form.values.customCriteria && form.values.criteria.length > 0 && (
               <>
-                <Divider label="Customize Criteria" labelPosition="center" />
+                <Divider label={t('performance.customizeCriteria')} labelPosition="center" />
                 <Group justify="space-between">
                   <Text size="sm" fw={500}>
-                    Total Weight:
+                    {t('performance.totalWeight')}:
                   </Text>
                   <Badge size="lg" color={isWeightValid ? 'green' : 'red'}>
                     {totalWeight}%
@@ -353,7 +362,7 @@ export function CreateCycleModal({
 
                 {!isWeightValid && (
                   <Alert icon={<IconAlertCircle size={16} />} color="red" variant="light">
-                    Total weight must equal 100%. Current: {totalWeight}%
+                    {t('performance.totalWeightInvalid', { total: totalWeight })}
                   </Alert>
                 )}
 
@@ -361,7 +370,7 @@ export function CreateCycleModal({
                   {form.values.criteria.map((_, index) => (
                     <Group key={index} align="center" gap={6} wrap="nowrap">
                       <TextInput
-                        placeholder="Criterion name"
+                        placeholder={t('performance.criterionNamePlaceholder')}
                         required
                         size="xs"
                         style={{ flex: 1, minWidth: 0 }}
@@ -369,7 +378,7 @@ export function CreateCycleModal({
                         {...form.getInputProps(`criteria.${index}.criterion`)}
                       />
                       <NumberInput
-                        placeholder="Weight %"
+                        placeholder={t('performance.weightPlaceholder')}
                         min={1}
                         max={100}
                         required
@@ -379,7 +388,7 @@ export function CreateCycleModal({
                         {...form.getInputProps(`criteria.${index}.weight`)}
                       />
                       <NumberInput
-                        placeholder="Max"
+                        placeholder={t('performance.maxPlaceholder')}
                         min={1}
                         max={10}
                         required
@@ -429,7 +438,7 @@ export function CreateCycleModal({
                     });
                   }}
                 >
-                  Add Criterion
+                  {t('performance.addCriterion')}
                 </Button>
               </>
             )}
@@ -437,19 +446,26 @@ export function CreateCycleModal({
         </Stepper.Step>
 
         {/* Step 2: Assignments */}
-        <Stepper.Step label="Assignments" description="Assign reviewers">
+        <Stepper.Step
+          label={t('performance.assignments')}
+          description={t('performance.assignReviewers')}
+        >
           <Stack gap="md" mt="md">
             {form.values.template_id ? (
               <>
                 <Alert icon={<IconAlertCircle size={16} />} color="blue" variant="light">
                   {filteredEmployeesForAssignment.length > 0 ? (
                     <>
-                      Found{' '}
-                      <strong>{filteredEmployeesForAssignment.length} active employees</strong>{' '}
-                      matching template criteria. Select employees and assign reviewers.
+                      {t('performance.foundActiveEmployeesPrefix')}{' '}
+                      <strong>
+                        {t('performance.activeEmployeesCount', {
+                          count: filteredEmployeesForAssignment.length,
+                        })}
+                      </strong>{' '}
+                      {t('performance.foundActiveEmployeesSuffix')}
                     </>
                   ) : (
-                    'No active employees match the template criteria.'
+                    t('performance.noMatchingActiveEmployees')
                   )}
                 </Alert>
 
@@ -457,8 +473,10 @@ export function CreateCycleModal({
                   <>
                     <Group justify="space-between">
                       <Text size="sm" fw={500}>
-                        Selected: {form.values.assignments.length} /{' '}
-                        {filteredEmployeesForAssignment.length}
+                        {t('performance.selectedAssignments', {
+                          selected: form.values.assignments.length,
+                          total: filteredEmployeesForAssignment.length,
+                        })}
                       </Text>
                       <Group gap="xs">
                         <Button
@@ -472,7 +490,7 @@ export function CreateCycleModal({
                             });
                           }}
                         >
-                          Select All
+                          {t('actions.selectAll')}
                         </Button>
                         <Button
                           size="xs"
@@ -482,7 +500,7 @@ export function CreateCycleModal({
                             form.setFieldValue('assignments', []);
                           }}
                         >
-                          Clear All
+                          {t('performance.clearAll')}
                         </Button>
                       </Group>
                     </Group>
@@ -524,7 +542,10 @@ export function CreateCycleModal({
                                       {deptName}
                                     </Text>
                                     <Text size="xs" c="dimmed">
-                                      {selectedInDept} / {deptEmployees.length} selected
+                                      {t('performance.selectedAssignments', {
+                                        selected: selectedInDept,
+                                        total: deptEmployees.length,
+                                      })}
                                     </Text>
                                   </div>
                                 </Group>
@@ -549,9 +570,9 @@ export function CreateCycleModal({
                                   <Table.Thead>
                                     <Table.Tr>
                                       <Table.Th style={{ width: 40 }}></Table.Th>
-                                      <Table.Th>Employee</Table.Th>
-                                      <Table.Th>Contract</Table.Th>
-                                      <Table.Th>Reviewer</Table.Th>
+                                      <Table.Th>{t('employee.employee')}</Table.Th>
+                                      <Table.Th>{t('employee.contractType')}</Table.Th>
+                                      <Table.Th>{t('performance.reviewer')}</Table.Th>
                                     </Table.Tr>
                                   </Table.Thead>
                                   <Table.Tbody>
@@ -589,7 +610,7 @@ export function CreateCycleModal({
                                           <Table.Td>
                                             {isSelected && assignmentIndex !== -1 ? (
                                               <Select
-                                                placeholder="Select reviewer"
+                                                placeholder={t('performance.selectReviewer')}
                                                 data={employeeOptions}
                                                 searchable
                                                 size="xs"
@@ -620,24 +641,23 @@ export function CreateCycleModal({
             ) : (
               <>
                 <Alert icon={<IconAlertCircle size={16} />} color="blue" variant="light">
-                  No template selected. You can manually add employee-reviewer assignments or skip
-                  this step.
+                  {t('performance.noTemplateSelectedAssignments')}
                 </Alert>
 
                 {form.values.assignments.map((_, index) => (
                   <Paper key={index} p="sm" withBorder>
                     <Group align="flex-start" wrap="nowrap">
                       <Select
-                        label="Employee"
-                        placeholder="Select employee"
+                        label={t('employee.employee')}
+                        placeholder={t('performance.selectEmployee')}
                         data={employeeOptions}
                         searchable
                         style={{ flex: 1 }}
                         {...form.getInputProps(`assignments.${index}.employee_id`)}
                       />
                       <Select
-                        label="Reviewer"
-                        placeholder="Select reviewer"
+                        label={t('performance.reviewer')}
+                        placeholder={t('performance.selectReviewer')}
                         data={employeeOptions}
                         searchable
                         style={{ flex: 1 }}
@@ -667,7 +687,7 @@ export function CreateCycleModal({
                     form.insertListItem('assignments', { employee_id: '', reviewer_id: '' });
                   }}
                 >
-                  Add Assignment
+                  {t('performance.addAssignment')}
                 </Button>
               </>
             )}
@@ -675,58 +695,68 @@ export function CreateCycleModal({
         </Stepper.Step>
 
         {/* Step 3: Review */}
-        <Stepper.Step label="Review" description="Confirm details">
+        <Stepper.Step
+          label={t('leaveRequest.review')}
+          description={t('performance.confirmDetails')}
+        >
           <Stack gap="md" mt="md">
             <Paper p="md" withBorder>
               <Stack gap="xs">
                 <Group justify="space-between">
                   <Text size="sm" c="dimmed">
-                    Cycle Name
+                    {t('performance.cycleName')}
                   </Text>
                   <Text fw={500}>{form.values.title}</Text>
                 </Group>
                 <Group justify="space-between">
                   <Text size="sm" c="dimmed">
-                    Period
+                    {t('common.period')}
                   </Text>
                   <Text>
-                    {PERIOD_LABEL[form.values.period_type]} - {form.values.period_year} Q
+                    {form.values.period_type === 'monthly'
+                      ? t('performance.periodMonthly')
+                      : t('performance.periodQuarterly')}{' '}
+                    - {form.values.period_year} {form.values.period_type === 'monthly' ? 'M' : 'Q'}
                     {form.values.period_seq}
                   </Text>
                 </Group>
                 <Group justify="space-between">
                   <Text size="sm" c="dimmed">
-                    Announce Date
+                    {t('performance.announceDate')}
                   </Text>
                   <Text>
                     {form.values.announce_date
                       ? new Date(form.values.announce_date).toLocaleDateString('en-GB')
-                      : 'N/A'}
+                      : t('common.notAvailable')}
                   </Text>
                 </Group>
                 <Group justify="space-between">
                   <Text size="sm" c="dimmed">
-                    Template
+                    {t('common.template')}
                   </Text>
                   <Text>
                     {form.values.template_id
                       ? templates.find((t) => t.id === form.values.template_id)?.title
-                      : 'No template'}
+                      : t('performance.noTemplate')}
                   </Text>
                 </Group>
                 {form.values.customCriteria && (
                   <Group justify="space-between">
                     <Text size="sm" c="dimmed">
-                      Custom Criteria
+                      {t('performance.customCriteria')}
                     </Text>
-                    <Badge color="orange">{form.values.criteria.length} criteria</Badge>
+                    <Badge color="orange">
+                      {t('performance.criteriaCount', { count: form.values.criteria.length })}
+                    </Badge>
                   </Group>
                 )}
                 <Group justify="space-between">
                   <Text size="sm" c="dimmed">
-                    Assignments
+                    {t('performance.assignments')}
                   </Text>
-                  <Badge>{form.values.assignments.length} assignments</Badge>
+                  <Badge>
+                    {t('performance.assignmentsCount', { count: form.values.assignments.length })}
+                  </Badge>
                 </Group>
               </Stack>
             </Paper>
@@ -745,17 +775,17 @@ export function CreateCycleModal({
             }
           }}
         >
-          {activeStep === 0 ? 'Cancel' : 'Back'}
+          {activeStep === 0 ? t('common.cancel') : t('actions.back')}
         </Button>
         {activeStep < 2 ? (
-          <Button onClick={handleNextStep}>Next Step</Button>
+          <Button onClick={handleNextStep}>{t('performance.nextStep')}</Button>
         ) : (
           <Button
             onClick={handleSubmitForm}
             loading={isLoading}
             disabled={form.values.customCriteria && !isWeightValid}
           >
-            {mode === 'create' ? 'Create Cycle' : 'Update Cycle'}
+            {mode === 'create' ? t('performance.createCycle') : t('performance.updateCycle')}
           </Button>
         )}
       </Group>

@@ -16,8 +16,10 @@ import { mapPositionToFormValues } from '../utils/position-mapper';
 import { notify } from '../../../components/Notification';
 import type { IPosition, PositionFormValues } from '../../positions/types';
 import { LEVEL_LABEL, LEVEL_COLOR, type LevelPosition } from '@/constant';
+import { useTranslation } from 'react-i18next';
 
 export default function PositionsPage() {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -57,7 +59,9 @@ export default function PositionsPage() {
   };
 
   const handleSubmit = async (values: PositionFormValues, id?: string) => {
-    const notiId = notify.loading(isEdit ? 'Updating position...' : 'Creating position...');
+    const notiId = notify.loading(
+      isEdit ? t('position.updatingPosition') : t('position.creatingPosition'),
+    );
 
     try {
       if (isEdit && id) {
@@ -70,7 +74,7 @@ export default function PositionsPage() {
       }
 
       notify.success(notiId, {
-        message: isEdit ? 'Position updated successfully' : 'Position created successfully',
+        message: isEdit ? t('position.positionUpdated') : t('position.positionCreated'),
       });
 
       setOpened(false);
@@ -79,7 +83,7 @@ export default function PositionsPage() {
       notify.error(notiId, {
         message:
           e?.response?.data?.message ||
-          (isEdit ? 'Update position failed' : 'Create position failed'),
+          (isEdit ? t('position.positionUpdateFailed') : t('position.positionCreateFailed')),
       });
     }
   };
@@ -118,13 +122,13 @@ export default function PositionsPage() {
   const columns: TableColumn<IPosition>[] = [
     {
       key: 'position_name',
-      title: 'Position Name',
+      title: t('position.positionName'),
       sortable: true,
       width: 250,
     },
     {
       key: 'level',
-      title: 'Level',
+      title: t('position.level'),
       sortable: true,
       width: 150,
       render: (row) => (
@@ -135,26 +139,31 @@ export default function PositionsPage() {
     },
     {
       key: 'department_id',
-      title: 'Department',
+      title: t('position.department'),
       sortable: true,
       width: 200,
       render: (row) => {
         const deptName = departmentMap.get(row.department_id);
-        return deptName || '-';
+        return deptName || t('position.noDepartment');
       },
     },
     {
       key: 'description',
-      title: 'Description',
-      render: (row) => row.description || '-',
+      title: t('position.description'),
+      render: (row) => row.description || t('position.noDescription'),
     },
     {
       key: 'action',
-      title: 'Actions',
+      title: t('position.actions'),
       align: 'center',
       width: 100,
       render: (row) => (
-        <ActionIcon variant="subtle" color="gray" onClick={() => handleEdit(row)} title="Edit">
+        <ActionIcon
+          variant="subtle"
+          color="gray"
+          onClick={() => handleEdit(row)}
+          title={t('common.edit')}
+        >
           <IconEdit size={18} />
         </ActionIcon>
       ),
@@ -162,28 +171,33 @@ export default function PositionsPage() {
   ];
 
   if (error) {
-    return <ErrorState message={`Error loading positions: ${error.message}`} onRetry={refetch} />;
+    return (
+      <ErrorState
+        message={t('position.errorLoadingPositions', { message: error.message })}
+        onRetry={refetch}
+      />
+    );
   }
 
   return (
     <Stack gap="md">
       <PageHeader
-        title="Positions"
-        description="Define roles and levels across departments"
+        title={t('pages.positionsTitle')}
+        description={t('pages.positionsDescription')}
         right={
           <Group gap="md" justify="space-between">
             <Button leftSection={<IconPlus size={18} />} onClick={handleAdd}>
-              Add Position
+              {t('actions.addPosition')}
             </Button>
             <TextInput
-              placeholder="Search positions..."
+              placeholder={t('fields.searchPositions')}
               leftSection={<IconSearch size={18} />}
               value={search}
               onChange={(e) => handleSearch(e.currentTarget.value)}
             />
             <Select
               checkIconPosition="right"
-              placeholder="Filter by department"
+              placeholder={t('fields.filterByDepartment')}
               clearable
               data={departments.map((dept) => ({
                 value: dept.id,

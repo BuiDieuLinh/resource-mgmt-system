@@ -28,6 +28,7 @@ import { useState } from 'react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { useGetMyCycles, useGetMyReview } from '../api';
 import type { IReviewCycle } from '../types';
+import { useTranslation } from 'react-i18next';
 
 const STATUS_COLOR: Record<string, string> = {
   draft: 'gray',
@@ -35,13 +36,8 @@ const STATUS_COLOR: Record<string, string> = {
   published: 'green',
 };
 
-const STATUS_LABEL: Record<string, string> = {
-  draft: 'In Progress',
-  submitted: 'Under Review',
-  published: 'Published',
-};
-
 function CycleReviewRow({ cycle }: { cycle: IReviewCycle }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const { data: review, isLoading } = useGetMyReview(open ? cycle.id : '');
   const { colorScheme } = useMantineColorScheme();
@@ -107,7 +103,7 @@ function CycleReviewRow({ cycle }: { cycle: IReviewCycle }) {
           <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
             {review && (
               <Badge size="xs" color={STATUS_COLOR[review.status]} variant="dot">
-                {STATUS_LABEL[review.status]}
+                {t(`performance.myReviews.status.${review.status}` as const)}
               </Badge>
             )}
             {open ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
@@ -136,7 +132,7 @@ function CycleReviewRow({ cycle }: { cycle: IReviewCycle }) {
             </Center>
           ) : !review ? (
             <Alert icon={<IconInfoCircle size={14} />} color="blue" variant="light" p="xs" mt="xs">
-              <Text size="xs">No review available for this cycle yet.</Text>
+              <Text size="xs">{t('performance.myReviews.noReviewYet')}</Text>
             </Alert>
           ) : review.status !== 'published' ? (
             <Alert
@@ -147,10 +143,10 @@ function CycleReviewRow({ cycle }: { cycle: IReviewCycle }) {
               mt="xs"
             >
               <Text size="xs" fw={500}>
-                Review in progress
+                {t('performance.myReviews.reviewInProgress')}
               </Text>
               <Text size="xs" c="dimmed" mt={2}>
-                Your manager is working on your review. You'll be notified once it's published.
+                {t('performance.myReviews.reviewInProgressDescription')}
               </Text>
             </Alert>
           ) : (
@@ -159,7 +155,7 @@ function CycleReviewRow({ cycle }: { cycle: IReviewCycle }) {
               <Group gap="xl">
                 <Box ta="center">
                   <Text size="xs" c="dimmed">
-                    Present
+                    {t('performance.myReviews.present')}
                   </Text>
                   <Text size="sm" fw={700} c="blue">
                     {review.attendance_days ?? '—'}
@@ -167,7 +163,7 @@ function CycleReviewRow({ cycle }: { cycle: IReviewCycle }) {
                 </Box>
                 <Box ta="center">
                   <Text size="xs" c="dimmed">
-                    Late
+                    {t('performance.myReviews.late')}
                   </Text>
                   <Text size="sm" fw={700} c="orange">
                     {review.late_count ?? '—'}
@@ -175,7 +171,7 @@ function CycleReviewRow({ cycle }: { cycle: IReviewCycle }) {
                 </Box>
                 <Box ta="center">
                   <Text size="xs" c="dimmed">
-                    Absent
+                    {t('performance.myReviews.absent')}
                   </Text>
                   <Text size="sm" fw={700} c="red">
                     {review.absent_count ?? '—'}
@@ -183,7 +179,7 @@ function CycleReviewRow({ cycle }: { cycle: IReviewCycle }) {
                 </Box>
                 <Box ta="center">
                   <Text size="xs" c="dimmed">
-                    OT (hrs)
+                    {t('performance.myReviews.otHours')}
                   </Text>
                   <Text size="sm" fw={700} c="teal">
                     {((review.overtime_minutes ?? 0) / 60).toFixed(1)}
@@ -203,7 +199,7 @@ function CycleReviewRow({ cycle }: { cycle: IReviewCycle }) {
                       tt="uppercase"
                       style={{ letterSpacing: '0.05em' }}
                     >
-                      Criteria Notes
+                      {t('performance.myReviews.criteriaNotes')}
                     </Text>
                   </Group>
                   {review.score_details
@@ -244,7 +240,7 @@ function CycleReviewRow({ cycle }: { cycle: IReviewCycle }) {
                   <Group gap="xs" mb={4}>
                     <IconTrophy size={13} color="var(--mantine-color-yellow-7)" />
                     <Text size="xs" fw={600} c="yellow.7">
-                      Key Achievements
+                      {t('performance.keyAchievements')}
                     </Text>
                   </Group>
                   <Text size="xs" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
@@ -267,7 +263,7 @@ function CycleReviewRow({ cycle }: { cycle: IReviewCycle }) {
                   <Group gap="xs" mb={4}>
                     <IconMessageCircle size={13} color="var(--mantine-color-blue-6)" />
                     <Text size="xs" fw={600} c="blue.7">
-                      Manager Feedback
+                      {t('performance.myReviews.managerFeedback')}
                     </Text>
                   </Group>
                   <Text size="xs" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
@@ -278,7 +274,7 @@ function CycleReviewRow({ cycle }: { cycle: IReviewCycle }) {
 
               {!hasFeedback && (
                 <Text size="xs" c="dimmed" ta="center" py="xs">
-                  No feedback provided for this review.
+                  {t('performance.myReviews.noFeedback')}
                 </Text>
               )}
             </Stack>
@@ -290,6 +286,7 @@ function CycleReviewRow({ cycle }: { cycle: IReviewCycle }) {
 }
 
 export default function MyReviewsPage() {
+  const { t } = useTranslation();
   const { data: cycles = [], isLoading: cyclesLoading } = useGetMyCycles();
 
   const myCycles = (cycles as IReviewCycle[]).filter(
@@ -299,8 +296,8 @@ export default function MyReviewsPage() {
   return (
     <Stack gap="md">
       <PageHeader
-        title="My Reviews"
-        description="Your performance evaluation history and feedback from your manager"
+        title={t('nav.myReviews')}
+        description={t('performance.myReviews.pageDescription')}
       />
 
       {cyclesLoading ? (
@@ -314,7 +311,7 @@ export default function MyReviewsPage() {
               <IconStar size={24} />
             </ThemeIcon>
             <Text c="dimmed" size="sm">
-              No review cycles available yet
+              {t('performance.myReviews.noCycles')}
             </Text>
           </Stack>
         </Center>

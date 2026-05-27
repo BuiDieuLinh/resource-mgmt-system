@@ -1,5 +1,6 @@
 import { notifications } from '@mantine/notifications';
 import { IconCheck, IconX, IconInfoCircle, IconAlertTriangle } from '@tabler/icons-react';
+import i18n from '@/i18n';
 
 type NotifyOptions = {
   title?: string;
@@ -7,17 +8,17 @@ type NotifyOptions = {
 };
 
 export const notify = {
-  loading(message = 'Please wait...') {
+  loading(message = i18n.t('notifications.pleaseWait')) {
     return notifications.show({
       loading: true,
-      title: 'Processing',
+      title: i18n.t('notifications.processing'),
       message,
       autoClose: false,
       withCloseButton: false,
     });
   },
 
-  success(id: string, { title = 'Success', message }: NotifyOptions) {
+  success(id: string, { title = i18n.t('notifications.success'), message }: NotifyOptions) {
     notifications.update({
       id,
       title,
@@ -28,7 +29,7 @@ export const notify = {
     });
   },
 
-  error(id: string, { title = 'Error', message }: NotifyOptions) {
+  error(id: string, { title = i18n.t('notifications.error'), message }: NotifyOptions) {
     notifications.update({
       id,
       title,
@@ -39,7 +40,7 @@ export const notify = {
     });
   },
 
-  info({ title = 'Info', message }: NotifyOptions) {
+  info({ title = i18n.t('notifications.info'), message }: NotifyOptions) {
     notifications.show({
       title,
       message,
@@ -49,7 +50,7 @@ export const notify = {
     });
   },
 
-  warning({ title = 'Warning', message }: NotifyOptions) {
+  warning({ title = i18n.t('notifications.warning'), message }: NotifyOptions) {
     notifications.show({
       title,
       message,

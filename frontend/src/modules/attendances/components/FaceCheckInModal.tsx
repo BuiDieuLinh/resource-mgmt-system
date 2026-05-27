@@ -22,6 +22,7 @@ import {
 } from '@/utils/face-api.util';
 import { useFaceCheckIn, useFaceCheckOut } from '../api/face-check';
 import { PRIMARY_COLOR } from '@/theme';
+import { useTranslation } from 'react-i18next';
 
 interface FaceCheckInModalProps {
   opened: boolean;
@@ -44,11 +45,18 @@ export function FaceCheckInModal({
   longitude,
   action = 'check-in',
 }: FaceCheckInModalProps) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const isCheckOut = action === 'check-out';
-  const modalTitle = isCheckOut ? 'Face Verification Check-Out' : 'Face Verification Check-In';
-  const successTitle = isCheckOut ? 'Check-out successful' : 'Check-in successful';
-  const failTitle = isCheckOut ? 'Check-out failed' : 'Check-in failed';
+  const modalTitle = isCheckOut
+    ? t('attendance.faceCheck.modalTitleCheckOut')
+    : t('attendance.faceCheck.modalTitleCheckIn');
+  const successTitle = isCheckOut
+    ? t('attendance.faceCheck.successTitleCheckOut')
+    : t('attendance.faceCheck.successTitleCheckIn');
+  const failTitle = isCheckOut
+    ? t('attendance.faceCheck.failTitleCheckOut')
+    : t('attendance.faceCheck.failTitleCheckIn');
   const [modelsLoading, setModelsLoading] = useState(true);
   const [cameraReady, setCameraReady] = useState(false);
   const [capturing, setCapturing] = useState(false);
@@ -97,8 +105,9 @@ export function FaceCheckInModal({
         };
       }
     } catch (error: any) {
-      notify.error('Camera access failed', {
-        message: error.message || 'Please grant camera permission.',
+      notify.error('camera-access-failed', {
+        title: t('attendance.faceCheck.cameraAccessFailed'),
+        message: error.message || t('attendance.faceCheck.grantCameraPermission'),
       });
       setModelsLoading(false);
       onClose();
@@ -130,13 +139,16 @@ export function FaceCheckInModal({
 
       const descriptor = await extractFaceDescriptor(selfieCanvas);
       if (!descriptor) {
-        const message = 'Please ensure your face is clearly visible and try again.';
+        const message = t('attendance.faceCheck.noFaceDetectedMessage');
         setVerificationResult({
           status: 'error',
-          title: 'No face detected',
+          title: t('attendance.faceCheck.noFaceDetectedTitle'),
           message,
         });
-        onResult?.({ status: 'error', message: `No face detected. ${message}` });
+        onResult?.({
+          status: 'error',
+          message: `${t('attendance.faceCheck.noFaceDetectedTitle')}. ${message}`,
+        });
         setLoading(false);
         setCapturing(false);
         return;
@@ -160,10 +172,15 @@ export function FaceCheckInModal({
         typeof data?.face_distance === 'number' ? data.face_distance.toFixed(3) : null;
       const threshold =
         typeof data?.face_threshold === 'number' ? data.face_threshold.toFixed(2) : null;
-      const detail = distance && threshold ? `Distance ${distance} / threshold ${threshold}` : '';
+      const detail =
+        distance && threshold
+          ? t('attendance.faceCheck.distanceDetail', { distance, threshold })
+          : '';
       const message = detail
-        ? `Face matched. ${detail}.`
-        : `${action === 'check-out' ? 'Check-out' : 'Check-in'} was recorded successfully.`;
+        ? t('attendance.faceCheck.faceMatched', { detail })
+        : isCheckOut
+          ? t('attendance.faceCheck.checkOutRecorded')
+          : t('attendance.faceCheck.checkInRecorded');
 
       setVerificationResult({
         status: 'success',
@@ -207,9 +224,7 @@ export function FaceCheckInModal({
     >
       <Stack gap="md">
         <Alert icon={<IconAlertCircle size={16} />} color="blue" variant="light">
-          <Text size="xs">
-            Keep your face centered, well lit and still until the capture completes.
-          </Text>
+          <Text size="xs">{t('attendance.faceCheck.keepFaceCentered')}</Text>
         </Alert>
 
         {modelsLoading ? (
@@ -217,7 +232,7 @@ export function FaceCheckInModal({
             <Stack align="center" gap="sm">
               <Loader size="lg" />
               <Text size="sm" c="dimmed">
-                Loading face recognition models...
+                {t('attendance.faceCheck.loadingModels')}
               </Text>
             </Stack>
           </Center>
@@ -233,6 +248,7 @@ export function FaceCheckInModal({
                 borderRadius: 8,
                 backgroundColor: '#000',
                 aspectRatio: '4/2',
+                transform: 'scaleX(-1)',
               }}
             />
 
@@ -269,7 +285,7 @@ export function FaceCheckInModal({
         {loading && (
           <Box>
             <Text size="sm" mb="xs">
-              Verifying face...
+              {t('attendance.faceCheck.verifyingFace')}
             </Text>
             <Progress value={100} animated />
           </Box>
@@ -289,7 +305,9 @@ export function FaceCheckInModal({
                 <Text size="sm">{verificationResult.message}</Text>
               </Box>
               <Badge color={verificationResult.status === 'success' ? 'teal' : 'red'}>
-                {verificationResult.status === 'success' ? 'Matched' : 'Not matched'}
+                {verificationResult.status === 'success'
+                  ? t('attendance.faceCheck.matched')
+                  : t('attendance.faceCheck.notMatched')}
               </Badge>
             </Group>
           </Alert>
@@ -302,7 +320,7 @@ export function FaceCheckInModal({
             disabled={loading || capturing}
             leftSection={<IconX size={16} />}
           >
-            Close
+            {t('common.close')}
           </Button>
           <Button
             leftSection={<IconCamera size={16} />}
@@ -310,7 +328,11 @@ export function FaceCheckInModal({
             disabled={!cameraReady || loading || capturing}
             loading={loading || capturing}
           >
-            {capturing ? 'Capturing...' : isCheckOut ? 'Capture & Check Out' : 'Capture & Check In'}
+            {capturing
+              ? t('attendance.faceCheck.capturing')
+              : isCheckOut
+                ? t('attendance.faceCheck.captureCheckOut')
+                : t('attendance.faceCheck.captureCheckIn')}
           </Button>
         </Group>
       </Stack>

@@ -15,6 +15,7 @@ import {
   ScrollArea,
   Stack,
   useMantineColorScheme,
+  SegmentedControl,
 } from '@mantine/core';
 import {
   IconChevronRight,
@@ -29,6 +30,7 @@ import {
   IconLogout,
   IconChevronDown,
   IconHome,
+  IconLanguage,
 } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
@@ -40,7 +42,11 @@ import { myProfileUrl, settingsUrl } from '@/routes/url';
 import { useGetNotifications, useMarkRead, useMarkAllRead } from '@/modules/notifications/api';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/vi';
+import 'dayjs/locale/en';
 import { EMPLOYEE_ROLE } from '@/constant';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 dayjs.extend(relativeTime);
 
 interface NavbarProps {
@@ -49,6 +55,7 @@ interface NavbarProps {
 }
 
 export function Navbar({ collapsed, onToggle }: NavbarProps) {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
@@ -63,6 +70,8 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
 
   const notifications = notiData?.notifications ?? [];
   const unread = notiData?.unread_count ?? 0;
+  const currentLanguage = i18n.language?.startsWith('en') ? 'en' : 'vi';
+  dayjs.locale(currentLanguage);
 
   const userRoles = user?.roles ?? [];
   const canSee = (roles?: string[]) => !roles?.length || roles.some((r) => userRoles.includes(r));
@@ -72,6 +81,11 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
       children: m.children?.filter((c) => canSee(c.roles)),
     }))
     .filter((m) => m.path || (m.children && m.children.length > 0));
+
+  const resolveNotificationLink = (link?: string | null) => {
+    if (!link) return null;
+    return link.startsWith('/') ? link : `/${link}`;
+  };
 
   const footerRow = (
     icon: React.ReactNode,
@@ -110,7 +124,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
         <Group gap="sm" justify={collapsed ? 'center' : 'space-between'} wrap="nowrap">
           {' '}
           {collapsed ? (
-            <Tooltip label="Expand" position="right" withArrow>
+            <Tooltip label={t('nav.expand')} position="right" withArrow>
               <ActionIcon variant="subtle" color="gray" size="sm" onClick={onToggle}>
                 <IconLayoutSidebarLeftExpand size={18} />
               </ActionIcon>
@@ -122,10 +136,10 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
                   <IconHierarchy size={20} />
                 </ThemeIcon>
                 <Text fw={700} size="md" style={{ letterSpacing: '-0.3px' }}>
-                  RMS Core
+                  {t('nav.brand')}
                 </Text>
               </Group>
-              <Tooltip label="Collapse" position="right" withArrow>
+              <Tooltip label={t('nav.collapse')} position="right" withArrow>
                 <ActionIcon variant="subtle" color="gray" size="sm" onClick={onToggle}>
                   <IconLayoutSidebarLeftCollapse size={18} />
                 </ActionIcon>
@@ -164,7 +178,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
                     </UnstyledButton>
                   </Menu.Target>
                   <Menu.Dropdown>
-                    <Menu.Label>{menu.label}</Menu.Label>
+                    <Menu.Label>{menu.labelKey ? t(menu.labelKey) : menu.label}</Menu.Label>
                     {menu.children?.map((child) => (
                       <Menu.Item
                         key={child.path}
@@ -178,7 +192,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
                               : undefined,
                         }}
                       >
-                        {child.label}
+                        {child.labelKey ? t(child.labelKey) : child.label}
                       </Menu.Item>
                     ))}
                   </Menu.Dropdown>
@@ -187,7 +201,12 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
             }
 
             return (
-              <Tooltip key={menu.label} label={menu.label} position="right" withArrow>
+              <Tooltip
+                key={menu.label}
+                label={menu.labelKey ? t(menu.labelKey) : menu.label}
+                position="right"
+                withArrow
+              >
                 <UnstyledButton
                   className={classes.collapsedItem}
                   data-active={isActive || undefined}
@@ -213,7 +232,6 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
           return (
             <NavLink
               key={menu.label}
-              label={menu.label}
               active={isActive}
               opened={opened}
               leftSection={
@@ -238,6 +256,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
                 )
               }
               classNames={{ root: classes.root, label: classes.label, children: classes.children }}
+              label={menu.labelKey ? t(menu.labelKey) : menu.label}
               onClick={() => {
                 if (hasChildren) setOpened((o) => !o);
                 else if (menu.path) navigate(menu.path);
@@ -246,7 +265,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
               {menu.children?.map((child) => (
                 <NavLink
                   key={child.path}
-                  label={child.label}
+                  label={child.labelKey ? t(child.labelKey) : child.label}
                   active={location.pathname === child.path}
                   onClick={() => navigate(child.path!)}
                 />
@@ -258,12 +277,50 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
 
       <div className={classes.footer}>
         {footerRow(
+          collapsed ? (
+            <Indicator
+              inline
+              label={currentLanguage.toUpperCase()}
+              size={16}
+              offset={1}
+              color="gray"
+              classNames={{ indicator: classes.languageBadge }}
+            >
+              <IconLanguage size={18} color="var(--mantine-color-dimmed)" />
+            </Indicator>
+          ) : (
+            <IconLanguage size={18} color="var(--mantine-color-dimmed)" />
+          ),
+          collapsed
+            ? `${t('common.language')}: ${currentLanguage.toUpperCase()}`
+            : t('common.language'),
+          collapsed ? undefined : (
+            <SegmentedControl
+              size="xs"
+              radius="xl"
+              value={currentLanguage}
+              onChange={(value) => i18n.changeLanguage(value)}
+              data={[
+                { label: 'VI', value: 'vi' },
+                { label: 'EN', value: 'en' },
+              ]}
+              classNames={{
+                root: classes.languageSwitch,
+                indicator: classes.languageIndicator,
+                label: classes.languageSwitchLabel,
+              }}
+            />
+          ),
+          collapsed ? () => i18n.changeLanguage(currentLanguage === 'vi' ? 'en' : 'vi') : undefined,
+        )}
+
+        {footerRow(
           colorScheme === 'dark' ? (
             <IconSun size={18} color="var(--mantine-color-dimmed)" />
           ) : (
             <IconMoon size={18} color="var(--mantine-color-dimmed)" />
           ),
-          colorScheme === 'dark' ? 'Light mode' : 'Dark mode',
+          colorScheme === 'dark' ? t('common.lightMode') : t('common.darkMode'),
           <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => toggleColorScheme()}>
             {colorScheme === 'dark' ? <IconSun size={17} /> : <IconMoon size={17} />}
           </ActionIcon>,
@@ -277,7 +334,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
                 <Indicator label={unread} size={15} disabled={unread === 0} color="red" offset={2}>
                   <IconBell size={18} color="var(--mantine-color-dimmed)" />
                 </Indicator>,
-                'Notifications',
+                t('common.notifications'),
                 unread > 0 ? (
                   <ThemeIcon
                     size={18}
@@ -295,12 +352,12 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
           <Menu.Dropdown>
             <Group justify="space-between" px="sm" py={8}>
               <Text size="sm" fw={600}>
-                Notifications
+                {t('common.notifications')}
               </Text>
               {unread > 0 && (
                 <UnstyledButton onClick={() => markAllReadMutation.mutate()}>
                   <Text size="xs" c="deepPurple" fw={500}>
-                    Mark all read
+                    {t('common.markAllRead')}
                   </Text>
                 </UnstyledButton>
               )}
@@ -310,7 +367,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
               <Stack gap={0}>
                 {notifications.length === 0 ? (
                   <Text size="xs" c="dimmed" ta="center" py="md" px="sm">
-                    No notifications yet
+                    {t('common.noNotificationsYet')}
                   </Text>
                 ) : (
                   notifications.map((n) => (
@@ -325,7 +382,8 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
                       }}
                       onClick={() => {
                         if (!n.is_read) markReadMutation.mutate(n.id);
-                        if (n.link) navigate(n.link);
+                        const target = resolveNotificationLink(n.link);
+                        if (target) navigate(target);
                       }}
                     >
                       <Group gap="sm" wrap="nowrap" align="flex-start" w={280}>
@@ -379,14 +437,14 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
               leftSection={<IconUser style={{ width: rem(14) }} />}
               onClick={() => navigate(myProfileUrl)}
             >
-              My Profile
+              {t('nav.myProfile')}
             </Menu.Item>
             {!isSettingDisabled && (
               <Menu.Item
                 leftSection={<IconSettings style={{ width: rem(14) }} />}
                 onClick={() => navigate(settingsUrl)}
               >
-                Settings
+                {t('nav.settings')}
               </Menu.Item>
             )}
             <Menu.Divider />
@@ -394,14 +452,14 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
               leftSection={<IconHome style={{ width: rem(14) }} />}
               onClick={() => window.open(AUTH_APP_URL, '_blank')}
             >
-              Back to Home
+              {t('nav.backToHome')}
             </Menu.Item>
             <Menu.Item
               color="red"
               leftSection={<IconLogout style={{ width: rem(14) }} />}
               onClick={logout}
             >
-              Sign out
+              {t('nav.signOut')}
             </Menu.Item>
           </Menu.Dropdown>
         </Menu>

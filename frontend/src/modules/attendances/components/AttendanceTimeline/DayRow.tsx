@@ -6,6 +6,7 @@ import { fmtTime, leaveOverlapsDay } from '../../utils/format';
 import { TimelineBar } from './TimelineBar';
 import { COL_DATE, COL_TIME, COL_BADGE } from './timeline.constants';
 import { AttendanceDetailModal } from '../AttendanceDetailModal';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   day: Date;
@@ -38,6 +39,7 @@ export function DayRow({
   workEndMin,
   canViewAttendanceDetails = false,
 }: Props) {
+  const { t, i18n } = useTranslation();
   const [detailOpened, setDetailOpened] = useState(false);
   const { colorScheme } = useMantineColorScheme();
   const dark = colorScheme === 'dark';
@@ -63,7 +65,8 @@ export function DayRow({
   const dayIso = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
   const holiday = holidays.find((h) => h.holiday_date.slice(0, 10) === dayIso);
 
-  const dayLabel = day.toLocaleDateString('vi-VN', {
+  const locale = i18n.language?.startsWith('en') ? 'en-US' : 'vi-VN';
+  const dayLabel = day.toLocaleDateString(locale, {
     weekday: 'short',
     day: '2-digit',
     month: '2-digit',
@@ -120,7 +123,7 @@ export function DayRow({
               </Tooltip>
             )}
             {canOpenDetail && (
-              <Tooltip label="View attendance detail" withArrow>
+              <Tooltip label={t('attendance.timeline.viewAttendanceDetail')} withArrow>
                 <IconMapPin size={13} color="var(--mantine-color-blue-6)" />
               </Tooltip>
             )}
@@ -143,7 +146,9 @@ export function DayRow({
           <Group gap={4} wrap="nowrap" justify="flex-end">
             {holiday && (
               <Badge size="xs" color="orange" variant="light">
-                {holiday.is_paid ? 'Holiday' : 'Unpaid'}
+                {holiday.is_paid
+                  ? t('attendance.timeline.holiday')
+                  : t('attendance.timeline.unpaid')}
               </Badge>
             )}
             {lateMin > 0 && (
@@ -167,7 +172,7 @@ export function DayRow({
               </Badge>
             )}
             {dayLeaves.map((lr) => (
-              <Tooltip key={lr.id} label="View leave request" withArrow>
+              <Tooltip key={lr.id} label={t('attendance.timeline.viewLeaveRequest')} withArrow>
                 <Badge
                   size="xs"
                   color={LEAVE_STATUS_COLOR[lr.status] ?? 'gray'}

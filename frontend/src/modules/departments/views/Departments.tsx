@@ -41,8 +41,10 @@ import {
   CollapsibleTable,
   type CollapsibleTableColumn,
 } from '@/components/CollapsibleTable/CollapsibleTable';
+import { useTranslation } from 'react-i18next';
 
 export default function DepartmentsPage() {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -80,7 +82,9 @@ export default function DepartmentsPage() {
   const deletePositionMutation = useDeletePosition();
 
   const handleSubmit = async (values: DepartmentFormValues, id?: string) => {
-    const notiId = notify.loading(isEdit ? 'Updating department...' : 'Creating department...');
+    const notiId = notify.loading(
+      isEdit ? t('department.updatingDepartment') : t('department.creatingDepartment'),
+    );
     try {
       if (isEdit && id) {
         await updateMutation.mutateAsync({ id, payload: values });
@@ -88,61 +92,71 @@ export default function DepartmentsPage() {
         await createMutation.mutateAsync(values);
       }
       notify.success(notiId, {
-        message: isEdit ? 'Department updated successfully' : 'Department created successfully',
+        message: isEdit ? t('department.departmentUpdated') : t('department.departmentCreated'),
       });
       setOpened(false);
       setEditDepartment(null);
     } catch (e: any) {
       notify.error(notiId, {
-        message: e?.response?.data?.message || (isEdit ? 'Update failed' : 'Create failed'),
+        message:
+          e?.response?.data?.message ||
+          (isEdit
+            ? t('department.departmentUpdateFailed')
+            : t('department.departmentCreateFailed')),
       });
     }
   };
 
   const handleAddPosition = async (values: PositionFormValues) => {
-    const notiId = notify.loading('Creating position...');
+    const notiId = notify.loading(t('department.creatingPosition'));
     try {
       await createPositionMutation.mutateAsync({
         ...values,
         department_id: selectedDepartmentForPosition!.id,
       });
-      notify.success(notiId, { message: 'Position created successfully' });
+      notify.success(notiId, { message: t('department.positionCreated') });
       setAddPositionModal(false);
       setSelectedDepartmentForPosition(null);
       refetch();
     } catch (e: any) {
-      notify.error(notiId, { message: e?.response?.data?.message || 'Create failed' });
+      notify.error(notiId, {
+        message: e?.response?.data?.message || t('department.positionCreateFailed'),
+      });
     }
   };
 
   const handleEditPosition = async (values: PositionFormValues, id?: string) => {
-    const notiId = notify.loading('Updating position...');
+    const notiId = notify.loading(t('department.updatingPosition'));
     try {
       await updatePositionMutation.mutateAsync({ id: id!, payload: values });
-      notify.success(notiId, { message: 'Position updated successfully' });
+      notify.success(notiId, { message: t('department.positionUpdated') });
       setEditPositionModal(false);
       setSelectedPosition(null);
       refetch();
     } catch (e: any) {
-      notify.error(notiId, { message: e?.response?.data?.message || 'Update failed' });
+      notify.error(notiId, {
+        message: e?.response?.data?.message || t('department.positionUpdateFailed'),
+      });
     }
   };
 
   const handleDeletePosition = (id: string, positionName: string) => {
     confirm({
-      title: 'Delete Position',
-      message: `Are you sure you want to delete position "${positionName}"? This action cannot be undone.`,
-      confirmLabel: 'Delete',
-      cancelLabel: 'Cancel',
+      title: t('department.deletePositionTitle'),
+      message: t('department.deletePositionMessage', { name: positionName }),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
       type: 'delete',
       onConfirm: async () => {
-        const notiId = notify.loading('Deleting position...');
+        const notiId = notify.loading(t('department.deletingPosition'));
         try {
           await deletePositionMutation.mutateAsync(id);
-          notify.success(notiId, { message: 'Position deleted successfully' });
+          notify.success(notiId, { message: t('department.positionDeleted') });
           refetch();
         } catch (e: any) {
-          notify.error(notiId, { message: e?.response?.data?.message || 'Delete failed' });
+          notify.error(notiId, {
+            message: e?.response?.data?.message || t('department.positionDeleteFailed'),
+          });
         }
       },
     });
@@ -168,7 +182,7 @@ export default function DepartmentsPage() {
   const columns: CollapsibleTableColumn<IDepartment>[] = [
     {
       key: 'department_code',
-      title: 'Code',
+      title: t('department.code'),
       sortable: true,
       width: 120,
       render: (row) => (
@@ -179,7 +193,7 @@ export default function DepartmentsPage() {
     },
     {
       key: 'department_name',
-      title: 'Department Name',
+      title: t('department.departmentName'),
       sortable: true,
       width: 250,
       render: (row) => (
@@ -190,7 +204,7 @@ export default function DepartmentsPage() {
     },
     {
       key: 'description',
-      title: 'Description',
+      title: t('department.description'),
       sortable: true,
       width: 250,
       render: (row) => (
@@ -201,12 +215,12 @@ export default function DepartmentsPage() {
     },
     {
       key: 'action',
-      title: 'Actions',
+      title: t('department.actions'),
       align: 'center',
       width: 120,
       render: (row) => (
         <Group gap="xs" justify="center">
-          <Tooltip label="Add position" withArrow position="top">
+          <Tooltip label={t('department.addPosition')} withArrow position="top">
             <ActionIcon
               variant="subtle"
               color="blue"
@@ -219,7 +233,7 @@ export default function DepartmentsPage() {
               <IconBriefcase size={18} />
             </ActionIcon>
           </Tooltip>
-          <Tooltip label="Edit department" withArrow position="top">
+          <Tooltip label={t('department.editDepartment')} withArrow position="top">
             <ActionIcon
               variant="subtle"
               color="gray"
@@ -253,7 +267,7 @@ export default function DepartmentsPage() {
       },
       {
         key: 'position_name',
-        title: 'Position Name',
+        title: t('department.positionName'),
         sortable: true,
         render: (row) => (
           <Group gap="xs">
@@ -268,7 +282,7 @@ export default function DepartmentsPage() {
       },
       {
         key: 'level',
-        title: 'Level',
+        title: t('department.level'),
         width: 120,
         sortable: true,
         render: (row) => (
@@ -284,21 +298,21 @@ export default function DepartmentsPage() {
       },
       {
         key: 'description',
-        title: 'Description',
+        title: t('department.description'),
         render: (row) => (
           <Text size="xs" c="dimmed" lineClamp={1}>
-            {row.description || 'No descriptions'}
+            {row.description || t('department.noDescription')}
           </Text>
         ),
       },
       {
         key: 'action',
-        title: 'Actions',
+        title: t('department.actions'),
         align: 'center',
         width: 100,
         render: (row) => (
           <Group gap={6} justify="center">
-            <Tooltip label="Edit" withArrow>
+            <Tooltip label={t('common.edit')} withArrow>
               <ActionIcon
                 size="sm"
                 variant="subtle"
@@ -311,7 +325,7 @@ export default function DepartmentsPage() {
                 <IconEdit size={14} />
               </ActionIcon>
             </Tooltip>
-            <Tooltip label="Delete" withArrow>
+            <Tooltip label={t('common.delete')} withArrow>
               <ActionIcon
                 size="sm"
                 variant="subtle"
@@ -330,16 +344,16 @@ export default function DepartmentsPage() {
       <Box p="md">
         {positions.length === 0 ? (
           <Text size="sm" c="dimmed" ta="center" py="md">
-            No positions in this department
+            {t('department.noPositions')}
           </Text>
         ) : (
           <Stack gap="xs">
             <Group justify="space-between" mb="xs">
               <Text size="sm" fw={600} c="dimmed">
-                Positions in {dept.department_name}
+                {t('department.positionsInDepartment', { name: dept.department_name })}
               </Text>
               <Badge size="sm" variant="dot" color="blue">
-                {positions.length} total
+                {t('department.totalPositions', { count: positions.length })}
               </Badge>
             </Group>
 
@@ -357,14 +371,19 @@ export default function DepartmentsPage() {
   };
 
   if (error) {
-    return <ErrorState message={`Error loading departments: ${error.message}`} onRetry={refetch} />;
+    return (
+      <ErrorState
+        message={t('messages.errorLoadingDepartments', { message: error.message })}
+        onRetry={refetch}
+      />
+    );
   }
 
   return (
     <Stack gap="md">
       <PageHeader
-        title="Departments"
-        description="Manage your organization's departments"
+        title={t('pages.departmentsTitle')}
+        description={t('pages.departmentsDescription')}
         right={
           <Group>
             <Button
@@ -374,10 +393,10 @@ export default function DepartmentsPage() {
                 setOpened(true);
               }}
             >
-              Add Department
+              {t('actions.addDepartment')}
             </Button>
             <TextInput
-              placeholder="Search departments..."
+              placeholder={t('fields.searchDepartments')}
               leftSection={<IconSearch size={18} />}
               value={search}
               onChange={(e) => handleSearch(e.currentTarget.value)}

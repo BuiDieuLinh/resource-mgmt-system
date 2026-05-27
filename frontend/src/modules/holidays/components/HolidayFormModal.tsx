@@ -6,6 +6,7 @@ import { PRIMARY_COLOR } from '@/theme';
 import type { IHoliday, IHolidayPayload } from '../types';
 import { DATE_FORMAT } from '@/constant';
 import { toDateOnly } from '@/utils/date';
+import { useTranslation } from 'react-i18next';
 
 interface HolidayFormModalProps {
   opened: boolean;
@@ -38,11 +39,12 @@ export function HolidayFormModal({
   onSubmit,
   loading = false,
 }: HolidayFormModalProps) {
+  const { t } = useTranslation();
   const form = useForm<FormValues>({
     initialValues: EMPTY,
     validate: {
-      name: (v) => (!v?.trim() ? 'Name is required' : null),
-      holiday_date: (v) => (!v ? 'Date is required' : null),
+      name: (v) => (!v?.trim() ? t('holiday.validation.nameRequired') : null),
+      holiday_date: (v) => (!v ? t('holiday.validation.dateRequired') : null),
     },
   });
 
@@ -79,7 +81,7 @@ export function HolidayFormModal({
       onClose={onClose}
       title={
         <Text size="xl" fw={700} c={PRIMARY_COLOR}>
-          {mode === 'edit' ? 'EDIT HOLIDAY' : 'ADD HOLIDAY'}
+          {mode === 'edit' ? t('holiday.modal.editHoliday') : t('holiday.modal.addHoliday')}
         </Text>
       }
       centered
@@ -89,32 +91,35 @@ export function HolidayFormModal({
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack gap="sm">
           <TextInput
-            label="Name"
-            placeholder="e.g. New Year's Day"
+            label={t('holiday.name')}
+            placeholder={t('holiday.modal.namePlaceholder')}
             required
             {...form.getInputProps('name')}
           />
           <DateInput
-            label="Date"
+            label={t('holiday.date')}
             placeholder={DATE_FORMAT}
             valueFormat={DATE_FORMAT}
             required
             {...form.getInputProps('holiday_date')}
           />
           <Textarea
-            label="Description"
-            placeholder="Optional"
+            label={t('holiday.description')}
+            placeholder={t('holiday.modal.descriptionPlaceholder')}
             autosize
             minRows={2}
             {...form.getInputProps('description')}
           />
-          <Switch label="Paid holiday" {...form.getInputProps('is_paid', { type: 'checkbox' })} />
+          <Switch
+            label={t('holiday.modal.paidHoliday')}
+            {...form.getInputProps('is_paid', { type: 'checkbox' })}
+          />
           <Group justify="flex-end" mt="xs">
             <Button variant="subtle" onClick={onClose} disabled={loading}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" loading={loading}>
-              {mode === 'edit' ? 'Update' : 'Create'}
+              {mode === 'edit' ? t('common.update') : t('common.save')}
             </Button>
           </Group>
         </Stack>

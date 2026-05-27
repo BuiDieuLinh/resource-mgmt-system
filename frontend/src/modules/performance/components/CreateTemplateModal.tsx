@@ -19,6 +19,7 @@ import { useForm } from '@mantine/form';
 import { IconPlus, IconTrash, IconAlertCircle } from '@tabler/icons-react';
 import { CONTRACT_TYPE_OPTIONS, SCORE_TYPE_OPTIONS } from '@/constant';
 import type { IEvaluationTemplate, CriteriaFormValues } from '../types';
+import { useTranslation } from 'react-i18next';
 
 const DEFAULT_CRITERIA: CriteriaFormValues[] = [
   { criterion: 'Work Quality', weight: 25, max_score: 5, score_type: 'rating' },
@@ -52,6 +53,7 @@ export function CreateTemplateModal({
   mode = 'add',
   initialValues,
 }: CreateTemplateModalProps) {
+  const { t } = useTranslation();
   const form = useForm<TemplateFormState>({
     initialValues: {
       title: '',
@@ -60,7 +62,7 @@ export function CreateTemplateModal({
       criteria: DEFAULT_CRITERIA.map((c) => ({ ...c })),
     },
     validate: {
-      title: (v) => (!v?.trim() ? 'Required' : null),
+      title: (v) => (!v?.trim() ? t('common.required') : null),
     },
   });
 
@@ -108,7 +110,7 @@ export function CreateTemplateModal({
       onClose={handleClose}
       title={
         <Text size="xl" fw={700} c={PRIMARY_COLOR}>
-          {mode === 'edit' ? 'EDIT EVALUATION TEMPLATE' : 'ADD EVALUATION TEMPLATE'}
+          {mode === 'edit' ? t('performance.editTemplate') : t('performance.addTemplate')}
         </Text>
       }
       size="lg"
@@ -117,30 +119,30 @@ export function CreateTemplateModal({
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack gap="md">
           <TextInput
-            label="Template Name"
-            placeholder="e.g. Probation Evaluation"
+            label={t('common.template')}
+            placeholder={t('performance.templateNamePlaceholder')}
             required
             {...form.getInputProps('title')}
           />
           <TextInput
-            label="Description"
-            placeholder="Purpose of this template"
+            label={t('position.description')}
+            placeholder={t('performance.templateDescriptionPlaceholder')}
             {...form.getInputProps('description')}
           />
           <MultiSelect
-            label="Apply To"
-            placeholder="Select contract types (leave empty for all)"
+            label={t('performance.applyTo')}
+            placeholder={t('performance.applyToPlaceholder')}
             data={CONTRACT_TYPE_OPTIONS}
             clearable
             checkIconPosition="right"
             {...form.getInputProps('apply_to')}
           />
 
-          <Divider label="Evaluation Criteria" labelPosition="center" />
+          <Divider label={t('performance.criteria')} labelPosition="center" />
 
           <Group justify="space-between">
             <Text size="sm" fw={500}>
-              Total Weight:
+              {t('performance.totalWeight')}:
             </Text>
             <Badge size="lg" color={isWeightValid ? 'green' : 'red'}>
               {totalWeight}%
@@ -149,7 +151,7 @@ export function CreateTemplateModal({
 
           {!isWeightValid && (
             <Alert icon={<IconAlertCircle size={16} />} color="red" variant="light">
-              Total weight must equal 100%. Current: {totalWeight}%
+              {t('performance.totalWeightInvalid', { total: totalWeight })}
             </Alert>
           )}
 
@@ -157,7 +159,7 @@ export function CreateTemplateModal({
             {form.values.criteria.map((_, index) => (
               <Group key={index} align="center" gap={6} wrap="nowrap">
                 <TextInput
-                  placeholder="Criterion name"
+                  placeholder={t('performance.criterionNamePlaceholder')}
                   required
                   size="xs"
                   style={{ flex: 1, minWidth: 0 }}
@@ -165,7 +167,7 @@ export function CreateTemplateModal({
                   {...form.getInputProps(`criteria.${index}.criterion`)}
                 />
                 <NumberInput
-                  placeholder="Weight %"
+                  placeholder={t('performance.weightPlaceholder')}
                   min={1}
                   max={100}
                   required
@@ -175,7 +177,7 @@ export function CreateTemplateModal({
                   {...form.getInputProps(`criteria.${index}.weight`)}
                 />
                 <NumberInput
-                  placeholder="Max"
+                  placeholder={t('performance.maxPlaceholder')}
                   min={1}
                   max={10}
                   required
@@ -224,15 +226,15 @@ export function CreateTemplateModal({
               } satisfies CriteriaFormValues)
             }
           >
-            Add Criterion
+            {t('performance.addCriterion')}
           </Button>
 
           <Group justify="flex-end" mt="md">
             <Button variant="subtle" onClick={handleClose}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" loading={isLoading} disabled={!isWeightValid}>
-              {mode === 'edit' ? 'Save Changes' : 'Create Template'}
+              {mode === 'edit' ? t('common.saveChanges') : t('performance.createTemplate')}
             </Button>
           </Group>
         </Stack>

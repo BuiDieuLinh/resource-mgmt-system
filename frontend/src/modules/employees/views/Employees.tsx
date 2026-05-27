@@ -51,8 +51,10 @@ import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { normalizeString } from '../utils/search';
 import { useHasRole } from '@/hooks/useHasRole';
+import { useTranslation } from 'react-i18next';
 
 export default function EmployeesPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [input, setInput] = useState('');
   const [search, setSearch] = useState('');
@@ -103,7 +105,9 @@ export default function EmployeesPage() {
   };
 
   const handleSubmit = async (values: EmployeeFormValues, id?: string) => {
-    const notiId = notify.loading(isEdit ? 'Updating employee...' : 'Creating employee...');
+    const notiId = notify.loading(
+      isEdit ? t('employee.updatingEmployee') : t('employee.creatingEmployee'),
+    );
 
     try {
       const payload = {
@@ -141,7 +145,7 @@ export default function EmployeesPage() {
       }
 
       notify.success(notiId, {
-        message: isEdit ? 'Employee updated successfully' : 'Employee created successfully',
+        message: isEdit ? t('employee.employeeUpdated') : t('employee.employeeCreated'),
       });
 
       setOpened(false);
@@ -150,7 +154,7 @@ export default function EmployeesPage() {
       notify.error(notiId, {
         message:
           e?.response?.data?.message ||
-          (isEdit ? 'Update employee failed' : 'Create employee failed'),
+          (isEdit ? t('employee.employeeUpdateFailed') : t('employee.employeeCreateFailed')),
       });
     }
   };
@@ -180,13 +184,13 @@ export default function EmployeesPage() {
   };
 
   const handleExport = async () => {
-    const notiId = notify.loading('Exporting employees...');
+    const notiId = notify.loading(t('employee.exportingEmployees'));
     try {
       const blob = await exportEmployees();
       saveAs(blob, `employees_${new Date().getTime()}.xlsx`);
-      notify.success(notiId, { message: 'Employees exported successfully' });
+      notify.success(notiId, { message: t('employee.employeesExported') });
     } catch (error: any) {
-      notify.error(notiId, { message: 'Export failed' });
+      notify.error(notiId, { message: t('employee.exportFailed') });
     }
   };
 
@@ -196,33 +200,36 @@ export default function EmployeesPage() {
 
     console.log('File selected:', file.name, file.type, file.size);
 
-    const notiId = notify.loading('Loading preview...');
+    const notiId = notify.loading(t('employee.loadingPreview'));
     try {
       const result = await previewMutation.mutateAsync(file);
       console.log('Preview result:', result);
       setPreviewData(result.data);
       setPreviewOpened(true);
-      notify.success(notiId, { message: 'Preview loaded successfully' });
+      notify.success(notiId, { message: t('employee.previewLoaded') });
     } catch (error: any) {
       console.error('Preview error:', error);
       notify.error(notiId, {
-        message: error?.response?.data?.message || 'Failed to load preview',
+        message: error?.response?.data?.message || t('employee.previewLoadFailed'),
       });
     }
   };
 
   const handleConfirmImport = async (selectedRows: PreviewEmployee[]) => {
-    const notiId = notify.loading(`Importing ${selectedRows.length} employees...`);
+    const notiId = notify.loading(t('employee.importingEmployees', { count: selectedRows.length }));
     try {
       const result = await importMutation.mutateAsync(selectedRows);
       notify.success(notiId, {
-        message: `Imported: ${result.data.imported}, Failed: ${result.data.failed}`,
+        message: t('employee.importResult', {
+          imported: result.data.imported,
+          failed: result.data.failed,
+        }),
       });
       setPreviewOpened(false);
       setPreviewData([]);
     } catch (error: any) {
       notify.error(notiId, {
-        message: error?.response?.data?.message || 'Import failed',
+        message: error?.response?.data?.message || t('employee.importFailed'),
       });
     }
   };
@@ -240,27 +247,27 @@ export default function EmployeesPage() {
   const columns: TableColumn<IEmployee>[] = [
     {
       key: 'employee_code',
-      title: 'Code',
+      title: t('importPreview.code'),
       sortable: true,
     },
     {
       key: 'full_name',
-      title: 'Name',
+      title: t('employee.fullName'),
       sortable: true,
     },
     {
       key: 'email',
-      title: 'Email',
+      title: t('employee.email'),
       sortable: true,
     },
     {
       key: 'phone',
-      title: 'Phone',
-      render: (row) => row.phone || '-',
+      title: t('employee.phone'),
+      render: (row) => row.phone || t('common.notAvailable'),
     },
     {
       key: 'position.position_name',
-      title: 'Position',
+      title: t('employee.position'),
       align: 'center',
       render: (row) =>
         row.position ? (
@@ -270,9 +277,9 @@ export default function EmployeesPage() {
             </Badge>
           </Tooltip>
         ) : (
-          <Tooltip label="Unknown Position" position="top" withArrow>
+          <Tooltip label={t('employee.unknownPosition')} position="top" withArrow>
             <Badge variant="light" color="gray" fw={400}>
-              Unknown
+              {t('employee.unknown')}
             </Badge>
           </Tooltip>
         ),
@@ -280,7 +287,7 @@ export default function EmployeesPage() {
     },
     {
       key: 'contract_type',
-      title: 'Contract Type',
+      title: t('employee.contractType'),
       align: 'center',
       render: (row) => (
         <Badge
@@ -296,17 +303,19 @@ export default function EmployeesPage() {
     },
     {
       key: 'hire_date',
-      title: 'Hire Date',
+      title: t('employee.hireDate'),
       sortable: true,
       render: (row) => formatDate(row.hire_date),
     },
     {
       key: 'status',
-      title: 'Status',
+      title: t('employee.status'),
       align: 'center',
       render: (row) => (
         <Tooltip
-          label={row.status === 'active' ? 'Active employee' : 'Inactive employee'}
+          label={
+            row.status === 'active' ? t('employee.activeEmployee') : t('employee.inactiveEmployee')
+          }
           position="top"
           withArrow
         >
@@ -323,23 +332,31 @@ export default function EmployeesPage() {
     },
     {
       key: 'action',
-      title: 'Actions',
+      title: t('actions.actions'),
       align: 'center',
       fixed: 'right',
       render: (row) => (
         <Group gap="xs" justify="center" wrap="nowrap">
-          <ActionIcon
-            variant="subtle"
-            color="blue"
-            onClick={() => navigate(`/employees/${row.id}/profile`)}
-            title="View Profile"
-          >
-            <IconEye size={18} />
-          </ActionIcon>
-          {isAdmin && (
-            <ActionIcon variant="subtle" color="gray" onClick={() => handleEdit(row)} title="Edit">
-              <IconEdit size={18} />
+          <Tooltip label={t('employee.viewProfile')} withArrow>
+            <ActionIcon
+              variant="subtle"
+              color="blue"
+              onClick={() => navigate(`/employees/${row.id}/profile`)}
+            >
+              <IconEye size={18} />
             </ActionIcon>
+          </Tooltip>
+          {isAdmin && (
+            <Tooltip label={t('common.edit')}>
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                onClick={() => handleEdit(row)}
+                title={t('common.edit')}
+              >
+                <IconEdit size={18} />
+              </ActionIcon>
+            </Tooltip>
           )}
         </Group>
       ),
@@ -347,25 +364,30 @@ export default function EmployeesPage() {
   ];
 
   if (error) {
-    return <ErrorState message={`Error loading employees: ${error.message}`} onRetry={refetch} />;
+    return (
+      <ErrorState
+        message={t('employee.errorLoadingEmployees', { message: error.message })}
+        onRetry={refetch}
+      />
+    );
   }
 
   return (
     <Stack gap="md">
       <PageHeader
-        title="Employees"
-        description="Manage your workforce — add, edit, and organize employees"
+        title={t('pages.employeesTitle')}
+        description={t('pages.employeesDescription')}
         right={
           <Group>
             {isAdmin && (
               <Button leftSection={<IconPlus size={18} />} onClick={handleAdd}>
-                Add employee
+                {t('actions.addEmployee')}
               </Button>
             )}
             <Menu shadow="md" width={200} position="bottom-start">
               <Menu.Target>
                 <Button variant="light" leftSection={<IconDotsVertical size={18} />}>
-                  Actions
+                  {t('actions.actions')}
                 </Button>
               </Menu.Target>
 
@@ -375,12 +397,12 @@ export default function EmployeesPage() {
                   leftSection={<IconSitemap size={18} />}
                   onClick={() => navigate('/employees/org-chart')}
                 >
-                  View Org Chart
+                  {t('actions.viewOrgChart')}
                 </Menu.Item>
                 {isAdmin && (
                   <>
                     <Menu.Item leftSection={<IconFileExport size={18} />} onClick={handleExport}>
-                      Export to Excel
+                      {t('actions.exportExcel')}
                     </Menu.Item>
                   </>
                 )}
@@ -392,7 +414,7 @@ export default function EmployeesPage() {
                         leftSection={<IconFileImport size={18} />}
                         closeMenuOnClick={false}
                       >
-                        Import from Excel
+                        {t('actions.importFromExcel')}
                       </Menu.Item>
                     )}
                   </FileButton>
@@ -400,7 +422,7 @@ export default function EmployeesPage() {
               </Menu.Dropdown>
             </Menu>
             <TextInput
-              placeholder="Search by name, email or code"
+              placeholder={t('fields.searchByNameEmailCode')}
               leftSection={<IconSearch size={18} />}
               value={input}
               onChange={(e) => handleSearch(e.currentTarget.value)}
@@ -408,12 +430,12 @@ export default function EmployeesPage() {
 
             <Select
               checkIconPosition="right"
-              placeholder="Filter by status"
+              placeholder={t('fields.filterByStatus')}
               clearable
               w={100}
               data={[
-                { value: 'active', label: 'Active' },
-                { value: 'inactive', label: 'Inactive' },
+                { value: 'active', label: t('common.active') },
+                { value: 'inactive', label: t('common.inactive') },
               ]}
               value={filter}
               onChange={handleFilterChange}

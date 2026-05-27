@@ -23,6 +23,7 @@ import { useUpdatePosition } from '@/modules/positions/api/update-position';
 import { useDeletePosition } from '@/modules/positions/api/delete-position';
 import { notify } from '@/components/Notification';
 import type { IPosition, PositionFormValues } from '@/modules/positions/types';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   department: IDepartment | null;
@@ -31,6 +32,7 @@ interface Props {
 }
 
 export function DepartmentPositionsModal({ department, onClose, onRefresh }: Props) {
+  const { t } = useTranslation();
   const { colorScheme } = useMantineColorScheme();
   const isDark = colorScheme === 'dark';
 
@@ -45,30 +47,40 @@ export function DepartmentPositionsModal({ department, onClose, onRefresh }: Pro
   const deleteMutation = useDeletePosition();
 
   const handleSubmit = async (values: PositionFormValues, id?: string) => {
-    const notiId = notify.loading(isEdit ? 'Updating...' : 'Creating...');
+    const notiId = notify.loading(
+      isEdit ? t('department.updatingPosition') : t('department.creatingPosition'),
+    );
     try {
       if (isEdit && id) {
         await updateMutation.mutateAsync({ id, payload: values });
       } else {
         await createMutation.mutateAsync({ ...values, department_id: department!.id });
       }
-      notify.success(notiId, { message: isEdit ? 'Position updated' : 'Position created' });
+      notify.success(notiId, {
+        message: isEdit ? t('department.positionUpdated') : t('department.positionCreated'),
+      });
       setPositionModal(false);
       setEditPosition(null);
       onRefresh?.();
     } catch (e: any) {
-      notify.error(notiId, { message: e?.response?.data?.message || 'Failed' });
+      notify.error(notiId, {
+        message:
+          e?.response?.data?.message ||
+          (isEdit ? t('department.positionUpdateFailed') : t('department.positionCreateFailed')),
+      });
     }
   };
 
   const handleDelete = async (id: string) => {
-    const notiId = notify.loading('Deleting...');
+    const notiId = notify.loading(t('department.deletingPosition'));
     try {
       await deleteMutation.mutateAsync(id);
-      notify.success(notiId, { message: 'Position deleted' });
+      notify.success(notiId, { message: t('department.positionDeleted') });
       onRefresh?.();
     } catch (e: any) {
-      notify.error(notiId, { message: e?.response?.data?.message || 'Delete failed' });
+      notify.error(notiId, {
+        message: e?.response?.data?.message || t('department.positionDeleteFailed'),
+      });
     }
   };
 
@@ -93,7 +105,7 @@ export function DepartmentPositionsModal({ department, onClose, onRefresh }: Pro
               {department?.department_name}
             </Text>
             <Badge size="xs" variant="light" color="blue">
-              {positions.length} positions
+              {t('department.totalPositions', { count: positions.length })}
             </Badge>
           </Group>
         }
@@ -109,7 +121,7 @@ export function DepartmentPositionsModal({ department, onClose, onRefresh }: Pro
           >
             <Box style={{ flex: 2 }}>
               <Text size="xs" c="dimmed" mb={2}>
-                Name
+                {t('department.modal.detailsName')}
               </Text>
               <Text size="sm" fw={600}>
                 {department?.department_name}{' '}
@@ -123,7 +135,7 @@ export function DepartmentPositionsModal({ department, onClose, onRefresh }: Pro
                 <Divider orientation="vertical" />
                 <Box style={{ flex: 3 }}>
                   <Text size="xs" c="dimmed" mb={2}>
-                    Description
+                    {t('department.description')}
                   </Text>
                   <Text size="sm">{department.description}</Text>
                 </Box>
@@ -133,7 +145,7 @@ export function DepartmentPositionsModal({ department, onClose, onRefresh }: Pro
 
           <Group justify="space-between" align="center">
             <Text size="sm" fw={600} c="dimmed">
-              Positions
+              {t('department.positions')}
             </Text>
             <Button
               size="xs"
@@ -144,13 +156,13 @@ export function DepartmentPositionsModal({ department, onClose, onRefresh }: Pro
                 setPositionModal(true);
               }}
             >
-              Add Position
+              {t('department.addPosition')}
             </Button>
           </Group>
 
           {positions.length === 0 ? (
             <Text size="sm" c="dimmed" ta="center" py="md">
-              No positions in this department
+              {t('department.noPositions')}
             </Text>
           ) : (
             <Box style={{ borderRadius: 8, overflow: 'hidden', border: `1px solid ${listBorder}` }}>
@@ -189,7 +201,7 @@ export function DepartmentPositionsModal({ department, onClose, onRefresh }: Pro
                     >
                       {LEVEL_LABEL[pos.level as LevelPosition] ?? pos.level}
                     </Badge>
-                    <Tooltip label="Edit" withArrow>
+                    <Tooltip label={t('common.edit')} withArrow>
                       <ActionIcon
                         size="sm"
                         variant="subtle"
@@ -202,7 +214,7 @@ export function DepartmentPositionsModal({ department, onClose, onRefresh }: Pro
                         <IconEdit size={14} />
                       </ActionIcon>
                     </Tooltip>
-                    <Tooltip label="Delete" withArrow>
+                    <Tooltip label={t('common.delete')} withArrow>
                       <ActionIcon
                         size="sm"
                         variant="subtle"

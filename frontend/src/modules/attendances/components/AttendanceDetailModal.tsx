@@ -28,6 +28,7 @@ import { formatMinutes } from '../utils/format';
 import { ATTENDANCE_STATUS_COLOR } from '../utils/color';
 import { useReverseGeocode } from '../hooks/useReverseGeocode';
 import { PRIMARY_COLOR } from '@/theme';
+import { useTranslation } from 'react-i18next';
 
 interface AttendanceDetailModalProps {
   opened: boolean;
@@ -102,6 +103,7 @@ function StatPill({ label, value, color }: { label: string; value: string; color
 }
 
 function LogCard({ log, variant }: { log?: IAttendanceLogs; variant: 'check_in' | 'check_out' }) {
+  const { t } = useTranslation();
   const isCheckIn = variant === 'check_in';
   const accent = isCheckIn ? 'teal' : 'blue';
   const hasGps = log?.latitude != null && log?.longitude != null;
@@ -119,7 +121,7 @@ function LogCard({ log, variant }: { log?: IAttendanceLogs; variant: 'check_in' 
         </ThemeIcon>
         <Box style={{ flex: 1, minWidth: 0 }}>
           <Text size="xs" c="dimmed" fw={500} tt="uppercase">
-            {isCheckIn ? 'Check-in' : 'Check-out'}
+            {isCheckIn ? t('attendance.detailModal.checkIn') : t('attendance.detailModal.checkOut')}
           </Text>
           <Group gap={6} align="baseline" wrap="nowrap">
             <Text size="lg" fw={700} lh={1.1}>
@@ -141,14 +143,16 @@ function LogCard({ log, variant }: { log?: IAttendanceLogs; variant: 'check_in' 
             {hasGps ? (
               <Group gap={6} wrap="nowrap" align="flex-start">
                 <Tooltip
-                  label={address ?? 'No address available'}
+                  label={address ?? t('attendance.detailModal.noAddressAvailable')}
                   withArrow
                   multiline
                   w={280}
                   disabled={!address}
                 >
                   <Text size="xs" style={{ flex: 1, minWidth: 0 }} lineClamp={2}>
-                    {addressLoading ? 'Resolving address...' : (address ?? 'Address unavailable')}
+                    {addressLoading
+                      ? t('attendance.detailModal.resolvingAddress')
+                      : (address ?? t('attendance.detailModal.addressUnavailable'))}
                   </Text>
                 </Tooltip>
                 <Anchor
@@ -157,12 +161,12 @@ function LogCard({ log, variant }: { log?: IAttendanceLogs; variant: 'check_in' 
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Map
+                  {t('attendance.detailModal.map')}
                 </Anchor>
               </Group>
             ) : (
               <Text size="xs" c="dimmed">
-                Location not recorded
+                {t('attendance.detailModal.locationNotRecorded')}
               </Text>
             )}
           </Box>
@@ -184,7 +188,7 @@ function LogCard({ log, variant }: { log?: IAttendanceLogs; variant: 'check_in' 
           <Tooltip
             multiline
             w={320}
-            label={log?.user_agent ?? 'No device info'}
+            label={log?.user_agent ?? t('attendance.detailModal.noDeviceInfo')}
             withArrow
             disabled={!log?.user_agent}
           >
@@ -206,6 +210,7 @@ export function AttendanceDetailModal({
   checkInLog,
   checkOutLog,
 }: AttendanceDetailModalProps) {
+  const { t } = useTranslation();
   const status = record?.status;
   const similarityPct =
     typeof record?.similarity_score === 'number'
@@ -222,7 +227,7 @@ export function AttendanceDetailModal({
       title={
         <Group gap="xs">
           <Text fw={700} c={PRIMARY_COLOR}>
-            ATTENDANCE DETAIL
+            {t('attendance.detailModal.title')}
           </Text>
           <Badge variant="light" color="gray" radius="sm">
             {dayLabel}
@@ -236,7 +241,7 @@ export function AttendanceDetailModal({
           <Group justify="space-between" align="flex-start" wrap="nowrap">
             <Box>
               <Text size="xs" c="dimmed" fw={500} tt="uppercase" mb={4}>
-                Total work
+                {t('attendance.detailModal.totalWork')}
               </Text>
               <Text fz={28} fw={700} lh={1}>
                 {fmtMin(record?.work_minutes)}
@@ -258,7 +263,7 @@ export function AttendanceDetailModal({
                 <Group gap={4} wrap="nowrap">
                   <IconShieldCheck size={14} color="var(--mantine-color-teal-6)" />
                   <Text size="xs" c="dimmed">
-                    Face match
+                    {t('attendance.detailModal.faceMatch')}
                   </Text>
                   <Text size="xs" fw={700}>
                     {similarityPct.toFixed(1)}%
@@ -272,17 +277,17 @@ export function AttendanceDetailModal({
 
           <Group gap="lg" wrap="wrap">
             <StatPill
-              label="Late"
+              label={t('attendance.detailModal.late')}
               value={fmtMin(record?.late)}
               color={record?.late ? 'red' : 'gray'}
             />
             <StatPill
-              label="Early leave"
+              label={t('attendance.detailModal.earlyLeave')}
               value={fmtMin(record?.early_leave)}
               color={record?.early_leave ? 'yellow' : 'gray'}
             />
             <StatPill
-              label="Overtime"
+              label={t('attendance.detailModal.overtime')}
               value={fmtMin(record?.overtime)}
               color={record?.overtime ? 'blue' : 'gray'}
             />
@@ -303,7 +308,7 @@ export function AttendanceDetailModal({
                 <IconCamera size={14} />
               </ThemeIcon>
               <Text size="sm" fw={600}>
-                Face verification snapshot
+                {t('attendance.detailModal.faceVerificationSnapshot')}
               </Text>
               {similarityPct != null && (
                 <Badge
@@ -321,7 +326,7 @@ export function AttendanceDetailModal({
             <Center>
               <Image
                 src={record.selfie_image_url}
-                alt="Check-in selfie"
+                alt={t('attendance.detailModal.checkInSelfie')}
                 radius="md"
                 mah={260}
                 fit="contain"

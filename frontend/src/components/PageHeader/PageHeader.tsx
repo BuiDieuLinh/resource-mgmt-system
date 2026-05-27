@@ -4,8 +4,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { MENUS } from '../../modules/app/Menu';
 import { useAuth } from '@/modules/auth/context/AuthContext';
 import { EMPLOYEE_ROLE } from '@/constant';
+import { useTranslation } from 'react-i18next';
 
-type BreadcrumbItem = { label: string; path?: string };
+type BreadcrumbItem = { label?: string; labelKey?: string; path?: string };
 
 function findPath(menus: any[], pathname: string): BreadcrumbItem[] {
   const result: BreadcrumbItem[] = [];
@@ -13,7 +14,7 @@ function findPath(menus: any[], pathname: string): BreadcrumbItem[] {
     for (const m of items) {
       const current = [...parents, m];
       if (m.path === pathname) {
-        current.forEach((i) => result.push({ label: i.label, path: i.path }));
+        current.forEach((i) => result.push({ label: i.label, labelKey: i.labelKey, path: i.path }));
         return true;
       }
       if (m.children && dfs(m.children, current)) return true;
@@ -39,6 +40,7 @@ export function PageHeader({
   breadcrumbs,
   breadcrumbOnly,
 }: PageHeaderProps) {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -49,7 +51,7 @@ export function PageHeader({
   );
 
   const items = breadcrumbs ?? findPath(MENUS, location.pathname);
-  const all: BreadcrumbItem[] = [{ label: 'Home', path: '/' }, ...items];
+  const all: BreadcrumbItem[] = [{ label: t('common.home'), path: '/' }, ...items];
 
   return (
     <Stack gap={4}>
@@ -57,6 +59,7 @@ export function PageHeader({
         {all.map((item, i) => {
           const isLast = i === all.length - 1;
           const isHome = i === 0;
+          const label = item.labelKey ? t(item.labelKey) : item.label;
 
           return (
             <Group key={i} gap={4} align="center" wrap="nowrap">
@@ -87,12 +90,12 @@ export function PageHeader({
                 )
               ) : isLast ? (
                 <Text size="xs" fw={600} c="dark.4">
-                  {item.label}
+                  {label}
                 </Text>
               ) : (
                 <UnstyledButton onClick={() => item.path && navigate(item.path)}>
                   <Text size="xs" c="dimmed">
-                    {item.label}
+                    {label}
                   </Text>
                 </UnstyledButton>
               )}

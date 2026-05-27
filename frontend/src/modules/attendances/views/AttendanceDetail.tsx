@@ -20,8 +20,10 @@ import { useHasRole } from '@/hooks/useHasRole';
 import { EMPLOYEE_ROLE } from '@/constant';
 import type { IAttendance, ILeaveRequest } from '../types';
 import type { ILeaveRequest as ILeaveRequestFull } from '@/modules/leave-requests/types';
+import { useTranslation } from 'react-i18next';
 
 export default function AttendanceDetailPage() {
+  const { t, i18n } = useTranslation();
   const { employeeId } = useParams<{ employeeId: string }>();
 
   const now = new Date();
@@ -70,7 +72,7 @@ export default function AttendanceDetailPage() {
     () =>
       weeks.map((w, i) => ({
         value: String(i),
-        label: `Week ${i + 1}: ${w[0].toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} – ${w[w.length - 1].toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}`,
+        label: `${t('attendance.timesheet.weekLabel', { index: i + 1 })}: ${w[0].toLocaleDateString(i18n.language?.startsWith('en') ? 'en-US' : 'vi-VN', { day: '2-digit', month: '2-digit' })} – ${w[w.length - 1].toLocaleDateString(i18n.language?.startsWith('en') ? 'en-US' : 'vi-VN', { day: '2-digit', month: '2-digit' })}`,
       })),
     [weeks],
   );
@@ -86,34 +88,38 @@ export default function AttendanceDetailPage() {
   };
 
   const handleLeaveApprove = async (id: string, comment: string) => {
-    const notiId = notify.loading('Approving...');
+    const notiId = notify.loading(t('attendance.detail.approving'));
     try {
       await updateLeaveStatus.mutateAsync({
         id,
         status: 'approved',
         comment: comment || undefined,
       });
-      notify.success(notiId, { message: 'Leave request approved' });
+      notify.success(notiId, { message: t('attendance.detail.leaveApproved') });
       setLeaveModal(null);
       refetch();
     } catch (e: any) {
-      notify.error(notiId, { message: e?.response?.data?.message || 'Failed' });
+      notify.error(notiId, {
+        message: e?.response?.data?.message || t('attendance.detail.failed'),
+      });
     }
   };
 
   const handleLeaveReject = async (id: string, comment: string) => {
-    const notiId = notify.loading('Rejecting...');
+    const notiId = notify.loading(t('attendance.detail.rejecting'));
     try {
       await updateLeaveStatus.mutateAsync({
         id,
         status: 'rejected',
         comment: comment || undefined,
       });
-      notify.success(notiId, { message: 'Leave request rejected' });
+      notify.success(notiId, { message: t('attendance.detail.leaveRejected') });
       setLeaveModal(null);
       refetch();
     } catch (e: any) {
-      notify.error(notiId, { message: e?.response?.data?.message || 'Failed' });
+      notify.error(notiId, {
+        message: e?.response?.data?.message || t('attendance.detail.failed'),
+      });
     }
   };
 
@@ -141,7 +147,7 @@ export default function AttendanceDetailPage() {
     <Stack gap="md">
       <PageHeader
         breadcrumbs={[
-          { label: 'Attendance', path: attendanceUrl },
+          { label: t('pages.attendanceTitle'), path: attendanceUrl },
           { label: employee?.full_name ?? '...' },
         ]}
       />
@@ -173,7 +179,7 @@ export default function AttendanceDetailPage() {
             loading={approving}
             onClick={() => employeeId && approve({ employeeId, month, year })}
           >
-            Approve Timesheet
+            {t('attendance.detail.approveTimesheet')}
           </Button>
         </Group>
       </Group>
@@ -193,7 +199,7 @@ export default function AttendanceDetailPage() {
               label: (
                 <Group gap={6} w={70}>
                   <IconCalendar size={16} />
-                  Month
+                  {t('attendance.timesheet.month')}
                 </Group>
               ),
             },
@@ -202,7 +208,7 @@ export default function AttendanceDetailPage() {
               label: (
                 <Group gap={6} w={70}>
                   <IconCalendarWeek size={16} />
-                  Week
+                  {t('attendance.timesheet.week')}
                 </Group>
               ),
             },

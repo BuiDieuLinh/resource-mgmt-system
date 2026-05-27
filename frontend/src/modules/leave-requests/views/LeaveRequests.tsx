@@ -60,8 +60,10 @@ import { useGetEmployeeByUserId } from '@/modules/employees/api/get-employee-by-
 import { useGetAllDepartments } from '@/modules/departments/api/get-departments';
 import { EmployeeColumn } from '@/components/EmployeeColumn/EmployeeColumn';
 import MonthNavigator from '@/modules/attendances/components/MonthPickerInput';
+import { useTranslation } from 'react-i18next';
 
 export default function LeaveRequestsPage() {
+  const { t } = useTranslation();
   const [selectedMonth, setSelectedMonth] = useState<Date | null>(() => new Date());
   const [page, setPage] = useState(1);
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
@@ -193,13 +195,17 @@ export default function LeaveRequestsPage() {
   };
 
   const handleSubmit = async (payload: ILeaveRequestPayload) => {
-    const notiId = notify.loading(isEdit ? 'Updating...' : 'Submitting...');
+    const notiId = notify.loading(
+      isEdit ? t('leaveRequest.updatingRequest') : t('leaveRequest.submittingRequest'),
+    );
     try {
       await createMutation.mutateAsync(payload);
-      notify.success(notiId, { message: isEdit ? 'Updated' : 'Submitted' });
+      notify.success(notiId, {
+        message: isEdit ? t('leaveRequest.updated') : t('leaveRequest.submitted'),
+      });
       handleClose();
     } catch (e: any) {
-      notify.error(notiId, { message: e?.response?.data?.message || 'Failed' });
+      notify.error(notiId, { message: e?.response?.data?.message || t('leaveRequest.failed') });
     }
   };
 
@@ -220,7 +226,7 @@ export default function LeaveRequestsPage() {
     const { ids, status } = actionModal;
     const isBulk = ids.length > 1;
     const notiId = notify.loading(
-      status === LEAVE_STATUS.APPROVED ? 'Approving...' : 'Rejecting...',
+      status === LEAVE_STATUS.APPROVED ? t('leaveRequest.approving') : t('leaveRequest.rejecting'),
     );
     try {
       if (isBulk) {
@@ -234,28 +240,40 @@ export default function LeaveRequestsPage() {
         });
       }
       notify.success(notiId, {
-        message: `${isBulk ? `${ids.length} requests` : 'Leave request'} ${status}`,
+        message: t('leaveRequest.actionSuccess', {
+          target: isBulk
+            ? t('leaveRequest.requestsCount', { count: ids.length })
+            : t('leaveRequest.singleRequest'),
+          status:
+            status === LEAVE_STATUS.APPROVED
+              ? t('labels.leaveStatus.approved')
+              : t('labels.leaveStatus.rejected'),
+        }),
       });
       setActionModal(null);
     } catch (e: any) {
-      notify.error(notiId, { message: e?.response?.data?.message || 'Action failed' });
+      notify.error(notiId, {
+        message: e?.response?.data?.message || t('leaveRequest.actionFailed'),
+      });
     }
   };
 
   const handleDelete = (id: string) => {
     confirm({
-      title: 'Delete Leave Request',
-      message: 'Are you sure you want to delete this leave request? This action cannot be undone.',
-      confirmLabel: 'Delete',
-      cancelLabel: 'Cancel',
+      title: t('leaveRequest.deleteTitle'),
+      message: t('leaveRequest.deleteMessage'),
+      confirmLabel: t('actions.delete'),
+      cancelLabel: t('common.cancel'),
       type: 'delete',
       onConfirm: async () => {
-        const notiId = notify.loading('Deleting...');
+        const notiId = notify.loading(t('leaveRequest.deleting'));
         try {
           await deleteMutation.mutateAsync(id);
-          notify.success(notiId, { message: 'Deleted' });
+          notify.success(notiId, { message: t('leaveRequest.deleted') });
         } catch (e: any) {
-          notify.error(notiId, { message: e?.response?.data?.message || 'Delete failed' });
+          notify.error(notiId, {
+            message: e?.response?.data?.message || t('leaveRequest.deleteFailed'),
+          });
         }
       },
     });
@@ -264,7 +282,7 @@ export default function LeaveRequestsPage() {
   const columns: TableColumn<ILeaveRequest>[] = [
     {
       key: 'employee',
-      title: 'Employee',
+      title: t('employee.employee'),
       sortable: true,
       render: (r) => (
         <EmployeeColumn employee={r.employee} showAvatar={true} showPendingBadge={false} />
@@ -272,7 +290,7 @@ export default function LeaveRequestsPage() {
     },
     {
       key: 'leave_type',
-      title: 'Type',
+      title: t('common.type'),
       render: (r) => (
         <Badge variant="light" color="blue" size="sm" fw={500}>
           {LEAVE_TYPE_LABEL[r.leave_type] ?? r.leave_type}
@@ -281,12 +299,12 @@ export default function LeaveRequestsPage() {
     },
     {
       key: 'period',
-      title: 'Period',
+      title: t('common.period'),
       render: (r) => {
         const timeLabel =
           r.leave_start_minutes != null || r.leave_end_minutes != null
             ? `${r.leave_start_minutes != null ? minutesToTime(r.leave_start_minutes) : '—'} – ${r.leave_end_minutes != null ? minutesToTime(r.leave_end_minutes) : '—'}`
-            : 'Full day';
+            : t('leaveRequest.fullDay');
         return (
           <Stack gap={1}>
             <Text size="sm">
@@ -301,16 +319,16 @@ export default function LeaveRequestsPage() {
     },
     {
       key: 'reason',
-      title: 'Reason',
+      title: t('leaveRequest.reason'),
       render: (r) => (
         <Text size="sm" c="dimmed" lineClamp={1}>
-          {r.reason || '—'}
+          {r.reason || t('common.notAvailable')}
         </Text>
       ),
     },
     {
       key: 'approved_by',
-      title: 'Review',
+      title: t('leaveRequest.review'),
       render: (r) => (
         <Stack gap={4}>
           <Group gap={6} wrap="nowrap">
@@ -324,7 +342,7 @@ export default function LeaveRequestsPage() {
             </ThemeIcon>
             <Box style={{ flex: 1, minWidth: 0 }}>
               <Text size="xs" c={r.approved_by_manager ? 'green' : 'dimmed'} fw={500} truncate>
-                {r.approver_manager?.full_name ?? 'Manager —'}
+                {r.approver_manager?.full_name ?? t('leaveRequest.managerFallback')}
               </Text>
               {r.manager_comment && (
                 <Text size="xs" c="dimmed" fs="italic" lineClamp={1}>
@@ -345,7 +363,7 @@ export default function LeaveRequestsPage() {
             </ThemeIcon>
             <Box style={{ flex: 1, minWidth: 0 }}>
               <Text size="xs" c={r.approved_by_admin ? 'green' : 'dimmed'} fw={500} truncate>
-                {r.approver_admin?.full_name ?? 'Admin —'}
+                {r.approver_admin?.full_name ?? t('leaveRequest.adminFallback')}
               </Text>
               {r.admin_comment && (
                 <Text size="xs" c="dimmed" fs="italic" lineClamp={1}>
@@ -359,7 +377,7 @@ export default function LeaveRequestsPage() {
     },
     {
       key: 'status',
-      title: 'Status',
+      title: t('common.status'),
       align: 'center',
       render: (r) => (
         <Badge variant="light" color={STATUS_COLOR[r.status] ?? 'gray'} size="sm" fw={500}>
@@ -369,7 +387,7 @@ export default function LeaveRequestsPage() {
     },
     {
       key: 'actions',
-      title: 'Actions',
+      title: t('actions.actions'),
       align: 'center',
       render: (r) => {
         const isSelf = currentEmployeeId === r.employee_id;
@@ -388,7 +406,7 @@ export default function LeaveRequestsPage() {
           <Group gap={4} justify="center">
             {canAct && (
               <>
-                <Tooltip label="Approve" withArrow>
+                <Tooltip label={t('common.approve')} withArrow>
                   <ActionIcon
                     size="sm"
                     variant="subtle"
@@ -398,7 +416,7 @@ export default function LeaveRequestsPage() {
                     <IconCheck size={16} />
                   </ActionIcon>
                 </Tooltip>
-                <Tooltip label="Reject" withArrow>
+                <Tooltip label={t('common.reject')} withArrow>
                   <ActionIcon
                     size="sm"
                     variant="subtle"
@@ -412,12 +430,12 @@ export default function LeaveRequestsPage() {
             )}
             {isPending && isSelf && !managerApproved && (
               <>
-                <Tooltip label="Edit" withArrow>
+                <Tooltip label={t('common.edit')} withArrow>
                   <ActionIcon size="sm" variant="subtle" color="gray" onClick={() => handleEdit(r)}>
                     <IconEdit size={16} />
                   </ActionIcon>
                 </Tooltip>
-                <Tooltip label="Delete" withArrow>
+                <Tooltip label={t('common.delete')} withArrow>
                   <ActionIcon
                     size="sm"
                     variant="subtle"
@@ -458,12 +476,12 @@ export default function LeaveRequestsPage() {
   return (
     <Stack gap="md">
       <PageHeader
-        title="Leave Requests"
-        description="Manage employee leave requests"
+        title={t('pages.leaveRequestsTitle')}
+        description={t('pages.leaveRequestsDescription')}
         right={
           <Group gap="sm">
             <Button leftSection={<IconPlus size={18} />} onClick={handleOpen}>
-              Add Leave Request
+              {t('leaveRequest.addRequest')}
             </Button>
           </Group>
         }
@@ -488,7 +506,7 @@ export default function LeaveRequestsPage() {
             >
               <Box>
                 <MultiSelect
-                  placeholder="Status"
+                  placeholder={t('leaveRequest.filters.status')}
                   data={LEAVE_STATUS_OPTIONS}
                   value={selectedStatuses}
                   onChange={(value) => {
@@ -531,7 +549,7 @@ export default function LeaveRequestsPage() {
             >
               <Box>
                 <MultiSelect
-                  placeholder="Leave Type"
+                  placeholder={t('leaveRequest.filters.leaveType')}
                   data={LEAVE_TYPE_OPTIONS}
                   value={selectedLeaveTypes}
                   onChange={(value) => {
@@ -583,7 +601,7 @@ export default function LeaveRequestsPage() {
                   >
                     <Box>
                       <MultiSelect
-                        placeholder="Employee"
+                        placeholder={t('leaveRequest.filters.employee')}
                         data={employeeOptions}
                         value={selectedEmployees}
                         onChange={(value) => {
@@ -641,7 +659,7 @@ export default function LeaveRequestsPage() {
                   >
                     <Box>
                       <MultiSelect
-                        placeholder="Department"
+                        placeholder={t('leaveRequest.filters.department')}
                         data={(deptData?.data ?? []).map((d) => ({
                           value: d.id,
                           label: d.department_name,
@@ -697,12 +715,12 @@ export default function LeaveRequestsPage() {
                   },
                 }}
               >
-                My Requests
+                {t('leaveRequest.filters.myRequests')}
               </Button>
             )}
 
             {hasActiveFilters && (
-              <Tooltip label="Clear all filters" withArrow>
+              <Tooltip label={t('leaveRequest.filters.clearAll')} withArrow>
                 <ActionIcon variant="subtle" color="gray" size="lg" onClick={handleClearFilters}>
                   <IconFilterOff size={18} />
                 </ActionIcon>
@@ -717,7 +735,7 @@ export default function LeaveRequestsPage() {
               style={{ background: 'var(--mantine-color-blue-0)', borderRadius: 6 }}
             >
               <Text size="sm" fw={500}>
-                {selectedIndices.size} selected
+                {t('leaveRequest.selectedCount', { count: selectedIndices.size })}
               </Text>
               <Button
                 size="xs"
@@ -725,7 +743,7 @@ export default function LeaveRequestsPage() {
                 leftSection={<IconChecks size={14} />}
                 onClick={() => handleBulkAction(LEAVE_STATUS.APPROVED)}
               >
-                Approve all
+                {t('leaveRequest.approveAll')}
               </Button>
               <Button
                 size="xs"
@@ -734,7 +752,7 @@ export default function LeaveRequestsPage() {
                 leftSection={<IconX size={14} />}
                 onClick={() => handleBulkAction(LEAVE_STATUS.REJECTED)}
               >
-                Reject all
+                {t('leaveRequest.rejectAll')}
               </Button>
             </Group>
           )}
@@ -819,10 +837,12 @@ export default function LeaveRequestsPage() {
               )}
             </ThemeIcon>
             <Text fw={700} size="md">
-              {actionModal?.status === LEAVE_STATUS.APPROVED ? 'Approve' : 'Reject'}{' '}
+              {actionModal?.status === LEAVE_STATUS.APPROVED
+                ? t('common.approve')
+                : t('common.reject')}{' '}
               {(actionModal?.ids.length ?? 0) > 1
-                ? `${actionModal?.ids.length} Requests`
-                : 'Leave Request'}
+                ? t('leaveRequest.requestsCount', { count: actionModal?.ids.length ?? 0 })
+                : t('leaveRequest.singleRequest')}
             </Text>
           </Group>
         }
@@ -834,15 +854,15 @@ export default function LeaveRequestsPage() {
         <Stack gap="md">
           <Text size="sm" c="dimmed">
             {actionModal?.status === LEAVE_STATUS.APPROVED
-              ? 'Optionally leave a note for the employee(s).'
-              : 'Please provide a reason for rejection.'}
+              ? t('leaveRequest.approveHint')
+              : t('leaveRequest.rejectHint')}
           </Text>
           <Textarea
-            label="Comment"
+            label={t('common.commentOptional')}
             placeholder={
               actionModal?.status === LEAVE_STATUS.APPROVED
-                ? 'e.g. Approved!'
-                : 'e.g. Insufficient notice...'
+                ? t('leaveRequest.placeholders.approveComment')
+                : t('leaveRequest.placeholders.rejectComment')
             }
             autosize
             minRows={3}
@@ -851,7 +871,7 @@ export default function LeaveRequestsPage() {
           />
           <Group justify="flex-end" mt={4}>
             <Button variant="subtle" color="gray" onClick={() => setActionModal(null)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               color={actionModal?.status === LEAVE_STATUS.APPROVED ? 'green' : 'red'}
@@ -865,7 +885,9 @@ export default function LeaveRequestsPage() {
               loading={updateMutation.isPending || bulkMutation.isPending}
               onClick={handleConfirmAction}
             >
-              {actionModal?.status === LEAVE_STATUS.APPROVED ? 'Approve' : 'Reject'}
+              {actionModal?.status === LEAVE_STATUS.APPROVED
+                ? t('common.approve')
+                : t('common.reject')}
             </Button>
           </Group>
         </Stack>

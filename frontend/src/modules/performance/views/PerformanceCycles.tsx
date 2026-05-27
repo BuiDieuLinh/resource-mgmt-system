@@ -22,8 +22,8 @@ import { CreateCycleModal } from '../components/CreateCycleModal';
 import { notify } from '@/components/Notification';
 import { performanceCycleDetailUrl } from '@/routes/url';
 import type { IReviewCycle } from '../types';
+import { useTranslation } from 'react-i18next';
 
-const PERIOD_LABEL: Record<string, string> = { monthly: 'Monthly', quarterly: 'Quarterly' };
 const PERIOD_COLOR: Record<string, string> = { monthly: 'blue', quarterly: 'violet' };
 type CycleReviewSummary = NonNullable<IReviewCycle['reviews']>[number];
 
@@ -38,6 +38,7 @@ const isReviewStarted = (review?: CycleReviewSummary) =>
   );
 
 export default function PerformanceCyclesPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: cycles = [], isLoading } = useGetCycles();
   const { data: templates = [] } = useGetTemplates();
@@ -52,13 +53,15 @@ export default function PerformanceCyclesPage() {
   const [filterYear, setFilterYear] = useState<string | null>(null);
 
   const handleCreateCycle = async (values: any) => {
-    const nid = notify.loading('Creating cycle...');
+    const nid = notify.loading(t('performance.creatingCycle'));
     try {
       await createCycle.mutateAsync(values);
-      notify.success(nid, { message: 'Review cycle created successfully' });
+      notify.success(nid, { message: t('performance.cycleCreated') });
       setOpened(false);
     } catch (e: any) {
-      notify.error(nid, { message: e?.response?.data?.message || 'Failed to create cycle' });
+      notify.error(nid, {
+        message: e?.response?.data?.message || t('performance.cycleCreateFailed'),
+      });
       throw e;
     }
   };
@@ -66,14 +69,16 @@ export default function PerformanceCyclesPage() {
   const handleUpdateCycle = async (values: any) => {
     if (!editingCycle) return;
 
-    const nid = notify.loading('Updating cycle...');
+    const nid = notify.loading(t('settings.workPolicies.updating'));
     try {
       await updateCycle.mutateAsync({ id: editingCycle.id, ...values });
-      notify.success(nid, { message: 'Review cycle updated successfully' });
+      notify.success(nid, { message: t('performance.cycleUpdated') });
       setOpened(false);
       setEditingCycle(null);
     } catch (e: any) {
-      notify.error(nid, { message: e?.response?.data?.message || 'Failed to update cycle' });
+      notify.error(nid, {
+        message: e?.response?.data?.message || t('performance.cycleUpdateFailed'),
+      });
       throw e;
     }
   };
@@ -109,7 +114,7 @@ export default function PerformanceCyclesPage() {
   const columns: TableColumn<IReviewCycle>[] = [
     {
       key: 'title',
-      title: 'Cycle Name',
+      title: t('performance.cycleName'),
       sortable: true,
       render: (r) => (
         <div>
@@ -122,23 +127,25 @@ export default function PerformanceCyclesPage() {
             {r.title}
           </Text>
           <Text size="xs" c="dimmed">
-            {r.period_year} · Period {r.period_seq}
+            {r.period_year} · {t('performance.periodSequence', { seq: r.period_seq })}
           </Text>
         </div>
       ),
     },
     {
       key: 'period_type',
-      title: 'Type',
+      title: t('common.type'),
       render: (r) => (
         <Badge variant="light" color={PERIOD_COLOR[r.period_type]} size="sm" fw={500}>
-          {PERIOD_LABEL[r.period_type]}
+          {r.period_type === 'monthly'
+            ? t('performance.periodMonthly')
+            : t('performance.periodQuarterly')}
         </Badge>
       ),
     },
     {
       key: 'template',
-      title: 'Template',
+      title: t('common.template'),
       render: (r) =>
         r.template ? (
           <Tooltip label={r.template.description || r.template.title}>
@@ -148,13 +155,13 @@ export default function PerformanceCyclesPage() {
           </Tooltip>
         ) : (
           <Text size="sm" c="dimmed">
-            No template
+            {t('performance.noTemplate')}
           </Text>
         ),
     },
     {
       key: 'announce_date',
-      title: 'Announce Date',
+      title: t('performance.announceDate'),
       sortable: true,
       render: (r) => {
         const isOver = new Date(r.announce_date) > new Date();
@@ -170,7 +177,7 @@ export default function PerformanceCyclesPage() {
     },
     {
       key: 'stats',
-      title: 'Progress',
+      title: t('common.progress'),
       align: 'center',
       render: (r) => {
         const totalAssignments = r._count?.assignments ?? r.assignments?.length ?? 0;
@@ -182,7 +189,10 @@ export default function PerformanceCyclesPage() {
           <Stack gap={6} style={{ minWidth: 180 }}>
             <Group justify="space-between" gap="xs">
               <Text size="xs" c="dimmed">
-                {completedReviews}/{totalAssignments} completed
+                {t('performance.completedCount', {
+                  completed: completedReviews,
+                  total: totalAssignments,
+                })}
               </Text>
               <Text size="xs" fw={600}>
                 {completionRate}%
@@ -209,13 +219,13 @@ export default function PerformanceCyclesPage() {
     },
     {
       key: 'actions',
-      title: 'Action',
+      title: t('actions.actions'),
       align: 'center',
       width: 60,
       render: (r) => {
         const isOver = new Date(r.announce_date) < new Date();
         return (
-          <Tooltip label="Edit cycle">
+          <Tooltip label={t('performance.editCycle')}>
             <ActionIcon
               variant="subtle"
               color="blue"
@@ -244,19 +254,19 @@ export default function PerformanceCyclesPage() {
   return (
     <Stack gap="lg">
       <PageHeader
-        title="Review Cycles"
-        description="Manage performance review cycles and track evaluation progress"
+        title={t('pages.performanceCyclesTitle')}
+        description={t('pages.performanceCyclesDescription')}
         right={
           <Group>
             <Button leftSection={<IconPlus size={18} />} onClick={handleOpenCreate}>
-              New Cycle
+              {t('performance.newCycle')}
             </Button>
             <Group>
               <Select
-                placeholder="Filter by type"
+                placeholder={t('performance.filterByType')}
                 data={[
-                  { value: 'monthly', label: 'Monthly' },
-                  { value: 'quarterly', label: 'Quarterly' },
+                  { value: 'monthly', label: t('performance.periodMonthly') },
+                  { value: 'quarterly', label: t('performance.periodQuarterly') },
                 ]}
                 value={filterType}
                 onChange={setFilterType}
@@ -265,7 +275,7 @@ export default function PerformanceCyclesPage() {
                 style={{ width: 180 }}
               />
               <Select
-                placeholder="Filter by year"
+                placeholder={t('performance.filterByYear')}
                 data={years}
                 value={filterYear}
                 onChange={setFilterYear}
@@ -275,7 +285,10 @@ export default function PerformanceCyclesPage() {
               />
               {(filterType || filterYear) && (
                 <Text size="sm" c="dimmed">
-                  Showing {filteredCycles.length} of {cycles.length} cycles
+                  {t('performance.showingCycles', {
+                    filtered: filteredCycles.length,
+                    total: cycles.length,
+                  })}
                 </Text>
               )}
             </Group>
@@ -288,8 +301,7 @@ export default function PerformanceCyclesPage() {
         columns={columns}
         height={520}
         highlightOnHover
-        // onRowClick={(r) => navigate(performanceCycleDetailUrl.replace(':id', r.id))}
-        emptyText="No review cycles found. Create your first cycle to get started."
+        emptyText={t('performance.noCyclesFound')}
       />
 
       <CreateCycleModal

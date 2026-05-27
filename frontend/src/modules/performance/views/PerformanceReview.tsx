@@ -54,6 +54,7 @@ import {
   INTERN_RESULT_LABEL,
 } from '@/constant';
 import type { IEvaluationCriteria, IReviewCycle, IPerformanceReview } from '../types';
+import { useTranslation } from 'react-i18next';
 
 interface CriteriaScore {
   criteria_id: string;
@@ -109,10 +110,10 @@ function calcRawAverage(
 
 function getGradeLabel(score: number, max = 100) {
   const pct = max > 0 ? (score / max) * 100 : score;
-  if (pct >= 90) return { label: 'Excellent', color: 'green' };
-  if (pct >= 75) return { label: 'Good', color: 'blue' };
-  if (pct >= 60) return { label: 'Average', color: 'yellow' };
-  return { label: 'Below Average', color: 'red' };
+  if (pct >= 90) return { labelKey: 'performance.gradeExcellent', color: 'green' };
+  if (pct >= 75) return { labelKey: 'performance.gradeGood', color: 'blue' };
+  if (pct >= 60) return { labelKey: 'performance.gradeAverage', color: 'yellow' };
+  return { labelKey: 'performance.gradeBelowAverage', color: 'red' };
 }
 
 function pickActiveCycle(cycles: IReviewCycle[]): IReviewCycle | null {
@@ -143,6 +144,7 @@ function pickActiveCycle(cycles: IReviewCycle[]): IReviewCycle | null {
 }
 
 export default function PerformanceReviewPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { get, set } = useUrlParams();
   const { data: cycles = [] } = useGetCycles();
@@ -311,7 +313,7 @@ export default function PerformanceReviewPage() {
 
   const handleSave = async (submit = false) => {
     if (!selectedCycleId || !selectedEmployeeId || !myEmployeeId) {
-      notify.error('', { message: 'Missing required data' });
+      notify.error('', { message: t('performance.missingRequiredData') });
       return;
     }
     if (
@@ -319,12 +321,14 @@ export default function PerformanceReviewPage() {
       (contractType === 'probation' || contractType === 'intern') &&
       !form.values.result
     ) {
-      notify.error('', { message: 'Result is required for probation/intern reviews' });
+      notify.error('', { message: t('performance.resultRequired') });
       return;
     }
 
     const payload = buildPayload();
-    const nid = notify.loading(submit ? 'Submitting...' : 'Saving draft...');
+    const nid = notify.loading(
+      submit ? t('performance.submittingReview') : t('performance.savingDraft'),
+    );
     try {
       if (submit && existingReview) {
         await submitReview.mutateAsync({ id: existingReview.id, ...payload });
@@ -335,9 +339,11 @@ export default function PerformanceReviewPage() {
       } else {
         await createReview.mutateAsync(payload);
       }
-      notify.success(nid, { message: submit ? 'Review submitted' : 'Draft saved' });
+      notify.success(nid, {
+        message: submit ? t('performance.reviewSubmitted') : t('performance.draftSaved'),
+      });
     } catch (e: any) {
-      notify.error(nid, { message: e?.response?.data?.message || 'An error occurred' });
+      notify.error(nid, { message: e?.response?.data?.message || t('performance.errorOccurred') });
     }
   };
 
@@ -395,11 +401,11 @@ export default function PerformanceReviewPage() {
   return (
     <Stack gap="md">
       <PageHeader
-        title="Performance Review"
+        title={t('nav.performanceReview')}
         description={
           isPrivilegedViewer && !canPrivilegedEditCurrentReview
-            ? 'View assigned review results by cycle'
-            : 'Evaluate only the employees assigned to you in the selected cycle'
+            ? t('performance.reviewReadonlyDescription')
+            : t('performance.reviewEditableDescription')
         }
       />
 
@@ -407,7 +413,7 @@ export default function PerformanceReviewPage() {
         <Group justify="space-between" align="center">
           <Group gap="sm">
             <Text size="sm" fw={600}>
-              Cycle:
+              {t('performance.cycleLabel')}
             </Text>
             <Select
               size="sm"
@@ -422,23 +428,23 @@ export default function PerformanceReviewPage() {
               }}
               checkIconPosition="right"
               style={{ width: 280 }}
-              placeholder="Select cycle..."
+              placeholder={t('performance.selectCycle')}
             />
           </Group>
 
           {selectedCycleId && totalCount > 0 && (
             <Group gap="xs">
               <Badge variant="light" color="gray" size="sm">
-                {totalCount} total
+                {t('performance.totalCount', { count: totalCount })}
               </Badge>
               <Badge variant="light" color="green" size="sm">
-                {doneCount} done
+                {t('performance.doneCount', { count: doneCount })}
               </Badge>
               <Badge variant="light" color="yellow" size="sm">
-                {draftCount} draft
+                {t('performance.draftCount', { count: draftCount })}
               </Badge>
               <Badge variant="light" color="red" size="sm">
-                {pendingCount} pending
+                {t('performance.pendingCount', { count: pendingCount })}
               </Badge>
             </Group>
           )}
@@ -449,7 +455,7 @@ export default function PerformanceReviewPage() {
         <Center h={300}>
           <Stack align="center" gap="xs">
             <IconChartBar size={40} color="var(--mantine-color-dimmed)" />
-            <Text c="dimmed">Select a cycle to start reviewing</Text>
+            <Text c="dimmed">{t('performance.selectCycleToStart')}</Text>
           </Stack>
         </Center>
       ) : reviewsLoading ? (
@@ -460,7 +466,7 @@ export default function PerformanceReviewPage() {
         <Center h={300}>
           <Stack align="center" gap="xs">
             <IconUser size={40} color="var(--mantine-color-dimmed)" />
-            <Text c="dimmed">No employees assigned to this cycle</Text>
+            <Text c="dimmed">{t('performance.noEmployeesInCycle')}</Text>
           </Stack>
         </Center>
       ) : (
@@ -475,7 +481,7 @@ export default function PerformanceReviewPage() {
               >
                 <Group justify="space-between">
                   <Text size="sm" fw={600}>
-                    Employees
+                    {t('employee.employees')}
                   </Text>
                   <Text size="xs" c="dimmed">
                     {doneCount}/{totalCount}
@@ -588,11 +594,11 @@ export default function PerformanceReviewPage() {
                       variant="light"
                       p="xs"
                     >
-                      <Text size="xs">All reviews completed!</Text>
+                      <Text size="xs">{t('performance.allReviewsCompleted')}</Text>
                     </Alert>
                   ) : (
                     <Text size="xs" c="dimmed" ta="center">
-                      {totalCount - doneCount} remaining
+                      {t('performance.remainingCount', { count: totalCount - doneCount })}
                     </Text>
                   )}
                 </Box>
@@ -608,8 +614,8 @@ export default function PerformanceReviewPage() {
                     <IconUser size={40} color="var(--mantine-color-dimmed)" />
                     <Text c="dimmed" size="sm">
                       {isPrivilegedViewer && !canPrivilegedEditCurrentReview
-                        ? 'Select an employee from the list to view review details'
-                        : 'Select an employee from the list to start reviewing'}
+                        ? t('performance.selectEmployeeToView')
+                        : t('performance.selectEmployeeToReview')}
                     </Text>
                   </Stack>
                 </Center>
@@ -663,8 +669,8 @@ export default function PerformanceReviewPage() {
                       <Box>
                         <Text size="xs" c="dimmed">
                           {template?.criteria && template.criteria.length > 0
-                            ? 'Avg Score'
-                            : 'Score'}
+                            ? t('performance.avgScore')
+                            : t('performance.score')}
                         </Text>
                         {calculatedRaw ? (
                           <Group gap={2} align="baseline">
@@ -685,7 +691,7 @@ export default function PerformanceReviewPage() {
                           </Text>
                         )}
                         <Badge size="xs" color={grade.color} variant="light" mt={2}>
-                          {grade.label}
+                          {t(grade.labelKey)}
                         </Badge>
                       </Box>
                     </Group>
@@ -700,7 +706,7 @@ export default function PerformanceReviewPage() {
                               {existingReview.attendance_days ?? '—'}
                             </Text>
                             <Text size="xs" c="dimmed">
-                              Present
+                              {t('attendance.summary.actualDays')}
                             </Text>
                           </Box>
                           <Box ta="center">
@@ -708,7 +714,7 @@ export default function PerformanceReviewPage() {
                               {existingReview.late_count ?? '—'}
                             </Text>
                             <Text size="xs" c="dimmed">
-                              Late
+                              {t('attendance.summary.late')}
                             </Text>
                           </Box>
                           <Box ta="center">
@@ -716,7 +722,7 @@ export default function PerformanceReviewPage() {
                               {existingReview.absent_count ?? '—'}
                             </Text>
                             <Text size="xs" c="dimmed">
-                              Absent
+                              {t('attendance.summary.absent')}
                             </Text>
                           </Box>
                         </Group>
@@ -728,7 +734,7 @@ export default function PerformanceReviewPage() {
                 {template?.criteria && template.criteria.length > 0 ? (
                   <Card withBorder p="md">
                     <Group justify="space-between" mb="md">
-                      <Text fw={600}>Evaluation Criteria</Text>
+                      <Text fw={600}>{t('performance.evaluationCriteria')}</Text>
                       <Badge variant="light" size="sm">
                         {template.title}
                       </Badge>
@@ -835,7 +841,7 @@ export default function PerformanceReviewPage() {
                 ) : (
                   <Card withBorder p="md">
                     <Text fw={600} mb="md">
-                      Performance Score
+                      {t('performance.score')}
                     </Text>
                     <Group align="center" gap="md">
                       <NumberInput
@@ -859,7 +865,7 @@ export default function PerformanceReviewPage() {
                         }
                       />
                       <Badge size="lg" color={grade.color} variant="light">
-                        {grade.label}
+                        {t(grade.labelKey)}
                       </Badge>
                       <Progress
                         value={form.values.score}
@@ -873,13 +879,13 @@ export default function PerformanceReviewPage() {
 
                 <Card withBorder p="md">
                   <Text fw={600} mb="md">
-                    Feedback & Conclusion
+                    {t('performance.feedbackConclusion')}
                   </Text>
                   <Stack gap="md">
                     {contractType === 'probation' && (
                       <Select
-                        label="Probation Result"
-                        placeholder="Select result..."
+                        label={t('performance.probationResult')}
+                        placeholder={t('performance.selectResult')}
                         data={probationResultOptions}
                         required
                         disabled={isReadOnly}
@@ -890,8 +896,8 @@ export default function PerformanceReviewPage() {
                     )}
                     {contractType === 'intern' && (
                       <Select
-                        label="Intern Result"
-                        placeholder="Select result..."
+                        label={t('performance.internResult')}
+                        placeholder={t('performance.selectResult')}
                         data={internResultOptions}
                         required
                         disabled={isReadOnly}
@@ -901,15 +907,15 @@ export default function PerformanceReviewPage() {
                       />
                     )}
                     <Textarea
-                      label="Key Achievements"
-                      placeholder="Outstanding work, notable projects, contributions..."
+                      label={t('performance.keyAchievements')}
+                      placeholder={t('performance.achievementsPlaceholder')}
                       rows={3}
                       disabled={isReadOnly}
                       {...form.getInputProps('achievements')}
                     />
                     <Textarea
-                      label="General Feedback"
-                      placeholder="Performance, attitude, areas for improvement..."
+                      label={t('performance.generalFeedback')}
+                      placeholder={t('performance.feedbackPlaceholder')}
                       rows={3}
                       disabled={isReadOnly}
                       {...form.getInputProps('comment')}
@@ -920,14 +926,14 @@ export default function PerformanceReviewPage() {
                 {/* Actions */}
                 {!isReadOnly && (
                   <Group justify="flex-end">
-                    <Tooltip label="Save as draft — you can continue editing later">
+                    <Tooltip label={t('performance.saveDraftHint')}>
                       <Button
                         variant="light"
                         leftSection={<IconDeviceFloppy size={16} />}
                         loading={createReview.isPending && !submitReview.isPending}
                         onClick={() => handleSave(false)}
                       >
-                        Save Draft
+                        {t('performance.saveDraft')}
                       </Button>
                     </Tooltip>
                     <Button
@@ -935,21 +941,22 @@ export default function PerformanceReviewPage() {
                       loading={submitReview.isPending}
                       onClick={() => handleSave(true)}
                     >
-                      Submit Review
+                      {t('performance.submitReview')}
                     </Button>
                   </Group>
                 )}
 
                 {isPrivilegedViewer && !canPrivilegedEditCurrentReview && (
                   <Alert icon={<IconAlertCircle size={16} />} color="blue" variant="light">
-                    You can only edit reviews for employees you directly manage or are assigned to
-                    review.
+                    {t('performance.privilegedEditNotice')}
                   </Alert>
                 )}
 
                 {(!isPrivilegedViewer || canPrivilegedEditCurrentReview) && isDone && (
                   <Alert icon={<IconCheck size={16} />} color="green" variant="light">
-                    This review has been {existingReview?.status}. No further edits allowed.
+                    {t('performance.reviewLocked', {
+                      status: existingReview?.status ?? '',
+                    })}
                   </Alert>
                 )}
               </Stack>

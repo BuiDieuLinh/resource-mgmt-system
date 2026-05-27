@@ -27,6 +27,7 @@ import { useGetEmployeeByUserId } from '@/modules/employees/api/get-employee-by-
 import type { ILeaveRequest, ILeaveRequestPayload } from '../types';
 import { toDateOnly } from '@/utils/date';
 import { TIME_OPTIONS } from '@/modules/employees/utils/time-option';
+import { useTranslation } from 'react-i18next';
 
 interface LeaveRequestFormModalProps {
   opened: boolean;
@@ -76,6 +77,7 @@ export function LeaveRequestFormModal({
   onReject,
   loading = false,
 }: LeaveRequestFormModalProps) {
+  const { t } = useTranslation();
   const { data: currentEmployeeData } = useGetEmployeeByUserId();
   const currentEmployee = currentEmployeeData?.data;
   const [reviewComment, setReviewComment] = useState('');
@@ -83,10 +85,10 @@ export function LeaveRequestFormModal({
   const form = useForm<FormValues>({
     initialValues: EMPTY,
     validate: {
-      employee_id: (v) => (!v ? 'Employee is required' : null),
-      leave_type: (v) => (!v ? 'Leave type is required' : null),
-      start_date: (v) => (!v ? 'Start date is required' : null),
-      end_date: (v) => (!v ? 'End date is required' : null),
+      employee_id: (v) => (!v ? t('leaveRequest.validation.employeeRequired') : null),
+      leave_type: (v) => (!v ? t('leaveRequest.validation.leaveTypeRequired') : null),
+      start_date: (v) => (!v ? t('leaveRequest.validation.startDateRequired') : null),
+      end_date: (v) => (!v ? t('leaveRequest.validation.endDateRequired') : null),
     },
   });
 
@@ -173,7 +175,7 @@ export function LeaveRequestFormModal({
         title={
           <Group gap="xs">
             <Text size="lg" fw={700} c={PRIMARY_COLOR}>
-              LEAVE REQUEST
+              {t('leaveRequest.modal.title')}
             </Text>
             <Badge color={STATUS_COLOR[lr.status] ?? 'gray'} variant="light" size="sm">
               {lr.status}
@@ -185,74 +187,80 @@ export function LeaveRequestFormModal({
         styles={{ header: { padding: '5px 15px' }, body: { paddingTop: 10 } }}
       >
         <Stack gap="sm">
-          <InfoRow label="Type" value={LEAVE_TYPE_LABEL[lr.leave_type] ?? lr.leave_type} />
           <InfoRow
-            label="Period"
+            label={t('fields.leaveType')}
+            value={LEAVE_TYPE_LABEL[lr.leave_type] ?? lr.leave_type}
+          />
+          <InfoRow
+            label={t('common.period')}
             value={`${formatDate(lr.start_date)} – ${formatDate(lr.end_date)}`}
           />
           {(lr.leave_start_minutes != null || lr.leave_end_minutes != null) && (
             <InfoRow
-              label="Time"
+              label={t('leaveRequest.time')}
               value={`${lr.leave_start_minutes != null ? minutesToTime(lr.leave_start_minutes) : '—'} – ${lr.leave_end_minutes != null ? minutesToTime(lr.leave_end_minutes) : '—'}`}
             />
           )}
-          {lr.reason && <InfoRow label="Reason" value={lr.reason} />}
+          {lr.reason && <InfoRow label={t('leaveRequest.reason')} value={lr.reason} />}
           {lr.leave_type === LEAVE_TYPE.ANNUAL && annualLeaveBalance && (
             <>
               <Divider
-                label={`Annual leave balance - Q${annualLeaveBalance.quarter}/${annualLeaveBalance.year}`}
+                label={t('leaveRequest.annualLeaveBalance', {
+                  quarter: annualLeaveBalance.quarter,
+                  year: annualLeaveBalance.year,
+                })}
                 labelPosition="left"
               />
               <SimpleGrid cols={3} spacing="md" verticalSpacing="xs">
                 <div>
                   <Text size="xs" c="dimmed">
-                    Allowed now
+                    {t('leaveRequest.allowedNow')}
                   </Text>
                   <Text size="sm" fw={500}>
-                    {annualLeaveBalance.entitled_days} day(s)
+                    {t('leaveRequest.daysCount', { count: annualLeaveBalance.entitled_days })}
                   </Text>
                 </div>
                 <div>
                   <Text size="xs" c="dimmed">
-                    Requested
+                    {t('leaveRequest.requested')}
                   </Text>
                   <Text size="sm" fw={500}>
-                    {annualLeaveBalance.requested_days ?? 0} day(s)
+                    {t('leaveRequest.daysCount', { count: annualLeaveBalance.requested_days ?? 0 })}
                   </Text>
                 </div>
                 <div>
                   <Text size="xs" c="dimmed">
-                    Used
+                    {t('leaveRequest.used')}
                   </Text>
                   <Text size="sm" fw={500}>
-                    {annualLeaveBalance.used_days} day(s)
+                    {t('leaveRequest.daysCount', { count: annualLeaveBalance.used_days })}
                   </Text>
                 </div>
               </SimpleGrid>
               <SimpleGrid cols={3} spacing="md" verticalSpacing="xs">
                 <div>
                   <Text size="xs" c="dimmed">
-                    Pending
+                    {t('leaveRequest.pending')}
                   </Text>
                   <Text size="sm" fw={500}>
-                    {annualLeaveBalance.pending_days ?? 0} day(s)
+                    {t('leaveRequest.daysCount', { count: annualLeaveBalance.pending_days ?? 0 })}
                   </Text>
                 </div>
                 <div>
                   <Text size="xs" c="dimmed">
-                    Remaining now
+                    {t('leaveRequest.remainingNow')}
                   </Text>
                   <Text
                     size="sm"
                     fw={500}
                     c={annualLeaveBalance.remaining_days < 0 ? 'red' : undefined}
                   >
-                    {annualLeaveBalance.remaining_days} day(s)
+                    {t('leaveRequest.daysCount', { count: annualLeaveBalance.remaining_days })}
                   </Text>
                 </div>
                 <div>
                   <Text size="xs" c="dimmed">
-                    Remaining after this
+                    {t('leaveRequest.remainingAfterThis')}
                   </Text>
                   <Text
                     size="sm"
@@ -264,9 +272,11 @@ export function LeaveRequestFormModal({
                         : undefined
                     }
                   >
-                    {annualLeaveBalance.remaining_after_request ??
-                      annualLeaveBalance.remaining_days}{' '}
-                    day(s)
+                    {t('leaveRequest.daysCount', {
+                      count:
+                        annualLeaveBalance.remaining_after_request ??
+                        annualLeaveBalance.remaining_days,
+                    })}
                   </Text>
                 </div>
               </SimpleGrid>
@@ -276,12 +286,12 @@ export function LeaveRequestFormModal({
           {/* Approval history */}
           {(lr.approved_by_manager || lr.approved_by_admin) && (
             <>
-              <Divider label="Review history" labelPosition="left" />
+              <Divider label={t('leaveRequest.reviewHistory')} labelPosition="left" />
               {lr.approved_by_manager && (
                 <Stack gap={2}>
                   <Group gap={4}>
                     <Text size="xs" c="dimmed">
-                      Manager:
+                      {t('employee.manager')}:
                     </Text>
                     <Text size="xs" fw={500}>
                       {lr.approver_manager?.full_name ?? '—'}
@@ -317,9 +327,9 @@ export function LeaveRequestFormModal({
           {/* Review actions */}
           {canReview && (
             <>
-              <Divider label="Review" labelPosition="left" />
+              <Divider label={t('leaveRequest.review')} labelPosition="left" />
               <Textarea
-                placeholder="Comment (optional)"
+                placeholder={t('common.commentOptional')}
                 autosize
                 minRows={2}
                 value={reviewComment}
@@ -327,7 +337,7 @@ export function LeaveRequestFormModal({
               />
               <Group justify="flex-end" gap="xs">
                 <Button variant="subtle" onClick={onClose}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   color="red"
@@ -335,10 +345,10 @@ export function LeaveRequestFormModal({
                   loading={loading}
                   onClick={() => onReject?.(lr.id, reviewComment)}
                 >
-                  Reject
+                  {t('common.reject')}
                 </Button>
                 <Button loading={loading} onClick={() => onApprove?.(lr.id, reviewComment)}>
-                  Approve
+                  {t('common.approve')}
                 </Button>
               </Group>
             </>
@@ -347,7 +357,7 @@ export function LeaveRequestFormModal({
           {!canReview && (
             <Group justify="flex-end">
               <Button variant="subtle" onClick={onClose}>
-                Close
+                {t('common.close')}
               </Button>
             </Group>
           )}
@@ -378,7 +388,7 @@ export function LeaveRequestFormModal({
       onClose={onClose}
       title={
         <Text size="xl" fw={700} c={PRIMARY_COLOR}>
-          {mode === 'edit' ? 'EDIT LEAVE REQUEST' : 'ADD LEAVE REQUEST'}
+          {mode === 'edit' ? t('titleModal.editLeaveRequest') : t('titleModal.addLeaveRequest')}
         </Text>
       }
       centered
@@ -389,15 +399,15 @@ export function LeaveRequestFormModal({
         <Stack gap="sm">
           <Select
             checkIconPosition="right"
-            label="Leave Type"
-            placeholder="Select type"
+            label={t('fields.leaveType')}
+            placeholder={t('leaveRequest.placeholders.selectType')}
             required
             data={LEAVE_TYPE_OPTIONS}
             {...form.getInputProps('leave_type')}
           />
           <Group grow>
             <DateInput
-              label="Start Date"
+              label={t('leaveRequest.startDate')}
               placeholder={DATE_FORMAT}
               valueFormat={DATE_FORMAT}
               required
@@ -405,7 +415,7 @@ export function LeaveRequestFormModal({
               {...form.getInputProps('start_date')}
             />
             <DateInput
-              label="End Date"
+              label={t('leaveRequest.endDate')}
               placeholder={DATE_FORMAT}
               valueFormat={DATE_FORMAT}
               required
@@ -417,8 +427,8 @@ export function LeaveRequestFormModal({
           <Group grow>
             <Select
               checkIconPosition="right"
-              label="Leave from"
-              placeholder="Start time"
+              label={t('leaveRequest.leaveFrom')}
+              placeholder={t('leaveRequest.placeholders.startTime')}
               data={TIME_OPTIONS}
               searchable
               clearable
@@ -426,8 +436,8 @@ export function LeaveRequestFormModal({
             />
             <Select
               checkIconPosition="right"
-              label="Leave until"
-              placeholder="End time"
+              label={t('leaveRequest.leaveUntil')}
+              placeholder={t('leaveRequest.placeholders.endTime')}
               data={TIME_OPTIONS}
               searchable
               clearable
@@ -436,18 +446,18 @@ export function LeaveRequestFormModal({
           </Group>
 
           <Textarea
-            label="Reason"
-            placeholder="Optional reason"
+            label={t('leaveRequest.reason')}
+            placeholder={t('leaveRequest.placeholders.optionalReason')}
             autosize
             minRows={2}
             {...form.getInputProps('reason')}
           />
           <Group justify="flex-end" mt="xs">
             <Button variant="subtle" onClick={onClose} disabled={loading}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" loading={loading}>
-              {mode === 'edit' ? 'Update' : 'Submit'}
+              {mode === 'edit' ? t('common.update') : t('common.submit')}
             </Button>
           </Group>
         </Stack>

@@ -30,8 +30,10 @@ import { CreateTemplateModal } from '../components/CreateTemplateModal';
 import { notify } from '@/components/Notification';
 import type { IEvaluationTemplate } from '../types';
 import { CONTRACT_TYPE_COLOR, CONTRACT_TYPE_LABEL } from '@/constant';
+import { useTranslation } from 'react-i18next';
 
 export default function EvaluationTemplatesPage() {
+  const { t } = useTranslation();
   const { data: templates = [], isLoading: _loading } = useGetTemplates();
   const isLoading = useDelayedLoading(_loading);
 
@@ -61,7 +63,7 @@ export default function EvaluationTemplatesPage() {
   };
 
   const handleCreate = async (values: any) => {
-    const nid = notify.loading('Creating template...');
+    const nid = notify.loading(t('performance.creatingTemplate'));
     try {
       await createTemplate.mutateAsync({
         title: values.title,
@@ -69,17 +71,19 @@ export default function EvaluationTemplatesPage() {
         apply_to: values.apply_to.length > 0 ? values.apply_to : [],
         criteria: values.criteria,
       });
-      notify.success(nid, { message: 'Template created' });
+      notify.success(nid, { message: t('performance.templateCreated') });
       setModalOpened(false);
     } catch (e: any) {
-      notify.error(nid, { message: e?.response?.data?.message || 'Failed to create' });
+      notify.error(nid, {
+        message: e?.response?.data?.message || t('performance.templateCreateFailed'),
+      });
       throw e;
     }
   };
 
   const handleEdit = async (values: any) => {
     if (!editingTemplate) return;
-    const nid = notify.loading('Saving changes...');
+    const nid = notify.loading(t('performance.savingTemplate'));
     try {
       await updateTemplate.mutateAsync({
         id: editingTemplate.id,
@@ -88,31 +92,37 @@ export default function EvaluationTemplatesPage() {
         apply_to: values.apply_to.length > 0 ? values.apply_to : [],
         criteria: values.criteria,
       });
-      notify.success(nid, { message: 'Template updated' });
+      notify.success(nid, { message: t('performance.templateUpdated') });
       setModalOpened(false);
       setEditingTemplate(null);
     } catch (e: any) {
-      notify.error(nid, { message: e?.response?.data?.message || 'Failed to save' });
+      notify.error(nid, {
+        message: e?.response?.data?.message || t('performance.templateSaveFailed'),
+      });
       throw e;
     }
   };
 
   const handleToggle = (id: string, isActive: boolean, title: string) => {
     confirm({
-      title: isActive ? 'Deactivate Template' : 'Activate Template',
+      title: isActive ? t('performance.deactivateTemplate') : t('performance.activateTemplate'),
       message: isActive
-        ? `Are you sure you want to deactivate template "${title}"? It will no longer be available for new review cycles.`
-        : `Are you sure you want to activate template "${title}"?`,
-      confirmLabel: isActive ? 'Deactivate' : 'Activate',
-      cancelLabel: 'Cancel',
+        ? t('performance.deactivateTemplateMessage', { title })
+        : t('performance.activateTemplateMessage', { title }),
+      confirmLabel: isActive
+        ? t('performance.deactivateTemplate')
+        : t('performance.activateTemplate'),
+      cancelLabel: t('common.cancel'),
       type: isActive ? 'warning' : 'info',
       onConfirm: async () => {
-        const nid = notify.loading('Updating...');
+        const nid = notify.loading(t('settings.workPolicies.updating'));
         try {
           await toggleTemplate.mutateAsync(id);
-          notify.success(nid, { message: 'Status updated' });
+          notify.success(nid, { message: t('performance.statusUpdated') });
         } catch (e: any) {
-          notify.error(nid, { message: e?.response?.data?.message || 'Failed to update' });
+          notify.error(nid, {
+            message: e?.response?.data?.message || t('performance.updateFailed'),
+          });
         }
       },
     });
@@ -125,7 +135,7 @@ export default function EvaluationTemplatesPage() {
   if (isLoading)
     return (
       <Stack gap="md">
-        <SectionLabel>Evaluation Templates</SectionLabel>
+        <SectionLabel>{t('performance.templatesTitle')}</SectionLabel>
         <SettingRowSkeleton rows={3} />
       </Stack>
     );
@@ -140,11 +150,11 @@ export default function EvaluationTemplatesPage() {
             leftSection={<IconPlus size={15} />}
             onClick={openCreate}
           >
-            New Template
+            {t('performance.newTemplate')}
           </Button>
         }
       >
-        Evaluation Templates
+        {t('performance.templatesTitle')}
       </SectionLabel>
 
       <SettingsCard>
@@ -152,18 +162,18 @@ export default function EvaluationTemplatesPage() {
           <Box py="xl" ta="center">
             <IconTemplate size={30} color="#adb5bd" style={{ margin: '0 auto 6px' }} />
             <Text size="sm" c="dimmed">
-              No templates yet
+              {t('performance.noTemplates')}
             </Text>
           </Box>
         ) : (
-          templates.map((t: IEvaluationTemplate, i) => {
-            const isExpanded = expandedId === t.id;
+          templates.map((template: IEvaluationTemplate, i) => {
+            const isExpanded = expandedId === template.id;
             const isLast = i === templates.length - 1;
 
             const applyToBadges =
-              t.apply_to && t.apply_to.length > 0 ? (
+              template.apply_to && template.apply_to.length > 0 ? (
                 <Group gap={4}>
-                  {t.apply_to.map((type) => (
+                  {template.apply_to.map((type) => (
                     <Badge
                       key={type}
                       size="xs"
@@ -177,14 +187,14 @@ export default function EvaluationTemplatesPage() {
                 </Group>
               ) : (
                 <Badge size="xs" variant="light" color="gray" fw={500}>
-                  All types
+                  {t('performance.allTypes')}
                 </Badge>
               );
 
-            const criteriaCount = t._count?.criteria ?? t.criteria?.length ?? 0;
+            const criteriaCount = template._count?.criteria ?? template.criteria?.length ?? 0;
 
             return (
-              <Box key={t.id}>
+              <Box key={template.id}>
                 {/* Main row */}
                 <Group
                   justify="space-between"
@@ -193,12 +203,12 @@ export default function EvaluationTemplatesPage() {
                   px="md"
                   wrap="nowrap"
                   style={{ cursor: 'pointer' }}
-                  onClick={() => toggleExpand(t.id)}
+                  onClick={() => toggleExpand(template.id)}
                 >
                   <Group gap="sm" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
                     <ThemeIcon
                       variant="light"
-                      color={t.is_active ? 'blue' : 'gray'}
+                      color={template.is_active ? 'blue' : 'gray'}
                       size="md"
                       radius="sm"
                       style={{ flexShrink: 0 }}
@@ -207,12 +217,12 @@ export default function EvaluationTemplatesPage() {
                     </ThemeIcon>
                     <Box style={{ minWidth: 0 }}>
                       <Text size="sm" fw={500} lh={1.3}>
-                        {t.title}
+                        {template.title}
                       </Text>
                       <Group gap={6} mt={2} wrap="nowrap">
                         {applyToBadges}
                         <Text size="xs" c="dimmed">
-                          · {criteriaCount} criteria
+                          · {t('performance.criteriaCount', { count: criteriaCount })}
                         </Text>
                       </Group>
                     </Box>
@@ -222,37 +232,44 @@ export default function EvaluationTemplatesPage() {
                     <Badge
                       size="xs"
                       variant="dot"
-                      color={t.is_active ? 'green' : 'gray'}
+                      color={template.is_active ? 'green' : 'gray'}
                       radius="sm"
                     >
-                      {t.is_active ? 'Active' : 'Inactive'}
+                      {template.is_active ? t('common.active') : t('common.inactive')}
                     </Badge>
-                    {t._count?.cycles != null && (
+                    {template._count?.cycles != null && (
                       <Badge size="xs" variant="light" color="gray" radius="sm">
-                        {t._count.cycles} cycles
+                        {template._count.cycles} cycles
                       </Badge>
                     )}
-                    <Tooltip label="Edit" withArrow>
+                    <Tooltip label={t('common.edit')} withArrow>
                       <ActionIcon
                         size="sm"
                         variant="subtle"
                         color="gray"
                         onClick={(e) => {
                           e.stopPropagation();
-                          openEdit(t);
+                          openEdit(template);
                         }}
                       >
                         <IconEdit size={15} />
                       </ActionIcon>
                     </Tooltip>
-                    <Tooltip label={t.is_active ? 'Deactivate' : 'Activate'} withArrow>
+                    <Tooltip
+                      label={
+                        template.is_active
+                          ? t('performance.deactivateTemplate')
+                          : t('performance.activateTemplate')
+                      }
+                      withArrow
+                    >
                       <ActionIcon
                         size="sm"
                         variant="subtle"
-                        color={t.is_active ? 'red' : 'green'}
+                        color={template.is_active ? 'red' : 'green'}
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleToggle(t.id, t.is_active, t.title);
+                          handleToggle(template.id, template.is_active, template.title);
                         }}
                       >
                         <IconEyeOff size={15} />
@@ -264,7 +281,7 @@ export default function EvaluationTemplatesPage() {
                       color="gray"
                       onClick={(e) => {
                         e.stopPropagation();
-                        toggleExpand(t.id);
+                        toggleExpand(template.id);
                       }}
                     >
                       {isExpanded ? <IconChevronDown size={15} /> : <IconChevronRight size={15} />}
@@ -274,38 +291,38 @@ export default function EvaluationTemplatesPage() {
 
                 <Collapse in={isExpanded}>
                   <Box px="md" pb="sm" style={{ background: 'var(--mantine-color-gray-0)' }}>
-                    {t.description && (
+                    {template.description && (
                       <Text size="xs" c="dimmed" mb="sm">
-                        {t.description}
+                        {template.description}
                       </Text>
                     )}
 
-                    {t.criteria && t.criteria.length > 0 ? (
+                    {template.criteria && template.criteria.length > 0 ? (
                       <Stack gap={4}>
                         <Group justify="space-between" mb={4}>
                           <Group gap={6}>
                             <IconListCheck size={14} color="var(--mantine-color-dimmed)" />
                             <Text size="xs" fw={600} c="dimmed" tt="uppercase">
-                              Criteria
+                              {t('performance.criteria')}
                             </Text>
                           </Group>
                           <Text size="xs" c="dimmed">
-                            Total weight:{' '}
+                            {t('performance.totalWeight')}:{' '}
                             <Text
                               span
                               fw={600}
                               c={
-                                t.criteria.reduce((s, c) => s + c.weight, 0) === 100
+                                template.criteria.reduce((s, c) => s + c.weight, 0) === 100
                                   ? 'green'
                                   : 'red'
                               }
                             >
-                              {t.criteria.reduce((s, c) => s + c.weight, 0)}%
+                              {template.criteria.reduce((s, c) => s + c.weight, 0)}%
                             </Text>
                           </Text>
                         </Group>
 
-                        {t.criteria.map((c, idx) => (
+                        {template.criteria.map((c, idx) => (
                           <Group
                             key={c.id}
                             justify="space-between"
@@ -326,7 +343,7 @@ export default function EvaluationTemplatesPage() {
                                 {c.weight}%
                               </Badge>
                               <Badge size="xs" variant="light" color="gray">
-                                max {c.max_score}
+                                {t('performance.maxScore', { count: c.max_score })}
                               </Badge>
                               <Badge size="xs" variant="outline" color="gray">
                                 {c.score_type}
@@ -337,7 +354,7 @@ export default function EvaluationTemplatesPage() {
                       </Stack>
                     ) : (
                       <Text size="xs" c="dimmed">
-                        No criteria defined
+                        {t('performance.noCriteria')}
                       </Text>
                     )}
                   </Box>

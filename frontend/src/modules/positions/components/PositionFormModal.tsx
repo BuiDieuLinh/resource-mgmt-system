@@ -1,11 +1,12 @@
 import { Modal, Button, Group, TextInput, Select, Stack, Text, Textarea } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useMemo, useEffect } from 'react';
-import { positionValidationRules } from '../rule-form/position-validation';
+import { getPositionValidationRules } from '../rule-form/position-validation';
 import type { PositionFormValues } from '../types';
 import { useGetAllDepartments } from '../../departments/api/get-departments';
 import { PRIMARY_COLOR } from '@/theme';
 import { LEVEL_OPTIONS } from '@/constant';
+import { useTranslation } from 'react-i18next';
 
 interface PositionFormModalProps {
   opened: boolean;
@@ -26,7 +27,9 @@ export function PositionFormModal({
   onSubmit,
   loading = false,
 }: PositionFormModalProps) {
+  const { t } = useTranslation();
   const { data: departmentsData, isLoading: isDepartmentsLoading } = useGetAllDepartments();
+  const positionValidationRules = getPositionValidationRules(t);
 
   const form = useForm<PositionFormValues>({
     initialValues: {
@@ -78,7 +81,7 @@ export function PositionFormModal({
       onClose={handleClose}
       title={
         <Text size="xl" fw={700} c={PRIMARY_COLOR}>
-          {mode === 'edit' ? 'EDIT POSITION' : 'ADD POSITION'}
+          {mode === 'edit' ? t('position.modal.editPosition') : t('position.modal.addPosition')}
         </Text>
       }
       size="lg"
@@ -95,16 +98,16 @@ export function PositionFormModal({
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack gap="sm">
           <TextInput
-            label="Position Name"
-            placeholder="e.g., Senior Developer"
+            label={t('position.positionName')}
+            placeholder={t('position.modal.positionNamePlaceholder')}
             required
             {...form.getInputProps('position_name')}
           />
 
           <Select
             checkIconPosition="right"
-            label="Level"
-            placeholder="Select level"
+            label={t('position.level')}
+            placeholder={t('position.modal.levelPlaceholder')}
             data={LEVEL_OPTIONS}
             required
             {...form.getInputProps('level')}
@@ -112,8 +115,8 @@ export function PositionFormModal({
 
           <Select
             checkIconPosition="right"
-            label="Department"
-            placeholder="Select department"
+            label={t('position.department')}
+            placeholder={t('position.modal.departmentPlaceholder')}
             required
             data={departmentOptions}
             searchable
@@ -122,8 +125,8 @@ export function PositionFormModal({
           />
 
           <Textarea
-            label="Description"
-            placeholder="Enter position description (optional)"
+            label={t('position.description')}
+            placeholder={t('position.modal.descriptionPlaceholder')}
             rows={3}
             {...form.getInputProps('description')}
           />
@@ -131,10 +134,10 @@ export function PositionFormModal({
 
         <Group justify="flex-end" mt="md">
           <Button variant="subtle" onClick={handleClose} disabled={loading}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" loading={loading}>
-            {mode === 'edit' ? 'Update' : 'Create'}
+            {mode === 'edit' ? t('common.update') : t('common.save')}
           </Button>
         </Group>
       </form>

@@ -24,6 +24,7 @@ import { TIME_OPTIONS, minutesToTime, timeToMinutes } from '../utils/time';
 import type { IWorkPolicy, IWorkPolicyPayload } from '../types';
 import { DATE_FORMAT } from '@/constant';
 import { toISO } from '@/utils/date';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   opened: boolean;
@@ -75,6 +76,7 @@ export function WorkPolicyFormModal({
   onSubmit,
   loading,
 }: Props) {
+  const { t } = useTranslation();
   const form = useForm<FormValues>({ initialValues: EMPTY });
   const [addressValue, setAddressValue] = useState('');
   const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
@@ -186,7 +188,9 @@ export function WorkPolicyFormModal({
       onClose={onClose}
       title={
         <Text fw={700} c={PRIMARY_COLOR}>
-          {mode === 'edit' ? 'EDIT WORK POLICY' : 'ADD WORK POLICY'}
+          {mode === 'edit'
+            ? t('workPolicy.modal.editWorkPolicy')
+            : t('workPolicy.modal.addWorkPolicy')}
         </Text>
       }
       size="lg"
@@ -201,7 +205,7 @@ export function WorkPolicyFormModal({
                 <Group gap={6} mb="xs">
                   <IconCoffee size={14} />
                   <Text size="sm" fw={600}>
-                    Break Time
+                    {t('workPolicy.breakTime')}
                   </Text>
                 </Group>
                 <Grid gutter="sm">
@@ -209,7 +213,7 @@ export function WorkPolicyFormModal({
                     <Select
                       size="xs"
                       checkIconPosition="right"
-                      label="Start"
+                      label={t('workPolicy.start')}
                       data={TIME_OPTIONS}
                       searchable
                       leftSection={<IconClock size={13} />}
@@ -220,7 +224,7 @@ export function WorkPolicyFormModal({
                     <Select
                       size="xs"
                       checkIconPosition="right"
-                      label="End"
+                      label={t('workPolicy.end')}
                       data={TIME_OPTIONS}
                       searchable
                       leftSection={<IconClock size={13} />}
@@ -235,12 +239,12 @@ export function WorkPolicyFormModal({
                 <Group gap={6} mb="xs">
                   <IconClock size={14} />
                   <Text size="sm" fw={600}>
-                    Flexible Window
+                    {t('workPolicy.flexibleWindow')}
                   </Text>
                 </Group>
                 <Switch
                   size="sm"
-                  label="Enable grace window"
+                  label={t('workPolicy.enableGraceWindow')}
                   mb={form.values.is_flexible_enabled ? 'xs' : 0}
                   {...form.getInputProps('is_flexible_enabled', { type: 'checkbox' })}
                 />
@@ -249,7 +253,7 @@ export function WorkPolicyFormModal({
                     <Grid.Col span={6}>
                       <NumberInput
                         size="xs"
-                        label="Check-in grace"
+                        label={t('workPolicy.checkInGrace')}
                         min={0}
                         max={120}
                         suffix=" min"
@@ -259,7 +263,7 @@ export function WorkPolicyFormModal({
                     <Grid.Col span={6}>
                       <NumberInput
                         size="xs"
-                        label="Check-out grace"
+                        label={t('workPolicy.checkOutGrace')}
                         min={0}
                         max={120}
                         suffix=" min"
@@ -276,10 +280,10 @@ export function WorkPolicyFormModal({
             <Group gap={6} mb="xs">
               <IconMapPin size={14} />
               <Text size="sm" fw={600}>
-                Office Location
+                {t('workPolicy.officeLocation')}
               </Text>
               <Text size="xs" c="dimmed">
-                (optional)
+                ({t('workPolicy.optional')})
               </Text>
             </Group>
 
@@ -287,8 +291,8 @@ export function WorkPolicyFormModal({
               <Box style={{ flex: 1, position: 'relative' }}>
                 <TextInput
                   size="xs"
-                  label="Address"
-                  placeholder="Search office address..."
+                  label={t('workPolicy.officeAddress')}
+                  placeholder={t('workPolicy.modal.officeAddressPlaceholder')}
                   leftSection={
                     searching ? (
                       <Loader size={12} />
@@ -355,7 +359,7 @@ export function WorkPolicyFormModal({
 
               <NumberInput
                 size="xs"
-                label="Radius"
+                label={t('workPolicy.allowedRadius')}
                 min={10}
                 max={5000}
                 suffix=" m"
@@ -377,7 +381,7 @@ export function WorkPolicyFormModal({
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  View on map ↗
+                  {t('workPolicy.viewOnMap')}
                 </Anchor>
               </Group>
             )}
@@ -388,14 +392,14 @@ export function WorkPolicyFormModal({
             <Group gap={6} mb="xs">
               <IconCalendar size={14} />
               <Text size="sm" fw={600}>
-                Effective Period
+                {t('workPolicy.effectiveRange')}
               </Text>
             </Group>
             <Grid gutter="sm">
               <Grid.Col span={6}>
                 <DateInput
                   size="xs"
-                  label="From"
+                  label={t('workPolicy.effectiveFrom')}
                   placeholder={DATE_FORMAT}
                   valueFormat={DATE_FORMAT}
                   required
@@ -405,8 +409,8 @@ export function WorkPolicyFormModal({
               <Grid.Col span={6}>
                 <DateInput
                   size="xs"
-                  label="To"
-                  placeholder="No end date"
+                  label={t('workPolicy.effectiveTo')}
+                  placeholder={t('workPolicy.noEndDate')}
                   valueFormat={DATE_FORMAT}
                   clearable
                   minDate={form.values.effective_from ?? undefined}
@@ -419,10 +423,10 @@ export function WorkPolicyFormModal({
 
         <Group justify="flex-end" mt="md">
           <Button variant="subtle" onClick={onClose} disabled={loading}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" loading={loading}>
-            {mode === 'edit' ? 'Update' : 'Create'}
+            {mode === 'edit' ? t('common.update') : t('common.save')}
           </Button>
         </Group>
       </form>

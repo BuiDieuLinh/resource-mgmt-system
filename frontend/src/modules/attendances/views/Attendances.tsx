@@ -33,8 +33,10 @@ import { getEmployeeAttendance } from '../api/get-employee-attendance';
 import { Loader, Center } from '@mantine/core';
 import { buildAttendanceDetailUrl } from '@/routes/url';
 import { useGetAllDepartments } from '@/modules/departments/api/get-departments';
+import { useTranslation } from 'react-i18next';
 
 export default function AttendancesPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState<string | null>(null);
@@ -72,7 +74,7 @@ export default function AttendancesPage() {
   );
 
   const selectedDeptName =
-    departmentOptions.find((d) => d.value === departmentFilter)?.label ?? 'All';
+    departmentOptions.find((d) => d.value === departmentFilter)?.label ?? t('common.all');
 
   const handleExportSummary = () => {
     exportSummaryExcel(filtered, month, year, selectedDeptName);
@@ -85,8 +87,8 @@ export default function AttendancesPage() {
       if (detail) {
         await exportEmployeeDetailExcel(
           row.employee?.full_name ?? row.employee_id,
-          detail.employee?.position?.position_name ?? '—',
-          detail.employee?.position?.department?.department_name ?? '—',
+          detail.employee?.position?.position_name ?? t('common.notAvailable'),
+          detail.employee?.position?.department?.department_name ?? t('common.notAvailable'),
           detail.records ?? [],
           detail.leave_requests ?? [],
           detail.work_policy ?? null,
@@ -103,7 +105,7 @@ export default function AttendancesPage() {
   const columns: TableColumn<IAttendance>[] = [
     {
       key: 'employee_id',
-      title: 'Employee',
+      title: t('fields.employee'),
       fixed: 'left',
       render: (r) => (
         <EmployeeColumn
@@ -113,11 +115,21 @@ export default function AttendancesPage() {
         />
       ),
     },
-    { key: 'plan_day', title: 'Planned', render: (r) => formatDays(r.plan_day), sortable: true },
-    { key: 'actual_day', title: 'Actual', render: (r) => formatDays(r.actual_day), sortable: true },
+    {
+      key: 'plan_day',
+      title: t('attendance.overview.planned'),
+      render: (r) => formatDays(r.plan_day),
+      sortable: true,
+    },
+    {
+      key: 'actual_day',
+      title: t('attendance.overview.actual'),
+      render: (r) => formatDays(r.actual_day),
+      sortable: true,
+    },
     {
       key: 'Late',
-      title: 'Late',
+      title: t('attendance.overview.late'),
       sortable: true,
       render: (r) => {
         const mins = (r as any).late_minutes ?? 0;
@@ -134,28 +146,33 @@ export default function AttendancesPage() {
         );
       },
     },
-    { key: 'Absent', title: 'Absent', render: (r) => formatDays(r.absent), sortable: true },
+    {
+      key: 'Absent',
+      title: t('attendance.overview.absent'),
+      render: (r) => formatDays(r.absent),
+      sortable: true,
+    },
     {
       key: 'annual_leave',
-      title: 'Annual Leave',
+      title: t('attendance.overview.annualLeave'),
       render: (r) => formatDays(r.annual_leave),
       sortable: true,
     },
     {
       key: 'unpaid_leave',
-      title: 'Unpaid Leave',
+      title: t('attendance.overview.unpaidLeave'),
       render: (r) => formatDays(r.unpaid_leave),
       sortable: true,
     },
     {
       key: 'holiday_days',
-      title: 'Holiday',
+      title: t('attendance.overview.holiday'),
       render: (r) => formatDays((r as any).holiday_days),
       sortable: true,
     },
     {
       key: 'over_time',
-      title: 'Overtime',
+      title: t('attendance.overview.overtime'),
       sortable: true,
       render: (r) => {
         const mins = r.over_time || 0;
@@ -168,7 +185,7 @@ export default function AttendancesPage() {
     },
     {
       key: 'difference',
-      title: 'Diff',
+      title: t('attendance.overview.diff'),
       sortable: true,
       render: (r) => {
         const diff = (r.actual_day || 0) - (r.plan_day || 0);
@@ -182,19 +199,19 @@ export default function AttendancesPage() {
         return (
           <Text size="sm" c={diff > 0 ? 'green' : 'red'}>
             {sign}
-            {diff} d
+            {diff} {t('attendance.overview.daysShort')}
           </Text>
         );
       },
     },
     {
       key: 'export_detail',
-      title: 'Actions',
+      title: t('actions.actions'),
       align: 'center',
       fixed: 'right',
       render: (r) => (
         <Group gap={4} justify="center" wrap="nowrap">
-          <Tooltip label="View detail" withArrow>
+          <Tooltip label={t('attendance.overview.viewDetail')} withArrow>
             <ActionIcon
               size="sm"
               variant="subtle"
@@ -204,7 +221,7 @@ export default function AttendancesPage() {
               <IconEye size={15} />
             </ActionIcon>
           </Tooltip>
-          <Tooltip label="Export Excel" withArrow>
+          <Tooltip label={t('actions.exportExcel')} withArrow>
             <ActionIcon
               size="sm"
               variant="subtle"
@@ -226,8 +243,8 @@ export default function AttendancesPage() {
   return (
     <Stack gap="md">
       <PageHeader
-        title="Attendance"
-        description="Track and manage employee attendance records"
+        title={t('pages.attendanceTitle')}
+        description={t('pages.attendanceDescription')}
         right={
           <Group gap="sm">
             <Menu shadow="md" position="bottom-end">
@@ -237,12 +254,16 @@ export default function AttendancesPage() {
                   leftSection={<IconDownload size={16} />}
                   rightSection={<IconChevronDown size={14} />}
                 >
-                  Export
+                  {t('actions.export')}
                 </Button>
               </Menu.Target>
               <Menu.Dropdown>
                 <Menu.Item leftSection={<IconDownload size={14} />} onClick={handleExportSummary}>
-                  Export Summary Excel ({selectedDeptName}, {month}/{year})
+                  {t('actions.exportSummaryExcel', {
+                    department: selectedDeptName,
+                    month,
+                    year,
+                  })}
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
@@ -260,7 +281,7 @@ export default function AttendancesPage() {
             <Group gap="md" align="flex-end" justify="space-between">
               <Group gap="sm" align="flex-end">
                 <TextInput
-                  placeholder="Search employee..."
+                  placeholder={t('fields.searchEmployee')}
                   leftSection={<IconSearch size={16} />}
                   value={search}
                   onChange={(e) => {
@@ -271,7 +292,7 @@ export default function AttendancesPage() {
                 />
                 <Select
                   checkIconPosition="right"
-                  placeholder="All departments"
+                  placeholder={t('fields.allDepartments')}
                   data={departmentOptions}
                   value={departmentFilter}
                   onChange={(v) => {
@@ -301,7 +322,7 @@ export default function AttendancesPage() {
             onPageSizeChange={setPageSize}
           />
 
-          {filtered.length === 0 && <Badge>No records found</Badge>}
+          {filtered.length === 0 && <Badge>{t('messages.noRecordsFound')}</Badge>}
         </>
       )}
     </Stack>

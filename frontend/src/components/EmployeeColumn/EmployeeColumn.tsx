@@ -1,4 +1,5 @@
 import { Anchor, Avatar, Group, Stack, Text, Tooltip, Badge } from '@mantine/core';
+import { useTranslation } from 'react-i18next';
 
 interface EmployeeColumnProps {
   employee?: {
@@ -28,7 +29,8 @@ export function EmployeeColumn({
   showPendingBadge = true,
   notificationBadge,
 }: EmployeeColumnProps) {
-  const fullName = employee?.full_name ?? employee?.employee_id ?? 'Unknown';
+  const { t } = useTranslation();
+  const fullName = employee?.full_name ?? employee?.employee_id ?? t('employee.unknown');
   const code = employee?.employee_code ?? '';
   const avatarUrl = employee?.avatar_url;
 
@@ -64,10 +66,7 @@ export function EmployeeColumn({
         <Group gap={6} wrap="nowrap">
           {nameElement}
           {showPendingBadge && pendingCount > 0 && (
-            <Tooltip
-              label={`${pendingCount} leave request${pendingCount > 1 ? 's' : ''} pending admin review`}
-              withArrow
-            >
+            <Tooltip label={t('employee.pendingLeaveRequests', { count: pendingCount })} withArrow>
               <span
                 style={{
                   display: 'inline-flex',
@@ -93,7 +92,7 @@ export function EmployeeColumn({
                     display: 'inline-block',
                   }}
                 />
-                {pendingCount} pending
+                {t('employee.pendingShort', { count: pendingCount })}
               </span>
             </Tooltip>
           )}

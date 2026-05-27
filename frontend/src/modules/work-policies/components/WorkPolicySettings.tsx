@@ -14,6 +14,7 @@ import { useDeleteWorkPolicy } from '../api/delete-work-policy';
 import { WorkPolicyFormModal } from './WorkPolicyFormModal';
 import { minutesToTime } from '../utils/time';
 import type { IWorkPolicy, IWorkPolicyPayload } from '../types';
+import { useTranslation } from 'react-i18next';
 
 function isActive(p: IWorkPolicy) {
   const now = new Date();
@@ -23,6 +24,7 @@ function isActive(p: IWorkPolicy) {
 }
 
 export function WorkPolicySettings() {
+  const { t } = useTranslation();
   const [opened, setOpened] = useState(false);
   const [editPolicy, setEditPolicy] = useState<IWorkPolicy | null>(null);
   const { data, isLoading: _loading } = useGetWorkPolicies();
@@ -37,40 +39,50 @@ export function WorkPolicySettings() {
 
   const handleDelete = (id: string, dateRange: string) => {
     confirm({
-      title: 'Delete Work Policy',
-      message: `Are you sure you want to delete the work policy for "${dateRange}"? This action cannot be undone.`,
-      confirmLabel: 'Delete',
-      cancelLabel: 'Cancel',
+      title: t('settings.workPolicies.deleteTitle'),
+      message: t('settings.workPolicies.deleteMessage', { dateRange }),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
       type: 'delete',
       onConfirm: async () => {
-        const notiId = notify.loading('Deleting...');
+        const notiId = notify.loading(t('settings.workPolicies.deleting'));
         try {
           await deleteMutation.mutateAsync(id);
-          notify.success(notiId, { message: 'Policy deleted' });
+          notify.success(notiId, { message: t('settings.workPolicies.deleteSuccess') });
         } catch (e: any) {
-          notify.error(notiId, { message: e?.response?.data?.message || 'Delete failed' });
+          notify.error(notiId, {
+            message: e?.response?.data?.message || t('settings.workPolicies.deleteFailed'),
+          });
         }
       },
     });
   };
 
   const handleSubmit = async (payload: IWorkPolicyPayload, id?: string) => {
-    const notiId = notify.loading(isEdit ? 'Updating...' : 'Creating...');
+    const notiId = notify.loading(
+      isEdit ? t('settings.workPolicies.updating') : t('settings.workPolicies.creating'),
+    );
     try {
       if (isEdit && id) await updateMutation.mutateAsync({ id, payload });
       else await createMutation.mutateAsync(payload);
-      notify.success(notiId, { message: isEdit ? 'Policy updated' : 'Policy created' });
+      notify.success(notiId, {
+        message: isEdit
+          ? t('settings.workPolicies.updateSuccess')
+          : t('settings.workPolicies.createSuccess'),
+      });
       setOpened(false);
       setEditPolicy(null);
     } catch (e: any) {
-      notify.error(notiId, { message: e?.response?.data?.message || 'Save failed' });
+      notify.error(notiId, {
+        message: e?.response?.data?.message || t('settings.workPolicies.saveFailed'),
+      });
     }
   };
 
   if (isLoading)
     return (
       <Stack gap="md">
-        <SectionLabel>Work Policies</SectionLabel>
+        <SectionLabel>{t('settings.workPolicies.title')}</SectionLabel>
         <SettingRowSkeleton rows={3} />
       </Stack>
     );
@@ -88,11 +100,11 @@ export function WorkPolicySettings() {
               setOpened(true);
             }}
           >
-            Add policy
+            {t('settings.workPolicies.addPolicy')}
           </Button>
         }
       >
-        Work Policies
+        {t('settings.workPolicies.title')}
       </SectionLabel>
 
       <SettingsCard>
@@ -100,7 +112,7 @@ export function WorkPolicySettings() {
           <Box py="xl" ta="center">
             <IconShieldCheck size={30} color="#adb5bd" style={{ margin: '0 auto 6px' }} />
             <Text size="sm" c="dimmed">
-              No policies configured
+              {t('settings.workPolicies.noPolicies')}
             </Text>
           </Box>
         ) : (
@@ -109,15 +121,15 @@ export function WorkPolicySettings() {
             const breakText =
               p.break_start != null && p.break_end != null
                 ? `${minutesToTime(p.break_start)} – ${minutesToTime(p.break_end)}`
-                : 'No break';
+                : t('settings.workPolicies.noBreak');
             const flexText = p.is_flexible_enabled
               ? `+${p.flexible_start ?? 0} / -${p.flexible_end ?? 0} min`
-              : 'Disabled';
+              : t('settings.workPolicies.disabled');
             const geoText =
               p.office_latitude != null && p.office_longitude != null
                 ? `GPS ≤${p.max_distance_meters ?? 100}m`
-                : 'No geo-fence';
-            const dateRange = `${formatDate(p.effective_from)} – ${p.effective_to ? formatDate(p.effective_to) : 'ongoing'}`;
+                : t('settings.workPolicies.noGeoFence');
+            const dateRange = `${formatDate(p.effective_from)} – ${p.effective_to ? formatDate(p.effective_to) : t('settings.workPolicies.ongoing')}`;
 
             return (
               <SettingRow
@@ -125,14 +137,18 @@ export function WorkPolicySettings() {
                 icon={<IconShieldCheck size={16} />}
                 color={active ? 'green' : 'gray'}
                 title={dateRange}
-                description={`Break: ${breakText}  ·  Flex: ${flexText}  ·  ${geoText}`}
+                description={t('settings.workPolicies.activeRange', {
+                  break: breakText,
+                  flex: flexText,
+                  geo: geoText,
+                })}
                 noDivider={i === policies.length - 1}
                 right={
                   <Group gap={6} wrap="nowrap">
                     <Badge size="xs" variant="dot" color={active ? 'green' : 'gray'} radius="sm">
-                      {active ? 'Active' : 'Inactive'}
+                      {active ? t('common.active') : t('common.inactive')}
                     </Badge>
-                    <Tooltip label="Edit" withArrow>
+                    <Tooltip label={t('common.edit')} withArrow>
                       <ActionIcon
                         size="sm"
                         variant="subtle"
@@ -146,7 +162,7 @@ export function WorkPolicySettings() {
                         <IconEdit size={15} />
                       </ActionIcon>
                     </Tooltip>
-                    <Tooltip label="Delete" withArrow>
+                    <Tooltip label={t('common.delete')} withArrow>
                       <ActionIcon
                         size="sm"
                         variant="subtle"

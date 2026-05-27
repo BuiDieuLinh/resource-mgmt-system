@@ -1,5 +1,6 @@
 import { Tooltip, useMantineColorScheme } from '@mantine/core';
 import type { IAttendance } from '../../types';
+import { useTranslation } from 'react-i18next';
 import {
   toPct,
   toMinutesUTC,
@@ -79,6 +80,7 @@ export function TimelineBar({
   workEndMin = WORK_END_MIN,
   hideWorkWindow = false,
 }: Props) {
+  const { t } = useTranslation();
   const { colorScheme } = useMantineColorScheme();
   const dark = colorScheme === 'dark';
 
@@ -99,6 +101,18 @@ export function TimelineBar({
   const windowBg = dark ? 'rgba(255,255,255,0.1)' : '#dee2e6';
   const tickMain = dark ? 'rgba(255,255,255,0.35)' : '#868e96';
   const tickSub = dark ? 'rgba(255,255,255,0.12)' : '#ced4da';
+
+  const localizedSegments = segments.map((s) => ({
+    ...s,
+    label:
+      s.label === 'Late'
+        ? t('attendance.timeline.late')
+        : s.label === 'Work'
+          ? t('attendance.timeline.work')
+          : s.label === 'Early leave'
+            ? t('attendance.timeline.earlyLeave')
+            : t('attendance.timeline.overtime'),
+  }));
 
   return (
     <div style={{ position: 'relative', height: 24, width: '100%' }}>
@@ -128,7 +142,7 @@ export function TimelineBar({
         />
       )}
 
-      {segments.map((s, i) => (
+      {localizedSegments.map((s, i) => (
         <Tooltip key={i} label={s.label} withArrow position="top">
           <div
             style={{

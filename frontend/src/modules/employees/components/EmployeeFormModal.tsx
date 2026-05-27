@@ -36,6 +36,7 @@ import {
 import { WorkDayBadges } from './WorkDayBadges';
 import { buildSchedules } from '../utils/time-option';
 import { TIME_OPTIONS } from '../utils/time-option';
+import { useTranslation } from 'react-i18next';
 
 interface EmployeeFormModalProps {
   opened: boolean;
@@ -78,6 +79,7 @@ export function EmployeeFormModal({
   onSubmit,
   loading = false,
 }: EmployeeFormModalProps) {
+  const { t } = useTranslation();
   const { data: positionsData, isLoading: isPositionsLoading } = useGetAllPositions();
   const { data: employeesData, isLoading: isEmployeesLoading } = useGetEmployees({
     pageIndex: 1,
@@ -240,7 +242,7 @@ export function EmployeeFormModal({
       onClose={handleClose}
       title={
         <Text size="xl" fw={700} c={PRIMARY_COLOR}>
-          {mode === 'edit' ? 'EDIT EMPLOYEE' : 'ADD EMPLOYEE'}
+          {mode === 'edit' ? t('titleModal.editEmployee') : t('titleModal.addEmployee')}
         </Text>
       }
       size="xl"
@@ -257,7 +259,7 @@ export function EmployeeFormModal({
               <Group gap={6} align="center">
                 <IconUser size={16} />
                 <Text size="sm" fw={700}>
-                  General Information
+                  {t('employee.generalInformation')}
                 </Text>
               </Group>
             }
@@ -266,8 +268,8 @@ export function EmployeeFormModal({
           <Grid gutter="sm">
             <Grid.Col span={4}>
               <TextInput
-                label="Employee Code"
-                placeholder="e.g., EMP-001"
+                label={t('employee.employeeCode')}
+                placeholder={t('employee.placeHolder.employeeCodePlaceholder')}
                 required
                 disabled={mode === 'edit'}
                 {...(mode === 'add'
@@ -277,16 +279,16 @@ export function EmployeeFormModal({
             </Grid.Col>
             <Grid.Col span={4}>
               <TextInput
-                label="Full Name"
-                placeholder="Enter full name"
+                label={t('employee.fullName')}
+                placeholder={t('employee.placeHolder.fullNamePlaceholder')}
                 required
                 {...form.getInputProps('full_name')}
               />
             </Grid.Col>
             <Grid.Col span={4}>
               <TextInput
-                label="Display Name"
-                placeholder="Optional"
+                label={t('employee.displayName')}
+                placeholder={t('employee.placeHolder.displayNamePlaceholder')}
                 {...form.getInputProps('display_name')}
               />
             </Grid.Col>
@@ -295,8 +297,8 @@ export function EmployeeFormModal({
           <Grid gutter="sm">
             <Grid.Col span={4}>
               <TextInput
-                label="Email"
-                placeholder="example@company.com"
+                label={t('employee.email')}
+                placeholder={t('employee.placeHolder.emailPlaceholder')}
                 type="email"
                 required
                 {...uniqueFieldProps('email')}
@@ -304,16 +306,16 @@ export function EmployeeFormModal({
             </Grid.Col>
             <Grid.Col span={4}>
               <TextInput
-                label="Phone"
-                placeholder="+84 123 456 789"
+                label={t('employee.phone')}
+                placeholder={t('employee.placeHolder.phonePlaceholder')}
                 required
                 {...form.getInputProps('phone')}
               />
             </Grid.Col>
             <Grid.Col span={4}>
               <TextInput
-                label="Identity Card"
-                placeholder="ID card number"
+                label={t('employee.idCard')}
+                placeholder={t('employee.placeHolder.idCardPlaceholder')}
                 required
                 {...uniqueFieldProps('identify_card')}
               />
@@ -325,19 +327,19 @@ export function EmployeeFormModal({
               <Select
                 checkIconPosition="right"
                 label="Gender"
-                placeholder="Select gender"
+                placeholder={t('employee.gender')}
                 required
                 data={[
-                  { value: 'Male', label: 'Male' },
-                  { value: 'Female', label: 'Female' },
-                  { value: 'Other', label: 'Other' },
+                  { value: 'Male', label: t('employee.genderMale') },
+                  { value: 'Female', label: t('employee.genderFemale') },
+                  { value: 'Other', label: t('employee.genderOther') },
                 ]}
                 {...form.getInputProps('gender')}
               />
             </Grid.Col>
             <Grid.Col span={4}>
               <DateInput
-                label="Date of Birth"
+                label={t('employee.dateOfBirth')}
                 placeholder={DATE_FORMAT}
                 valueFormat={DATE_FORMAT}
                 clearable
@@ -349,8 +351,8 @@ export function EmployeeFormModal({
             <Grid.Col span={4}>
               <Select
                 checkIconPosition="right"
-                label="Position"
-                placeholder="Select position"
+                label={t('employee.position')}
+                placeholder={t('employee.placeHolder.positionPlaceholder')}
                 required
                 data={positionOptions}
                 searchable
@@ -361,8 +363,8 @@ export function EmployeeFormModal({
           </Grid>
 
           <Textarea
-            label="Address"
-            placeholder="Enter full address"
+            label={t('employee.address')}
+            placeholder={t('employee.placeHolder.addressPlaceholder')}
             required
             autosize
             minRows={2}
@@ -372,7 +374,7 @@ export function EmployeeFormModal({
           <Grid gutter="sm">
             <Grid.Col span={4}>
               <DateInput
-                label="Hire Date"
+                label={t('employee.hireDate')}
                 placeholder={DATE_FORMAT}
                 valueFormat={DATE_FORMAT}
                 required
@@ -386,12 +388,12 @@ export function EmployeeFormModal({
             <Grid.Col span={4}>
               <Select
                 checkIconPosition="right"
-                label="Status"
-                placeholder="Select status"
+                label={t('employee.status')}
+                placeholder={t('employee.status')}
                 required
                 data={[
-                  { value: 'active', label: 'Active' },
-                  { value: 'inactive', label: 'Inactive' },
+                  { value: 'active', label: t('common.active') },
+                  { value: 'inactive', label: t('common.inactive') },
                 ]}
                 {...form.getInputProps('status')}
               />
@@ -399,8 +401,8 @@ export function EmployeeFormModal({
             <Grid.Col span={4}>
               <Select
                 checkIconPosition="right"
-                label="Contract Type"
-                placeholder="Select contract type"
+                label={t('employee.contractType')}
+                placeholder={t('employee.contractType')}
                 required
                 data={CONTRACT_TYPE_OPTIONS}
                 {...form.getInputProps('contract_type')}
@@ -412,8 +414,8 @@ export function EmployeeFormModal({
             <Grid.Col span={6}>
               <Select
                 checkIconPosition="right"
-                label="Manager"
-                placeholder="Select manager (optional)"
+                label={t('employee.manager')}
+                placeholder={t('employee.placeHolder.managerPlaceholder')}
                 clearable
                 searchable
                 data={managerOptions}
@@ -424,7 +426,7 @@ export function EmployeeFormModal({
             {form.values.status === 'inactive' && (
               <Grid.Col span={6}>
                 <DateInput
-                  label="Terminated Date"
+                  label={t('employee.terminatedDate')}
                   placeholder={DATE_FORMAT}
                   valueFormat={DATE_FORMAT}
                   clearable
@@ -441,22 +443,21 @@ export function EmployeeFormModal({
               <Group gap={6} align="center">
                 <IconCalendar size={16} />
                 <Text size="sm" fw={700}>
-                  Work Schedule
+                  {t('employee.workSchedule')}
                 </Text>
               </Group>
             }
             labelPosition="left"
           />
           <Text size="xs" c="dimmed">
-            Set the number of working days per week and shift hours. This will be used to track
-            attendance automatically.
+            {t('employee.workScheduleDescription')}
           </Text>
           <Stack gap="sm">
             <Stack gap={4}>
               <Group gap={6}>
                 <WorkDayBadges days={selectedDays} onToggle={toggleDay} />
                 <Text size="xs" c="dimmed" ml={4}>
-                  {selectedDays.length} day{selectedDays.length !== 1 ? 's' : ''} / week
+                  {t('employee.daysPerWeek', { count: selectedDays.length })}
                 </Text>
               </Group>
             </Stack>
@@ -475,7 +476,7 @@ export function EmployeeFormModal({
                 <Group gap={6} align="center">
                   <IconClockHour8 size={16} color="#868e96" />
                   <Text size="xs" c="dimmed" fw={500}>
-                    From
+                    {t('employee.from')}
                   </Text>
                 </Group>
                 <Select
@@ -502,7 +503,7 @@ export function EmployeeFormModal({
                 <Group gap={6} align="center">
                   <IconClockHour5 size={16} color="#868e96" />
                   <Text size="xs" c="dimmed" fw={500}>
-                    To
+                    {t('employee.to')}
                   </Text>
                 </Group>
                 <Select
@@ -522,10 +523,10 @@ export function EmployeeFormModal({
 
         <Group justify="flex-end" mt="md">
           <Button variant="subtle" onClick={handleClose} disabled={loading}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" loading={loading} disabled={hasExistsError || isChecking}>
-            {mode === 'edit' ? 'Update' : 'Create'}
+            {mode === 'edit' ? t('common.update') : t('common.save')}
           </Button>
         </Group>
       </form>

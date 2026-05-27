@@ -14,8 +14,10 @@ import { getDaysInMonth, getWeeksInMonth } from '../utils/format';
 import { useGetMyAttendance } from '../api/get-my-attendance';
 import type { IAttendance, ILeaveRequest } from '../types';
 import { IconInfoCircle } from '@tabler/icons-react';
+import { useTranslation } from 'react-i18next';
 
 export default function MyTimesheetPage() {
+  const { t, i18n } = useTranslation();
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState<Date | null>(now);
   const [viewTab, setViewTab] = useState<string>('month');
@@ -58,7 +60,7 @@ export default function MyTimesheetPage() {
     () =>
       weeks.map((w, i) => ({
         value: String(i),
-        label: `Week ${i + 1}: ${w[0].toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} – ${w[w.length - 1].toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}`,
+        label: `${t('attendance.timesheet.weekLabel', { index: i + 1 })}: ${w[0].toLocaleDateString(i18n.language?.startsWith('en') ? 'en-US' : 'vi-VN', { day: '2-digit', month: '2-digit' })} – ${w[w.length - 1].toLocaleDateString(i18n.language?.startsWith('en') ? 'en-US' : 'vi-VN', { day: '2-digit', month: '2-digit' })}`,
       })),
     [weeks],
   );
@@ -78,17 +80,18 @@ export default function MyTimesheetPage() {
   return (
     <Stack gap="md">
       <PageHeader
-        title="My Timesheet"
-        description="Your personal attendance records"
+        title={t('pages.myTimesheetTitle')}
+        description={t('pages.myTimesheetDescription')}
         right={<CheckInOutButton />}
       />
 
       {data?.annual_leave_balance && (
         <Alert icon={<IconInfoCircle size={16} />} color="blue" variant="light">
           <Text size="sm">
-            Annual leave available now:{' '}
-            <strong>{data.annual_leave_balance.year_end_remaining_days}</strong> /{' '}
-            {data.annual_leave_balance.annual_leave_days} day(s).
+            {t('messages.annualLeaveAvailableNow', {
+              remaining: data.annual_leave_balance.year_end_remaining_days,
+              total: data.annual_leave_balance.annual_leave_days,
+            })}
           </Text>
         </Alert>
       )}
@@ -106,7 +109,7 @@ export default function MyTimesheetPage() {
               label: (
                 <Group gap={4}>
                   <IconCalendar size={16} />
-                  Month
+                  {t('attendance.timesheet.month')}
                 </Group>
               ),
             },
@@ -115,7 +118,7 @@ export default function MyTimesheetPage() {
               label: (
                 <Group gap={4}>
                   <IconCalendarWeek size={16} />
-                  Week
+                  {t('attendance.timesheet.week')}
                 </Group>
               ),
             },

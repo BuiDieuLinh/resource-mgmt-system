@@ -46,6 +46,7 @@ import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useGetAllDepartments } from '@/modules/departments/api/get-departments';
+import { useTranslation } from 'react-i18next';
 
 const now = new Date();
 const CURRENT_YEAR = now.getFullYear();
@@ -59,6 +60,7 @@ function MetricCard({
   color,
   iconColor,
   icon,
+  dark = false,
 }: {
   label: string;
   value: string | number;
@@ -66,23 +68,30 @@ function MetricCard({
   color: string;
   iconColor: string;
   icon: React.ReactNode;
+  dark?: boolean;
 }) {
+  const surfaceBg = dark
+    ? `linear-gradient(145deg, ${color}22 0%, rgba(30,41,59,0.98) 62%)`
+    : `linear-gradient(145deg, ${color}12 0%, rgba(255,255,255,0.98) 62%)`;
+
   return (
     <Card
       radius="lg"
       p="lg"
       style={{
-        background: `linear-gradient(145deg, ${color}12 0%, rgba(255,255,255,0.98) 62%)`,
-        border: '1px solid rgba(148,163,184,0.16)',
-        boxShadow: '0 10px 24px -22px rgba(15,23,42,0.28)',
+        background: surfaceBg,
+        border: dark ? '1px solid rgba(148,163,184,0.2)' : '1px solid rgba(148,163,184,0.16)',
+        boxShadow: dark
+          ? '0 10px 24px -22px rgba(2,6,23,0.75)'
+          : '0 10px 24px -22px rgba(15,23,42,0.28)',
       }}
     >
       <Group justify="space-between" align="flex-start" mb="sm">
         <Box>
-          <Text size="xs" fw={600} tt="uppercase" c="dimmed">
+          <Text size="xs" fw={600} tt="uppercase" c={dark ? 'gray.4' : 'dimmed'}>
             {label}
           </Text>
-          <Text fw={800} size="1.5rem" lh={1.05} mt={6}>
+          <Text fw={800} size="1.5rem" lh={1.05} mt={6} c={dark ? 'gray.0' : undefined}>
             {value}
           </Text>
         </Box>
@@ -90,7 +99,7 @@ function MetricCard({
           <Box style={{ transform: 'scale(0.9)' }}>{icon}</Box>
         </ThemeIcon>
       </Group>
-      <Text size="xs" c="dimmed" fw={500}>
+      <Text size="xs" c={dark ? 'gray.4' : 'dimmed'} fw={500}>
         {hint}
       </Text>
     </Card>
@@ -98,6 +107,7 @@ function MetricCard({
 }
 
 function AdminDashboard() {
+  const { t } = useTranslation();
   const { colorScheme } = useMantineColorScheme();
   const dark = colorScheme === 'dark';
   const gridColor = dark ? '#373A40' : '#e9ecef';
@@ -115,6 +125,18 @@ function AdminDashboard() {
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<string>(String(CURRENT_YEAR));
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'quarter' | 'year'>('month');
+  const cardSurface = dark
+    ? 'linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(30,41,59,0.96) 100%)'
+    : 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)';
+  const cardBorder = dark ? '1px solid rgba(100,116,139,0.28)' : '1px solid rgba(148,163,184,0.18)';
+  const chartTextColor = dark ? 'var(--mantine-color-gray-2)' : undefined;
+  const subtleTextColor = dark ? 'gray.4' : 'dimmed';
+  const selectedPeriodLabel =
+    selectedPeriod === 'month'
+      ? t('dashboard.selectedPeriodMonth')
+      : selectedPeriod === 'quarter'
+        ? t('dashboard.selectedPeriodQuarter')
+        : t('dashboard.selectedPeriodYear');
   const reportYear = Number(selectedYear);
 
   const { data: departmentsData } = useGetAllDepartments({
@@ -123,13 +145,13 @@ function AdminDashboard() {
 
   const departmentOptions = useMemo(
     () => [
-      { value: '', label: 'All departments' },
+      { value: '', label: t('dashboard.allDepartments') },
       ...((departmentsData?.data ?? []).map((department) => ({
         value: department.id,
         label: department.department_name,
       })) ?? []),
     ],
-    [departmentsData],
+    [departmentsData, t],
   );
 
   const yearOptions = useMemo(() => {
@@ -209,30 +231,30 @@ function AdminDashboard() {
         <Group justify="space-between" align="flex-start" gap="xl">
           <Stack gap={6} maw={620}>
             <Text size="xs" fw={700} tt="uppercase" c="rgba(255,255,255,0.58)">
-              HR dashboard
+              {t('dashboard.heroTag')}
             </Text>
             <Title order={2} c="white" style={{ letterSpacing: -0.8 }}>
-              Workforce overview
+              {t('dashboard.heroTitle')}
             </Title>
             <Text c="rgba(255,255,255,0.72)" size="sm" maw={480}>
-              Headcount, turnover and risk signals for the selected scope.
+              {t('dashboard.heroDescription')}
             </Text>
           </Stack>
 
           <Group gap="xl" wrap="wrap">
             <Box>
               <Text size="xs" c="rgba(255,255,255,0.5)">
-                Department
+                {t('dashboard.selectedScopeDepartment')}
               </Text>
               <Text size="sm" fw={700} c="white">
                 {selectedDepartmentId
                   ? departmentOptions.find((item) => item.value === selectedDepartmentId)?.label
-                  : 'All departments'}
+                  : t('dashboard.allDepartments')}
               </Text>
             </Box>
             <Box>
               <Text size="xs" c="rgba(255,255,255,0.5)">
-                Year
+                {t('dashboard.selectedScopeYear')}
               </Text>
               <Text size="sm" fw={700} c="white">
                 {reportYear}
@@ -240,10 +262,10 @@ function AdminDashboard() {
             </Box>
             <Box>
               <Text size="xs" c="rgba(255,255,255,0.5)">
-                Period
+                {t('dashboard.selectedScopePeriod')}
               </Text>
               <Text size="sm" fw={700} c="white" tt="capitalize">
-                {selectedPeriod}
+                {selectedPeriodLabel}
               </Text>
             </Box>
           </Group>
@@ -254,13 +276,13 @@ function AdminDashboard() {
         radius="lg"
         p="md"
         style={{
-          background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
-          border: '1px solid rgba(148,163,184,0.18)',
+          background: cardSurface,
+          border: cardBorder,
         }}
       >
         <Group align="end" grow>
           <Select
-            label="Department"
+            label={t('dashboard.filterDepartment')}
             data={departmentOptions}
             value={selectedDepartmentId ?? ''}
             onChange={(value) => setSelectedDepartmentId(value || null)}
@@ -268,7 +290,7 @@ function AdminDashboard() {
             clearable={false}
           />
           <Select
-            label="Year"
+            label={t('dashboard.filterYear')}
             data={yearOptions}
             value={selectedYear}
             onChange={(value) => {
@@ -277,11 +299,11 @@ function AdminDashboard() {
             clearable={false}
           />
           <Select
-            label="Turnover Period"
+            label={t('dashboard.filterTurnoverPeriod')}
             data={[
-              { value: 'month', label: 'Monthly' },
-              { value: 'quarter', label: 'Quarterly' },
-              { value: 'year', label: 'Yearly' },
+              { value: 'month', label: t('dashboard.periodMonthly') },
+              { value: 'quarter', label: t('dashboard.periodQuarterly') },
+              { value: 'year', label: t('dashboard.periodYearly') },
             ]}
             value={selectedPeriod}
             onChange={(value) => {
@@ -296,37 +318,47 @@ function AdminDashboard() {
 
       <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
         <MetricCard
-          label="Total Employees"
+          label={t('dashboard.totalEmployees')}
           value={hrStructure?.totalEmployees || 0}
-          hint="Active employees in the selected scope"
+          hint={t('dashboard.activeEmployees')}
           color="#2563eb"
           iconColor="blue"
+          dark={dark}
           icon={<IconUsers size={20} />}
         />
         <MetricCard
-          label="New Hires"
+          label={t('dashboard.newHires')}
           value={turnover?.summary.totalNewHires || 0}
-          hint={selectedPeriod === 'year' ? 'Across selected years' : `In ${reportYear}`}
+          hint={
+            selectedPeriod === 'year'
+              ? t('dashboard.acrossSelectedYears')
+              : t('dashboard.inYear', { year: reportYear })
+          }
           color="#0f766e"
           iconColor="teal"
+          dark={dark}
           icon={<IconTrendingUp size={20} />}
         />
         <MetricCard
-          label="Turnover Rate"
+          label={t('dashboard.turnoverRate')}
           value={`${turnover?.summary.averageTurnoverRate.toFixed(1) || 0}%`}
           hint={
-            selectedPeriod === 'year' ? 'Average across selected years' : `Average in ${reportYear}`
+            selectedPeriod === 'year'
+              ? t('dashboard.averageAcrossSelectedYears')
+              : t('dashboard.averageInYear', { year: reportYear })
           }
           color="#ea580c"
           iconColor="orange"
+          dark={dark}
           icon={<IconAlertTriangle size={20} />}
         />
         <MetricCard
-          label="Avg Tenure"
+          label={t('dashboard.avgTenure')}
           value={turnover?.summary.averageTenureMonths || 0}
-          hint="Measured in months"
+          hint={t('dashboard.measuredInMonths')}
           color="#7c3aed"
           iconColor="violet"
+          dark={dark}
           icon={<IconClock size={20} />}
         />
       </SimpleGrid>
@@ -337,18 +369,18 @@ function AdminDashboard() {
             radius="lg"
             p="lg"
             style={{
-              background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
-              border: '1px solid rgba(148,163,184,0.18)',
+              background: cardSurface,
+              border: cardBorder,
               height: '100%',
             }}
           >
             <Group justify="space-between" mb="md">
               <div>
-                <Text fw={800} size="md">
-                  HR Structure Overview
+                <Text fw={800} size="md" c={chartTextColor}>
+                  {t('dashboard.hrStructureOverview')}
                 </Text>
-                <Text size="xs" c="dimmed">
-                  Employee distribution across organization layers
+                <Text size="xs" c={dark ? 'gray.4' : 'dimmed'}>
+                  {t('dashboard.hrStructureDescription')}
                 </Text>
               </div>
               <ThemeIcon size={38} radius="md" color="blue" variant="light">
@@ -358,9 +390,9 @@ function AdminDashboard() {
 
             <Tabs defaultValue="department" variant="pills" radius="xl">
               <Tabs.List mb="md">
-                <Tabs.Tab value="department">Departments</Tabs.Tab>
-                <Tabs.Tab value="age">Age Groups</Tabs.Tab>
-                <Tabs.Tab value="tenure">Tenure</Tabs.Tab>
+                <Tabs.Tab value="department">{t('dashboard.departments')}</Tabs.Tab>
+                <Tabs.Tab value="age">{t('dashboard.ageGroups')}</Tabs.Tab>
+                <Tabs.Tab value="tenure">{t('dashboard.tenure')}</Tabs.Tab>
               </Tabs.List>
 
               <Tabs.Panel value="department">
@@ -417,26 +449,26 @@ function AdminDashboard() {
             radius="lg"
             p="lg"
             style={{
-              background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
-              border: '1px solid rgba(148,163,184,0.18)',
+              background: cardSurface,
+              border: cardBorder,
               height: '100%',
             }}
           >
             <Group justify="space-between" mb="md">
               <div>
-                <Text fw={800} size="md">
-                  Turnover & Retention Trend
+                <Text fw={800} size="md" c={chartTextColor}>
+                  {t('dashboard.turnoverRetentionTrend')}
                 </Text>
-                <Text size="xs" c="dimmed">
+                <Text size="xs" c={dark ? 'gray.4' : 'dimmed'}>
                   {selectedPeriod === 'month'
-                    ? 'Monthly turnover and retention rates'
+                    ? t('dashboard.turnoverRetentionDescriptionMonthly')
                     : selectedPeriod === 'quarter'
-                      ? 'Quarterly turnover and retention rates'
-                      : 'Yearly turnover and retention rates'}
+                      ? t('dashboard.turnoverRetentionDescriptionQuarterly')
+                      : t('dashboard.turnoverRetentionDescriptionYearly')}
                 </Text>
               </div>
               <Badge variant="light" color="orange">
-                {selectedPeriod}
+                {selectedPeriodLabel}
               </Badge>
             </Group>
             <ResponsiveContainer width="100%" height={336}>
@@ -453,7 +485,7 @@ function AdminDashboard() {
                   type="monotone"
                   dataKey="turnoverRate"
                   stroke="#f97316"
-                  name="Turnover Rate (%)"
+                  name={t('dashboard.turnoverRateLegend')}
                   strokeWidth={3}
                   dot={{ r: 3 }}
                 />
@@ -461,7 +493,7 @@ function AdminDashboard() {
                   type="monotone"
                   dataKey="retentionRate"
                   stroke="#0f766e"
-                  name="Retention Rate (%)"
+                  name={t('dashboard.retentionRateLegend')}
                   strokeWidth={3}
                   dot={{ r: 3 }}
                 />
@@ -476,17 +508,19 @@ function AdminDashboard() {
           radius="lg"
           p="lg"
           style={{
-            background: 'linear-gradient(180deg, #fffdf4 0%, #ffffff 100%)',
-            border: '1px solid rgba(250,204,21,0.28)',
+            background: dark
+              ? 'linear-gradient(180deg, rgba(66,32,6,0.96) 0%, rgba(51,31,7,0.98) 100%)'
+              : 'linear-gradient(180deg, #fffdf4 0%, #ffffff 100%)',
+            border: dark ? '1px solid rgba(250,204,21,0.24)' : '1px solid rgba(250,204,21,0.28)',
           }}
         >
           <Group justify="space-between" mb="md">
             <div>
-              <Text fw={800} size="md">
-                AI Insights & Correlations
+              <Text fw={800} size="md" c={dark ? 'gray.0' : undefined}>
+                {t('dashboard.aiInsights')}
               </Text>
-              <Text size="xs" c="dimmed">
-                Automated analysis of workforce patterns
+              <Text size="xs" c={dark ? 'gray.4' : 'dimmed'}>
+                {t('dashboard.aiInsightsDescription')}
               </Text>
             </div>
             <ThemeIcon size={32} radius="md" color="yellow" variant="light">
@@ -501,8 +535,10 @@ function AdminDashboard() {
                 p="md"
                 radius="lg"
                 style={{
-                  background: 'linear-gradient(180deg, #ffffff 0%, #fffef7 100%)',
-                  borderColor: 'rgba(250,204,21,0.18)',
+                  background: dark
+                    ? 'linear-gradient(180deg, rgba(51,31,7,0.98) 0%, rgba(30,41,59,0.96) 100%)'
+                    : 'linear-gradient(180deg, #ffffff 0%, #fffef7 100%)',
+                  borderColor: dark ? 'rgba(250,204,21,0.18)' : 'rgba(250,204,21,0.18)',
                 }}
               >
                 <Group justify="space-between" mb={4}>
@@ -519,15 +555,17 @@ function AdminDashboard() {
                           : 'yellow'
                     }
                   >
-                    {(insight.correlation * 100).toFixed(0)}% correlation
+                    {t('dashboard.correlation', {
+                      value: (insight.correlation * 100).toFixed(0),
+                    })}
                   </Badge>
                 </Group>
-                <Text size="xs" c="dimmed">
+                <Text size="xs" c={subtleTextColor}>
                   {insight.description}
                 </Text>
                 {insight.recommendation && (
                   <Text size="xs" c="blue" mt={8} fw={500}>
-                    Recommendation: {insight.recommendation}
+                    {t('dashboard.recommendation', { value: insight.recommendation })}
                   </Text>
                 )}
               </Paper>
@@ -540,6 +578,7 @@ function AdminDashboard() {
 }
 
 export default function Home() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const roles = user?.roles ?? [];
   const isAdmin = roles.some((r) => [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.HR].includes(r as any));
@@ -552,11 +591,10 @@ export default function Home() {
         </ThemeIcon>
         <Stack gap={4} align="center">
           <Text size="lg" fw={600}>
-            Dashboard Access Restricted
+            {t('messages.accessRestricted')}
           </Text>
-          <Text size="sm" c="dimmed" ta="center" maw={400}>
-            This dashboard is only available for administrators. Please contact your system
-            administrator if you need access.
+          <Text size="sm" ta="center" maw={400}>
+            {t('messages.accessRestrictedDescription')}
           </Text>
         </Stack>
       </Stack>

@@ -19,8 +19,10 @@ import { useUpdateHoliday } from '../api/update-holiday';
 import { useDeleteHoliday } from '../api/delete-holiday';
 import { HolidayFormModal } from './HolidayFormModal';
 import type { IHoliday, IHolidayPayload } from '../types';
+import { useTranslation } from 'react-i18next';
 
 export function HolidaySettings() {
+  const { t } = useTranslation();
   const [year, setYear] = useState(String(new Date().getFullYear()));
   const [opened, setOpened] = useState(false);
   const [editHoliday, setEditHoliday] = useState<IHoliday | null>(null);
@@ -40,32 +42,42 @@ export function HolidaySettings() {
   });
 
   const handleSubmit = async (payload: IHolidayPayload, id?: string) => {
-    const notiId = notify.loading(isEdit ? 'Updating...' : 'Creating...');
+    const notiId = notify.loading(
+      isEdit ? t('settings.holidays.updating') : t('settings.holidays.creating'),
+    );
     try {
       if (isEdit && id) await updateMutation.mutateAsync({ id, payload });
       else await createMutation.mutateAsync(payload);
-      notify.success(notiId, { message: isEdit ? 'Holiday updated' : 'Holiday created' });
+      notify.success(notiId, {
+        message: isEdit
+          ? t('settings.holidays.updateSuccess')
+          : t('settings.holidays.createSuccess'),
+      });
       setOpened(false);
       setEditHoliday(null);
     } catch (e: any) {
-      notify.error(notiId, { message: e?.response?.data?.message || 'Save failed' });
+      notify.error(notiId, {
+        message: e?.response?.data?.message || t('settings.holidays.saveFailed'),
+      });
     }
   };
 
   const handleDelete = (id: string, name: string) => {
     confirm({
-      title: 'Delete Holiday',
-      message: `Are you sure you want to delete holiday "${name}"? This action cannot be undone.`,
-      confirmLabel: 'Delete',
-      cancelLabel: 'Cancel',
+      title: t('settings.holidays.deleteTitle'),
+      message: t('settings.holidays.deleteMessage', { name }),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
       type: 'delete',
       onConfirm: async () => {
-        const notiId = notify.loading('Deleting...');
+        const notiId = notify.loading(t('settings.holidays.deleting'));
         try {
           await deleteMutation.mutateAsync(id);
-          notify.success(notiId, { message: 'Holiday deleted' });
+          notify.success(notiId, { message: t('settings.holidays.deleteSuccess') });
         } catch (e: any) {
-          notify.error(notiId, { message: e?.response?.data?.message || 'Delete failed' });
+          notify.error(notiId, {
+            message: e?.response?.data?.message || t('settings.holidays.deleteFailed'),
+          });
         }
       },
     });
@@ -74,7 +86,7 @@ export function HolidaySettings() {
   if (isLoading)
     return (
       <Stack gap="md">
-        <SectionLabel>Public Holidays</SectionLabel>
+        <SectionLabel>{t('settings.holidays.title')}</SectionLabel>
         <SettingRowSkeleton rows={5} />
       </Stack>
     );
@@ -101,12 +113,12 @@ export function HolidaySettings() {
                 setOpened(true);
               }}
             >
-              Add
+              {t('settings.holidays.add')}
             </Button>
           </Group>
         }
       >
-        Public Holidays — {year}
+        {t('settings.holidays.title')} - {year}
       </SectionLabel>
 
       <SettingsCard>
@@ -114,7 +126,7 @@ export function HolidaySettings() {
           <Box py="xl" ta="center">
             <IconCalendarEvent size={30} color="#adb5bd" style={{ margin: '0 auto 6px' }} />
             <Text size="sm" c="dimmed">
-              No holidays for {year}
+              {t('settings.holidays.noHolidays', { year })}
             </Text>
           </Box>
         ) : (
@@ -129,9 +141,9 @@ export function HolidaySettings() {
               right={
                 <Group gap={4}>
                   <Badge size="xs" variant="light" color={h.is_paid ? 'teal' : 'gray'} radius="sm">
-                    {h.is_paid ? 'Paid' : 'Unpaid'}
+                    {h.is_paid ? t('settings.holidays.paid') : t('settings.holidays.unpaid')}
                   </Badge>
-                  <Tooltip label="Edit" withArrow>
+                  <Tooltip label={t('common.edit')} withArrow>
                     <ActionIcon
                       size="sm"
                       variant="subtle"
@@ -145,7 +157,7 @@ export function HolidaySettings() {
                       <IconEdit size={15} />
                     </ActionIcon>
                   </Tooltip>
-                  <Tooltip label="Delete" withArrow>
+                  <Tooltip label={t('common.delete')} withArrow>
                     <ActionIcon
                       size="sm"
                       variant="subtle"

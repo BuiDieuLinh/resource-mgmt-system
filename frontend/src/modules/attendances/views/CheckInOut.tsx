@@ -33,6 +33,7 @@ import { minutesToTime } from '@/constant';
 import { FaceCheckInModal } from '../components/FaceCheckInModal';
 import { reverseGeocode } from '../api/reverse-geocode';
 import { myProfileUrl } from '@/routes/url';
+import { useTranslation } from 'react-i18next';
 
 function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000;
@@ -55,6 +56,7 @@ function useNow() {
 }
 
 export default function CheckInOutPage() {
+  const { t, i18n } = useTranslation();
   const now = useNow();
   const { data: empData } = useGetEmployeeByUserId();
   const employee = empData?.data;
@@ -133,11 +135,11 @@ export default function CheckInOutPage() {
       label:
         faceCheckMode === 'check-out'
           ? result.status === 'success'
-            ? 'Check-out success'
-            : 'Check-out failed'
+            ? t('attendance.checkInOut.checkOutSuccess')
+            : t('attendance.checkInOut.checkOutFailed')
           : result.status === 'success'
-            ? 'Check-in success'
-            : 'Check-in failed',
+            ? t('attendance.checkInOut.checkInSuccess')
+            : t('attendance.checkInOut.checkInFailed'),
       message: result.message,
     });
   };
@@ -149,12 +151,13 @@ export default function CheckInOutPage() {
     setFaceCheckInOpened(true);
   };
 
-  const timeStr = now.toLocaleTimeString('vi-VN', {
+  const locale = i18n.language?.startsWith('en') ? 'en-US' : 'vi-VN';
+  const timeStr = now.toLocaleTimeString(locale, {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
   });
-  const dateStr = now.toLocaleDateString('vi-VN', {
+  const dateStr = now.toLocaleDateString(locale, {
     weekday: 'long',
     day: '2-digit',
     month: '2-digit',
@@ -174,18 +177,18 @@ export default function CheckInOutPage() {
       : 'linear-gradient(135deg, #3b82f6 0%, #6366f1 60%, #4f46e5 100%)';
 
   const statusLabel = hasCheckedOut
-    ? 'Done for today'
+    ? t('attendance.checkInOut.doneForToday')
     : hasCheckedIn
-      ? 'Currently working'
-      : 'Not checked in';
+      ? t('attendance.checkInOut.currentlyWorking')
+      : t('attendance.checkInOut.notCheckedIn');
   const statusColor = hasCheckedOut ? '#94a3b8' : hasCheckedIn ? '#5eead4' : '#93c5fd';
 
   const hasFaceRegistered = !!employee?.face_descriptor?.length;
   return (
     <Stack gap="md">
       <PageHeader
-        title="Check In / Out"
-        description="Record your attendance with GPS verification"
+        title={t('pages.checkInOutTitle')}
+        description={t('pages.checkInOutDescription')}
       />
 
       <Grid gutter="md" align="stretch">
@@ -246,8 +249,8 @@ export default function CheckInOutPage() {
                     >
                       <IconCircleCheck size={15} color="white" />
                       <Text size="xs" style={{ color: 'white' }}>
-                        In at{' '}
-                        {checkInTime.toLocaleTimeString('vi-VN', {
+                        {t('attendance.checkInOut.inAt')}{' '}
+                        {checkInTime.toLocaleTimeString(locale, {
                           hour: '2-digit',
                           minute: '2-digit',
                         })}
@@ -258,8 +261,8 @@ export default function CheckInOutPage() {
                             ·
                           </Text>
                           <Text size="xs" style={{ color: 'white' }}>
-                            Out at{' '}
-                            {new Date(todayRecord.check_out_time).toLocaleTimeString('vi-VN', {
+                            {t('attendance.checkInOut.outAt')}{' '}
+                            {new Date(todayRecord.check_out_time).toLocaleTimeString(locale, {
                               hour: '2-digit',
                               minute: '2-digit',
                             })}
@@ -302,7 +305,10 @@ export default function CheckInOutPage() {
                   </Box>
                   {policy?.break_start != null && policy?.break_end != null && (
                     <Text size="xs" ta="center" mt={4} style={{ color: 'rgba(255,255,255,0.45)' }}>
-                      Break {minutesToTime(policy.break_start)} – {minutesToTime(policy.break_end)}
+                      {t('attendance.checkInOut.breakTime', {
+                        start: minutesToTime(policy.break_start),
+                        end: minutesToTime(policy.break_end),
+                      })}
                     </Text>
                   )}
                 </Box>
@@ -327,7 +333,7 @@ export default function CheckInOutPage() {
                       fontWeight: 700,
                     }}
                   >
-                    Check In
+                    {t('attendance.checkInOut.checkIn')}
                   </Button>
                   <Button
                     size="md"
@@ -345,17 +351,19 @@ export default function CheckInOutPage() {
                       fontWeight: 700,
                     }}
                   >
-                    Check Out
+                    {t('attendance.checkInOut.checkOut')}
                   </Button>
                 </Group>
                 {hasOfficeLocation && !withinRange && position && (
                   <Text size="xs" ta="center" mt="xs" style={{ color: 'rgba(255,255,255,0.55)' }}>
-                    Too far from office — move closer to check in
+                    {t('attendance.checkInOut.tooFarFromOffice')}
                   </Text>
                 )}
                 {isPastWorkEnd && (
                   <Text size="xs" ta="center" mt="xs" style={{ color: 'rgba(255,255,255,0.55)' }}>
-                    Check-in unavailable — work hours ended at {minutesToTime(workEnd)}
+                    {t('attendance.checkInOut.workHoursEnded', {
+                      time: minutesToTime(workEnd),
+                    })}
                   </Text>
                 )}
                 {!hasFaceRegistered && (
@@ -375,7 +383,7 @@ export default function CheckInOutPage() {
                     }}
                   >
                     <Text size="xs" c="white" mb={4}>
-                      You have not registered your face for check-in yet.
+                      {t('attendance.checkInOut.faceNotRegistered')}
                     </Text>
 
                     <Anchor
@@ -386,7 +394,7 @@ export default function CheckInOutPage() {
                       fw={600}
                       style={{ display: 'inline-block' }}
                     >
-                      Go to profile to register your face
+                      {t('attendance.checkInOut.goToProfile')}
                     </Anchor>
                   </Alert>
                 )}
@@ -398,10 +406,7 @@ export default function CheckInOutPage() {
         {/* ── Right: Location ── */}
         <Grid.Col span={{ base: 12, md: 7 }}>
           <Alert icon={<IconAlertCircle size={16} />} color="yellow" mb="md" p="sm" radius="md">
-            <Text size="xs">
-              For accurate attendance tracking, please allow location access and ensure GPS signal
-              is active.
-            </Text>
+            <Text size="xs">{t('attendance.checkInOut.locationNotice')}</Text>
           </Alert>
           <Stack gap="md" h="100%">
             <Card withBorder radius="xl" p="lg">
@@ -417,12 +422,14 @@ export default function CheckInOutPage() {
                   </ThemeIcon>
                   <div>
                     <Text size="sm" fw={600}>
-                      GPS Signal
+                      {t('attendance.checkInOut.gpsSignal')}
                     </Text>
                     <Text size="xs" c="dimmed">
                       {position
-                        ? `±${Math.round(position.accuracy)}m accuracy`
-                        : 'Waiting for signal...'}
+                        ? t('attendance.checkInOut.gpsAccuracy', {
+                            accuracy: Math.round(position.accuracy),
+                          })
+                        : t('attendance.checkInOut.waitingForSignal')}
                     </Text>
                   </div>
                 </Group>
@@ -430,7 +437,7 @@ export default function CheckInOutPage() {
                   <Loader size="sm" />
                 ) : (
                   <Badge variant="light" color={position ? 'teal' : 'gray'} radius="sm">
-                    {position ? 'Active' : 'Inactive'}
+                    {position ? t('common.active') : t('common.inactive')}
                   </Badge>
                 )}
               </Group>
@@ -451,7 +458,7 @@ export default function CheckInOutPage() {
                   />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <Text size="xs" c="dimmed" mb={2}>
-                      Current address
+                      {t('attendance.checkInOut.currentAddress')}
                     </Text>
                     {addressLoading ? (
                       <Stack gap={4}>
@@ -489,10 +496,10 @@ export default function CheckInOutPage() {
                 <Group justify="space-between">
                   <div>
                     <Text size="sm" fw={600} mb={2}>
-                      Distance to Office
+                      {t('attendance.checkInOut.distanceToOffice')}
                     </Text>
                     <Text size="xs" c="dimmed">
-                      Max allowed: {maxDist}m
+                      {t('attendance.checkInOut.maxAllowed', { distance: maxDist })}
                     </Text>
                   </div>
                   {distanceToOffice != null ? (
@@ -527,8 +534,13 @@ export default function CheckInOutPage() {
                     size="sm"
                   >
                     {withinRange
-                      ? `✓ Within range (${Math.round(distanceToOffice)}m / ${maxDist}m)`
-                      : `✗ Out of range — ${Math.round(distanceToOffice - maxDist)}m too far`}
+                      ? t('attendance.checkInOut.withinRange', {
+                          current: Math.round(distanceToOffice),
+                          max: maxDist,
+                        })
+                      : t('attendance.checkInOut.outOfRange', {
+                          distance: Math.round(distanceToOffice - maxDist),
+                        })}
                   </Badge>
                 )}
               </Card>

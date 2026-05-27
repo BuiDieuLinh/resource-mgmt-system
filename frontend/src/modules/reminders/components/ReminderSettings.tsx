@@ -28,37 +28,46 @@ import { SettingRowSkeleton } from '@/components/Skeleton/SettingRowSkeleton';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { notify } from '@/components/Notification';
 import { useGetReminderSettings, useUpdateReminderSetting, type ReminderSetting } from '../api';
+import { useTranslation } from 'react-i18next';
 
 type TriggerKey = ReminderSetting['trigger_type'];
 type ChannelKey = Exclude<ReminderSetting['channel'], 'dashboard'>;
 
-const TRIGGER_META: Record<
-  TriggerKey,
-  { label: string; description: string; icon: React.ReactNode; color: string }
-> = {
-  cycle_deadline: {
-    label: 'Upcoming Cycle Deadline',
-    description: 'Remind when a review cycle deadline is approaching',
-    icon: <IconCalendarClock size={16} />,
-    color: 'blue',
-  },
-  contract_ending: {
-    label: 'Expiring Intern / Probation',
-    description: 'Remind when an intern or probation contract is about to end',
-    icon: <IconAlertTriangle size={16} />,
-    color: 'yellow',
-  },
-};
-
-const CHANNEL_META: Record<ChannelKey, { label: string; icon: React.ReactNode; color: string }> = {
-  inapp: { label: 'In-app', icon: <IconBell size={14} />, color: 'violet' },
-  email: { label: 'Email', icon: <IconMail size={14} />, color: 'blue' },
-};
-
-const TRIGGERS = Object.keys(TRIGGER_META) as TriggerKey[];
+const TRIGGERS: TriggerKey[] = ['cycle_deadline', 'contract_ending'];
 const CHANNELS: ChannelKey[] = ['inapp', 'email'];
 
 export function ReminderSettings() {
+  const { t } = useTranslation();
+  const TRIGGER_META: Record<
+    TriggerKey,
+    { label: string; description: string; icon: React.ReactNode; color: string }
+  > = {
+    cycle_deadline: {
+      label: t('settings.reminders.upcomingCycleDeadline'),
+      description: t('settings.reminders.upcomingCycleDeadlineDescription'),
+      icon: <IconCalendarClock size={16} />,
+      color: 'blue',
+    },
+    contract_ending: {
+      label: t('settings.reminders.expiringContract'),
+      description: t('settings.reminders.expiringContractDescription'),
+      icon: <IconAlertTriangle size={16} />,
+      color: 'yellow',
+    },
+  };
+  const CHANNEL_META: Record<ChannelKey, { label: string; icon: React.ReactNode; color: string }> =
+    {
+      inapp: {
+        label: t('settings.reminders.inApp'),
+        icon: <IconBell size={14} />,
+        color: 'violet',
+      },
+      email: {
+        label: t('settings.reminders.email'),
+        icon: <IconMail size={14} />,
+        color: 'blue',
+      },
+    };
   const { data: settings = [], isLoading: _loading } = useGetReminderSettings();
   const isLoading = useDelayedLoading(_loading);
   const updateMutation = useUpdateReminderSetting();
@@ -68,12 +77,14 @@ export function ReminderSettings() {
     settings.find((s) => s.trigger_type === trigger && s.channel === ch);
 
   const handleToggle = async (trigger: TriggerKey, channel: ChannelKey, enabled: boolean) => {
-    const nid = notify.loading('Saving...');
+    const nid = notify.loading(t('settings.reminders.saving'));
     try {
       await updateMutation.mutateAsync({ trigger_type: trigger, channel, is_enabled: enabled });
-      notify.success(nid, { message: 'Saved' });
+      notify.success(nid, { message: t('settings.reminders.saved') });
     } catch (e: any) {
-      notify.error(nid, { message: e?.response?.data?.message || 'Failed to save' });
+      notify.error(nid, {
+        message: e?.response?.data?.message || t('settings.reminders.saveFailed'),
+      });
     }
   };
 
@@ -92,14 +103,14 @@ export function ReminderSettings() {
   if (isLoading)
     return (
       <Stack gap="md">
-        <SectionLabel>Reminder Notifications</SectionLabel>
+        <SectionLabel>{t('settings.reminders.title')}</SectionLabel>
         <SettingRowSkeleton rows={3} />
       </Stack>
     );
 
   return (
     <Stack gap="md">
-      <SectionLabel>Reminder Notifications</SectionLabel>
+      <SectionLabel>{t('settings.reminders.title')}</SectionLabel>
 
       <SettingsCard>
         {TRIGGERS.map((trigger, i) => {
@@ -144,11 +155,14 @@ export function ReminderSettings() {
 
                 <Group gap={6} wrap="nowrap" style={{ flexShrink: 0 }}>
                   <Badge size="xs" variant="dot" color={anyEnabled ? 'green' : 'gray'} radius="sm">
-                    {anyEnabled ? 'Active' : 'Inactive'}
+                    {anyEnabled ? t('common.active') : t('common.inactive')}
                   </Badge>
                   {anyEnabled && (
                     <Text size="xs" c="dimmed">
-                      {daysBefore}d · every {repeatInterval}d
+                      {t('settings.reminders.everyDays', {
+                        days: daysBefore,
+                        repeat: repeatInterval,
+                      })}
                     </Text>
                   )}
                   <ThemeIcon size="sm" variant="subtle" color="gray" radius="sm">
@@ -163,7 +177,7 @@ export function ReminderSettings() {
                     <Group gap="xs" align="center" wrap="nowrap">
                       <IconClock size={13} color="var(--mantine-color-dimmed)" />
                       <Text size="xs" c="dimmed">
-                        Notify within
+                        {t('settings.reminders.notifyWithin')}
                       </Text>
                       <NumberInput
                         size="xs"
@@ -175,13 +189,13 @@ export function ReminderSettings() {
                         onChange={(val) => handleConfig(trigger, 'days_before', val)}
                       />
                       <Text size="xs" c="dimmed">
-                        days before
+                        {t('settings.reminders.daysBefore')}
                       </Text>
                     </Group>
                     <Group gap="xs" align="center" wrap="nowrap">
                       <IconRepeat size={13} color="var(--mantine-color-dimmed)" />
                       <Text size="xs" c="dimmed">
-                        Repeat every
+                        {t('settings.reminders.repeatEvery')}
                       </Text>
                       <NumberInput
                         size="xs"
@@ -195,7 +209,7 @@ export function ReminderSettings() {
                         onChange={(val) => handleConfig(trigger, 'repeat_interval_days', val)}
                       />
                       <Text size="xs" c="dimmed">
-                        days
+                        {t('settings.reminders.days')}
                       </Text>
                     </Group>
                   </Group>
@@ -252,25 +266,23 @@ export function ReminderSettings() {
         })}
       </SettingsCard>
 
-      <SectionLabel>System Emails</SectionLabel>
+      <SectionLabel>{t('settings.reminders.systemEmails')}</SectionLabel>
 
       <SettingsCard>
         {[
           {
             icon: <IconSend size={16} />,
             color: 'green',
-            label: 'Welcome email',
-            description:
-              "Sent automatically on the employee's hire date. Includes employee code, position, department, and login link.",
-            badge: 'Cron: 8:00 AM daily',
+            label: t('settings.reminders.welcomeEmail'),
+            description: t('settings.reminders.welcomeEmailDescription'),
+            badge: t('settings.reminders.welcomeEmailBadge'),
           },
           {
             icon: <IconMail size={16} />,
             color: 'blue',
-            label: 'Reminder email',
-            description:
-              'Sent when a reminder log is dispatched (cycle deadline, contract ending).',
-            badge: 'Based on reminder settings above',
+            label: t('settings.reminders.reminderEmail'),
+            description: t('settings.reminders.reminderEmailDescription'),
+            badge: t('settings.reminders.reminderEmailBadge'),
           },
         ].map((item, i, arr) => (
           <Box key={i}>

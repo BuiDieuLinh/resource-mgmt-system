@@ -49,7 +49,6 @@ import {
   minutesToTime,
   formatDate,
   CONTRACT_TYPE_COLOR,
-  CONTRACT_TYPE_LABEL,
   type ContractType,
 } from '../../../constant';
 import { AwardRevealPage } from '../../performance/components/AwardRevealPage';
@@ -57,6 +56,7 @@ import { useState } from 'react';
 import type { IAward } from '../../performance/types';
 import { FaceEnrollmentModal } from '../components/FaceEnrollmentModal';
 import { useGetEmployeeByUserId } from '../api/get-employee-by-user';
+import { useTranslation } from 'react-i18next';
 
 function InfoRow({
   icon,
@@ -99,10 +99,11 @@ function WorkScheduleSection({
   schedules?: IWorkSchedule[];
   policy?: IWorkPolicy | null;
 }) {
+  const { t } = useTranslation();
   if (!schedules || schedules.length === 0) {
     return (
       <Text size="sm" c="dimmed">
-        No work schedule assigned.
+        {t('employee.noWorkScheduleAssigned')}
       </Text>
     );
   }
@@ -131,10 +132,10 @@ function WorkScheduleSection({
     <Stack gap="md">
       <Group gap="xs">
         <Badge variant="light" color="deepPurple" tt="capitalize">
-          {schedules.length} days/week
+          {t('employee.daysPerWeek', { count: schedules.length })}
         </Badge>
         <Badge variant="light" color="violet" tt="capitalize">
-          {Math.round(totalNetHours * 10) / 10}h/week
+          {t('employee.hoursPerWeek', { count: Math.round(totalNetHours * 10) / 10 })}
         </Badge>
         {breakMinutes > 0 && (
           <Badge
@@ -143,7 +144,7 @@ function WorkScheduleSection({
             tt="capitalize"
             leftSection={<IconCoffee size={12} />}
           >
-            {breakMinutes}min break
+            {t('employee.breakMinutes', { count: breakMinutes })}
           </Badge>
         )}
       </Group>
@@ -157,7 +158,7 @@ function WorkScheduleSection({
               {minutesToTime(shift.start)} – {minutesToTime(shift.end)}
             </Text>
             <Text size="xs" c="dimmed">
-              · {Math.round(shift.netHours * 10) / 10}h net
+              · {t('employee.netHours', { count: Math.round(shift.netHours * 10) / 10 })}
             </Text>
           </Group>
           <Group gap={6}>
@@ -170,6 +171,7 @@ function WorkScheduleSection({
 }
 
 export default function EmployeeProfile() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
 
@@ -225,22 +227,23 @@ export default function EmployeeProfile() {
     );
 
   if (error) {
-    const parsedError = parseApiError(error, 'Error loading employee profile');
+    const parsedError = parseApiError(error, t('messages.errorLoadingEmployeeProfile'));
 
     return (
       <ErrorState
-        message={
-          parsedError.isForbidden
-            ? 'You do not have permission to view this profile'
-            : parsedError.message
-        }
+        message={parsedError.isForbidden ? t('messages.noPermissionProfile') : parsedError.message}
         onRetry={parsedError.isForbidden ? undefined : refetch}
       />
     );
   }
 
   if (!data?.data)
-    return <ErrorState message="Employee not found" onRetry={() => navigate(employeeListUrl)} />;
+    return (
+      <ErrorState
+        message={t('messages.employeeNotFound')}
+        onRetry={() => navigate(employeeListUrl)}
+      />
+    );
 
   const employee = data.data;
   const currentUserEmployee = empData?.data;
@@ -253,7 +256,10 @@ export default function EmployeeProfile() {
     <Stack gap="lg">
       <PageHeader
         breadcrumbOnly
-        breadcrumbs={[{ label: 'Employees', path: '/employees' }, { label: employee.full_name }]}
+        breadcrumbs={[
+          { labelKey: 'nav.employees', path: '/employees' },
+          { label: employee.full_name },
+        ]}
         right={
           <Group>
             <Button
@@ -261,7 +267,7 @@ export default function EmployeeProfile() {
               leftSection={<IconArrowLeft size={18} />}
               onClick={() => navigate(employeeListUrl)}
             >
-              Back to List
+              {t('employee.backToList')}
             </Button>
           </Group>
         }
@@ -299,18 +305,32 @@ export default function EmployeeProfile() {
                 size="md"
                 radius="sm"
               >
-                {employee.status}
+                {employee.status === 'active'
+                  ? t('employee.activeEmployee')
+                  : t('employee.inactiveEmployee')}
               </Badge>
             </Stack>
 
             <Divider my="md" />
 
             <Stack gap="sm">
-              <InfoRow icon={<IconMail size={14} />} label="Email" value={employee.email} />
+              <InfoRow
+                icon={<IconMail size={14} />}
+                label={t('employee.email')}
+                value={employee.email}
+              />
               {employee.phone && (
-                <InfoRow icon={<IconPhone size={14} />} label="Phone" value={employee.phone} />
+                <InfoRow
+                  icon={<IconPhone size={14} />}
+                  label={t('employee.phone')}
+                  value={employee.phone}
+                />
               )}
-              <InfoRow icon={<IconId size={14} />} label="ID Card" value={employee.identify_card} />
+              <InfoRow
+                icon={<IconId size={14} />}
+                label={t('employee.idCard')}
+                value={employee.identify_card}
+              />
             </Stack>
 
             {/* Face Recognition Section - Only show for own profile */}
@@ -321,10 +341,10 @@ export default function EmployeeProfile() {
                   <Group justify="space-between">
                     <div>
                       <Text size="sm" fw={600}>
-                        Face Recognition
+                        {t('employee.faceRecognition')}
                       </Text>
                       <Text size="xs" c="dimmed">
-                        {hasFaceRegistered ? 'Registered' : 'Not registered'}
+                        {hasFaceRegistered ? t('employee.registered') : t('employee.notRegistered')}
                       </Text>
                     </div>
                     <Button
@@ -333,7 +353,7 @@ export default function EmployeeProfile() {
                       leftSection={<IconCamera size={14} />}
                       onClick={() => setFaceEnrollmentOpened(true)}
                     >
-                      {hasFaceRegistered ? 'Update' : 'Register'}
+                      {hasFaceRegistered ? t('common.update') : t('employee.register')}
                     </Button>
                   </Group>
                 </Stack>
@@ -346,12 +366,12 @@ export default function EmployeeProfile() {
           <Card withBorder padding="xl" radius="md">
             <Stack gap="xl">
               <div>
-                <SectionTitle>Personal Information</SectionTitle>
+                <SectionTitle>{t('employee.personalInformation')}</SectionTitle>
                 <Grid gutter="lg">
                   <Grid.Col span={6}>
                     <InfoRow
                       icon={<IconGenderMale size={14} />}
-                      label="Gender"
+                      label={t('employee.gender')}
                       value={employee.gender || '—'}
                     />
                   </Grid.Col>
@@ -359,7 +379,7 @@ export default function EmployeeProfile() {
                     <Grid.Col span={6}>
                       <InfoRow
                         icon={<IconCalendar size={14} />}
-                        label="Date of Birth"
+                        label={t('employee.dateOfBirth')}
                         value={formatDate(employee.date_of_birth)}
                       />
                     </Grid.Col>
@@ -367,7 +387,7 @@ export default function EmployeeProfile() {
                   <Grid.Col span={6}>
                     <InfoRow
                       icon={<IconCalendar size={14} />}
-                      label="Hire Date"
+                      label={t('employee.hireDate')}
                       value={formatDate(employee.hire_date)}
                     />
                   </Grid.Col>
@@ -375,7 +395,7 @@ export default function EmployeeProfile() {
                     <Grid.Col span={6}>
                       <InfoRow
                         icon={<IconCalendar size={14} />}
-                        label="Terminated Date"
+                        label={t('employee.terminatedDate')}
                         value={
                           <Group gap="xs">
                             <Text size="sm" fw={500} c="red">
@@ -389,7 +409,7 @@ export default function EmployeeProfile() {
                   <Grid.Col span={6}>
                     <InfoRow
                       icon={<IconMapPin size={14} />}
-                      label="Address"
+                      label={t('employee.address')}
                       value={employee.address}
                     />
                   </Grid.Col>
@@ -399,19 +419,19 @@ export default function EmployeeProfile() {
               <Divider />
 
               <div>
-                <SectionTitle>Work Information</SectionTitle>
+                <SectionTitle>{t('employee.workInformation')}</SectionTitle>
                 <Grid gutter="lg">
                   <Grid.Col span={6}>
                     <InfoRow
                       icon={<IconBuilding size={14} />}
-                      label="Department"
+                      label={t('employee.department')}
                       value={employee.position.department?.department_name || '—'}
                     />
                   </Grid.Col>
                   <Grid.Col span={6}>
                     <InfoRow
                       icon={<IconBriefcase size={14} />}
-                      label="Position"
+                      label={t('employee.position')}
                       value={employee.position?.position_name || '—'}
                     />
                   </Grid.Col>
@@ -419,7 +439,7 @@ export default function EmployeeProfile() {
                     <Grid.Col span={6}>
                       <InfoRow
                         icon={<IconBriefcase size={14} />}
-                        label="Level"
+                        label={t('employee.level')}
                         value={
                           <Badge variant="light" color="blue" size="sm" radius="sm">
                             {employee.position.level}
@@ -431,7 +451,7 @@ export default function EmployeeProfile() {
                   <Grid.Col span={6}>
                     <InfoRow
                       icon={<IconFileText size={14} />}
-                      label="Contract Type"
+                      label={t('employee.contractType')}
                       value={
                         <Badge
                           variant="light"
@@ -441,8 +461,7 @@ export default function EmployeeProfile() {
                           size="sm"
                           radius="sm"
                         >
-                          {CONTRACT_TYPE_LABEL[employee.contract_type as ContractType] ||
-                            employee.contract_type}
+                          {t(`labels.contractType.${employee.contract_type as ContractType}`)}
                         </Badge>
                       }
                     />
@@ -450,15 +469,15 @@ export default function EmployeeProfile() {
                   <Grid.Col span={6}>
                     <InfoRow
                       icon={<IconCalendar size={14} />}
-                      label="Annual Leave"
-                      value={`${employee.annual_leave_days} days/year`}
+                      label={t('employee.annualLeave')}
+                      value={t('employee.daysPerYear', { count: employee.annual_leave_days })}
                     />
                   </Grid.Col>
                   {employee.manager && (
                     <Grid.Col span={6}>
                       <InfoRow
                         icon={<IconUser size={14} />}
-                        label="Manager"
+                        label={t('employee.manager')}
                         value={
                           <Stack gap={2}>
                             <Text size="sm" fw={500}>
@@ -478,7 +497,7 @@ export default function EmployeeProfile() {
               <Divider />
 
               <div>
-                <SectionTitle>Work Schedule</SectionTitle>
+                <SectionTitle>{t('employee.workSchedule')}</SectionTitle>
                 <WorkScheduleSection
                   schedules={employee.work_schedules}
                   policy={policyData?.data}
@@ -489,7 +508,7 @@ export default function EmployeeProfile() {
                 <>
                   <Divider />
                   <div>
-                    <SectionTitle>Employment History</SectionTitle>
+                    <SectionTitle>{t('employee.employmentHistory')}</SectionTitle>
                     <Timeline
                       active={employee.employment_histories.length}
                       bulletSize={32}
@@ -497,21 +516,41 @@ export default function EmployeeProfile() {
                     >
                       {employee.employment_histories.map((history) => {
                         const eventConfig = {
-                          hired: { icon: IconUserPlus, color: 'indigo', label: 'Hired' },
+                          hired: {
+                            icon: IconUserPlus,
+                            color: 'indigo',
+                            label: t('employee.historyEvent.hired'),
+                          },
                           contract_changed: {
                             icon: IconFileText,
                             color: 'violet',
-                            label: 'Contract Changed',
+                            label: t('employee.historyEvent.contract_changed'),
                           },
-                          promoted: { icon: IconArrowUpRight, color: 'grape', label: 'Promoted' },
+                          promoted: {
+                            icon: IconArrowUpRight,
+                            color: 'grape',
+                            label: t('employee.historyEvent.promoted'),
+                          },
                           transferred: {
                             icon: IconSwitchHorizontal,
                             color: 'blue',
-                            label: 'Transferred',
+                            label: t('employee.historyEvent.transferred'),
                           },
-                          resigned: { icon: IconUserMinus, color: 'orange', label: 'Resigned' },
-                          terminated: { icon: IconUserMinus, color: 'red', label: 'Terminated' },
-                          rehired: { icon: IconUserCheck, color: 'green', label: 'Rehired' },
+                          resigned: {
+                            icon: IconUserMinus,
+                            color: 'orange',
+                            label: t('employee.historyEvent.resigned'),
+                          },
+                          terminated: {
+                            icon: IconUserMinus,
+                            color: 'red',
+                            label: t('employee.historyEvent.terminated'),
+                          },
+                          rehired: {
+                            icon: IconUserCheck,
+                            color: 'green',
+                            label: t('employee.historyEvent.rehired'),
+                          },
                         };
 
                         const config = eventConfig[history.event_type] || {
@@ -564,7 +603,7 @@ export default function EmployeeProfile() {
                               {history.contract_type && (
                                 <Group gap={6}>
                                   <Text size="xs" c="dimmed">
-                                    Contract:
+                                    {t('employee.contract')}:
                                   </Text>
                                   <Badge
                                     size="xs"
@@ -574,8 +613,9 @@ export default function EmployeeProfile() {
                                       'gray'
                                     }
                                   >
-                                    {CONTRACT_TYPE_LABEL[history.contract_type as ContractType] ||
-                                      history.contract_type}
+                                    {t(
+                                      `labels.contractType.${history.contract_type as ContractType}`,
+                                    )}
                                   </Badge>
                                 </Group>
                               )}
@@ -599,19 +639,19 @@ export default function EmployeeProfile() {
                 <>
                   <Divider />
                   <div>
-                    <SectionTitle>Additional Information</SectionTitle>
+                    <SectionTitle>{t('employee.additionalInformation')}</SectionTitle>
                     <Stack gap="md">
                       {employee.position?.description && (
                         <InfoRow
                           icon={<IconBriefcase size={14} />}
-                          label="Position Description"
+                          label={t('employee.positionDescription')}
                           value={employee.position.description}
                         />
                       )}
                       {employee.position.department?.description && (
                         <InfoRow
                           icon={<IconBuilding size={14} />}
-                          label="Department Description"
+                          label={t('employee.departmentDescription')}
                           value={employee.position.department.description}
                         />
                       )}

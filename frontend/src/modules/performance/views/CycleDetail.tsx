@@ -38,12 +38,9 @@ import { AwardRevealPage } from '../components/AwardRevealPage';
 import { notify } from '@/components/Notification';
 import type { IAward, IPerformanceReview } from '../types';
 import { performanceCyclesUrl } from '@/routes/url';
+import { useTranslation } from 'react-i18next';
 
 const RANK_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
-const CATEGORY_LABEL: Record<string, string> = {
-  top_employee: 'Top Employee',
-  top_manager: 'Top Manager',
-};
 const STATUS_COLOR: Record<string, string> = {
   draft: 'gray',
   submitted: 'blue',
@@ -79,6 +76,7 @@ function normalizeReviewScore(review: IPerformanceReview) {
 }
 
 export default function CycleDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const { data: cycle, isLoading: cycleLoading } = useGetCycle(id!);
   const { data: reviews = [], isLoading: reviewsLoading } = useGetReviewsByCycle(id!);
@@ -100,49 +98,53 @@ export default function CycleDetailPage() {
       description: '',
     },
     validate: {
-      employee_id: (v) => (!v ? 'Required' : null),
-      title: (v) => (!v ? 'Required' : null),
+      employee_id: (v) => (!v ? t('common.required') : null),
+      title: (v) => (!v ? t('common.required') : null),
     },
   });
 
   const handleCreateAward = async (values: typeof form.values) => {
-    const nid = notify.loading('Creating award...');
+    const nid = notify.loading(t('performance.creatingAward'));
     try {
       await createAward.mutateAsync({ ...values, cycle_id: id });
-      notify.success(nid, { message: 'Award created' });
+      notify.success(nid, { message: t('performance.awardCreated') });
       setAwardModal(false);
       form.reset();
     } catch (e: any) {
-      notify.error(nid, { message: e?.response?.data?.message || 'Failed to create award' });
+      notify.error(nid, {
+        message: e?.response?.data?.message || t('performance.awardCreateFailed'),
+      });
     }
   };
 
   const handleDeleteAward = (id: string, employeeName: string, title: string) => {
     confirm({
-      title: 'Delete Award',
-      message: `Are you sure you want to delete the award "${title}" for ${employeeName}? This action cannot be undone.`,
-      confirmLabel: 'Delete',
-      cancelLabel: 'Cancel',
+      title: t('performance.deleteAwardTitle'),
+      message: t('performance.deleteAwardMessage', { title, employeeName }),
+      confirmLabel: t('actions.delete'),
+      cancelLabel: t('common.cancel'),
       type: 'delete',
       onConfirm: async () => {
-        const notiId = notify.loading('Deleting award...');
+        const notiId = notify.loading(t('performance.deletingAward'));
         try {
           await deleteAward.mutateAsync(id);
-          notify.success(notiId, { message: 'Award deleted successfully' });
+          notify.success(notiId, { message: t('performance.awardDeleted') });
         } catch (e: any) {
-          notify.error(notiId, { message: e?.response?.data?.message || 'Failed to delete award' });
+          notify.error(notiId, {
+            message: e?.response?.data?.message || t('performance.awardDeleteFailed'),
+          });
         }
       },
     });
   };
 
   const handlePublish = async () => {
-    const nid = notify.loading('Publishing...');
+    const nid = notify.loading(t('performance.publishingReviews'));
     try {
       await publishReviews.mutateAsync(id!);
-      notify.success(nid, { message: 'Reviews published' });
+      notify.success(nid, { message: t('performance.reviewsPublished') });
     } catch (e: any) {
-      notify.error(nid, { message: e?.response?.data?.message || 'Failed to publish' });
+      notify.error(nid, { message: e?.response?.data?.message || t('performance.publishFailed') });
     }
   };
 
@@ -161,7 +163,7 @@ export default function CycleDetailPage() {
   const reviewColumns: TableColumn<IPerformanceReview>[] = [
     {
       key: 'employee',
-      title: 'Employee',
+      title: t('employee.employee'),
       render: (r) => (
         <Flex align="center" gap="sm">
           <Avatar size="sm" radius="xl" color="blue">
@@ -184,12 +186,14 @@ export default function CycleDetailPage() {
     },
     {
       key: 'reviewer',
-      title: 'Reviewer',
-      render: (r) => <Text size="sm">{r.assignment?.reviewer?.full_name ?? 'Unassigned'}</Text>,
+      title: t('performance.reviewer'),
+      render: (r) => (
+        <Text size="sm">{r.assignment?.reviewer?.full_name ?? t('performance.unassigned')}</Text>
+      ),
     },
     {
       key: 'score',
-      title: 'Score',
+      title: t('performance.score'),
       align: 'center',
       sortable: true,
       sortAccessor: (r) => normalizeReviewScore(r),
@@ -204,20 +208,24 @@ export default function CycleDetailPage() {
     },
     {
       key: 'attendance',
-      title: 'Attendance',
+      title: t('nav.attendance'),
       render: (r) => (
         <Text size="xs" c="dimmed">
-          {r.attendance_days}d · {r.late_count} late · {r.absent_count} absent
+          {t('performance.attendanceSummary', {
+            days: r.attendance_days,
+            late: r.late_count,
+            absent: r.absent_count,
+          })}
         </Text>
       ),
     },
     {
       key: 'status',
-      title: 'Status',
+      title: t('common.status'),
       align: 'center',
       render: (r) => (
         <Badge size="sm" color={STATUS_COLOR[r.status]} variant="light">
-          {r.status}
+          {t(`labels.leaveStatus.${r.status}` as const, { defaultValue: r.status })}
         </Badge>
       ),
     },
@@ -226,7 +234,7 @@ export default function CycleDetailPage() {
   const awardColumns: TableColumn<any>[] = [
     {
       key: 'rank',
-      title: 'Rank',
+      title: t('performance.rank'),
       align: 'center',
       render: (r) => (
         <ThemeIcon
@@ -241,16 +249,16 @@ export default function CycleDetailPage() {
     },
     {
       key: 'category',
-      title: 'Category',
+      title: t('common.category'),
       render: (r) => (
         <Badge size="sm" variant="light" color={r.category === 'top_manager' ? 'violet' : 'blue'}>
-          {CATEGORY_LABEL[r.category]}
+          {t(`labels.awardCategory.${r.category}` as const)}
         </Badge>
       ),
     },
     {
       key: 'employee',
-      title: 'Employee',
+      title: t('employee.employee'),
       render: (r) => (
         <Flex align="center" gap="sm">
           <Avatar size="sm" radius="xl" color="blue">
@@ -268,7 +276,7 @@ export default function CycleDetailPage() {
     },
     {
       key: 'title',
-      title: 'Title',
+      title: t('common.title'),
       render: (r) => <Text size="sm">{r.title}</Text>,
     },
     {
@@ -277,7 +285,7 @@ export default function CycleDetailPage() {
       align: 'center',
       render: (r) => (
         <Group gap={4} justify="center">
-          <Tooltip label="Preview Award Reveal">
+          <Tooltip label={t('performance.previewAwardReveal')}>
             <ActionIcon
               variant="subtle"
               color="yellow"
@@ -287,7 +295,7 @@ export default function CycleDetailPage() {
               <IconEye size={16} />
             </ActionIcon>
           </Tooltip>
-          <Tooltip label="Delete award">
+          <Tooltip label={t('performance.deleteAward')}>
             <ActionIcon
               variant="subtle"
               color="red"
@@ -314,9 +322,11 @@ export default function CycleDetailPage() {
     <Stack gap="lg">
       <PageHeader
         title={cycle.title}
-        description={`Announce date: ${new Date(cycle.announce_date).toLocaleDateString('en-GB')}`}
+        description={t('performance.announceDateValue', {
+          date: new Date(cycle.announce_date).toLocaleDateString('en-GB'),
+        })}
         breadcrumbs={[
-          { label: 'Review Cycles', path: performanceCyclesUrl },
+          { label: t('nav.reviewCycles'), path: performanceCyclesUrl },
           { label: cycle.title },
         ]}
         right={
@@ -328,7 +338,7 @@ export default function CycleDetailPage() {
                 leftSection={<IconEye size={18} />}
                 onClick={() => setPreviewAwards(awards)}
               >
-                Preview Reveal
+                {t('performance.previewReveal')}
               </Button>
             )}
             {submittedCount > 0 && (
@@ -339,11 +349,11 @@ export default function CycleDetailPage() {
                 onClick={handlePublish}
                 loading={publishReviews.isPending}
               >
-                Publish {submittedCount} reviews
+                {t('performance.publishReviewsCount', { count: submittedCount })}
               </Button>
             )}
             <Button leftSection={<IconPlus size={18} />} onClick={() => setAwardModal(true)}>
-              Add Award
+              {t('performance.addAward')}
             </Button>
           </Group>
         }
@@ -352,10 +362,14 @@ export default function CycleDetailPage() {
       <Stack gap={8}>
         <Group justify="space-between" gap="xs">
           <Text size="sm" fw={500}>
-            Review completion
+            {t('performance.reviewCompletion')}
           </Text>
           <Text size="sm" fw={600}>
-            {completedCount}/{totalReviews} completed ({completionRate}%)
+            {t('performance.reviewCompletionValue', {
+              completed: completedCount,
+              total: totalReviews,
+              percent: completionRate,
+            })}
           </Text>
         </Group>
         <Progress value={completionRate} color={completionRate === 100 ? 'green' : 'blue'} />
@@ -364,10 +378,10 @@ export default function CycleDetailPage() {
       <Tabs defaultValue="reviews" variant="outline">
         <Tabs.List mb="lg">
           <Tabs.Tab value="reviews" leftSection={<IconStar size={16} />}>
-            Reviews ({reviews.length})
+            {t('performance.reviewsTab', { count: reviews.length })}
           </Tabs.Tab>
           <Tabs.Tab value="awards" leftSection={<IconTrophy size={16} />}>
-            Awards ({awards.length})
+            {t('performance.awardsTab', { count: awards.length })}
           </Tabs.Tab>
         </Tabs.List>
 
@@ -378,7 +392,7 @@ export default function CycleDetailPage() {
             loading={reviewsLoading}
             height={480}
             highlightOnHover
-            emptyText="No reviews yet"
+            emptyText={t('performance.noReviewsYet')}
           />
         </Tabs.Panel>
 
@@ -388,7 +402,7 @@ export default function CycleDetailPage() {
             columns={awardColumns}
             height={480}
             highlightOnHover
-            emptyText="No awards yet"
+            emptyText={t('performance.noAwardsYet')}
           />
         </Tabs.Panel>
       </Tabs>
@@ -397,12 +411,17 @@ export default function CycleDetailPage() {
         <AwardRevealPage awards={previewAwards} onClose={() => setPreviewAwards([])} previewMode />
       )}
 
-      <Modal opened={awardModal} onClose={() => setAwardModal(false)} title="Add Award" centered>
+      <Modal
+        opened={awardModal}
+        onClose={() => setAwardModal(false)}
+        title={t('performance.addAward')}
+        centered
+      >
         <form onSubmit={form.onSubmit(handleCreateAward)}>
           <Stack gap="sm">
             <Select
-              label="Employee"
-              placeholder="Select employee"
+              label={t('employee.employee')}
+              placeholder={t('performance.selectEmployee')}
               data={employeeOptions}
               searchable
               required
@@ -410,27 +429,36 @@ export default function CycleDetailPage() {
               {...form.getInputProps('employee_id')}
             />
             <Select
-              label="Category"
+              label={t('common.category')}
               data={[
-                { value: 'top_employee', label: 'Top Employee' },
-                { value: 'top_manager', label: 'Top Manager' },
+                { value: 'top_employee', label: t('labels.awardCategory.top_employee') },
+                { value: 'top_manager', label: t('labels.awardCategory.top_manager') },
               ]}
               checkIconPosition="right"
               {...form.getInputProps('category')}
             />
-            <NumberInput label="Rank" min={1} max={3} {...form.getInputProps('rank')} />
-            <TextInput label="Award Title" required {...form.getInputProps('title')} />
+            <NumberInput
+              label={t('performance.rank')}
+              min={1}
+              max={3}
+              {...form.getInputProps('rank')}
+            />
+            <TextInput
+              label={t('performance.awardTitle')}
+              required
+              {...form.getInputProps('title')}
+            />
             <Textarea
-              label="Achievement Description"
+              label={t('performance.achievementDescription')}
               rows={3}
               {...form.getInputProps('description')}
             />
             <Group justify="flex-end" mt="sm">
               <Button variant="subtle" onClick={() => setAwardModal(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" loading={createAward.isPending}>
-                Create Award
+                {t('performance.createAward')}
               </Button>
             </Group>
           </Stack>
