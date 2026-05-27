@@ -13,6 +13,7 @@ import {
   dateToMinutes,
   overlapMinutes,
   toLocalWorkDate,
+  minutesToTime,
 } from '../../common/utils/date.util';
 import {
   resolvePagination,
@@ -275,7 +276,7 @@ export class AttendancesService {
     const checkInMinutes = dateToMinutes(timestamp);
     if (checkInMinutes > schedule.end_time) {
       throw new BadRequestException(
-        `Check-in not allowed after work hours end (${schedule.end_time} min). Current time: ${checkInMinutes} min.`,
+        `Check-in not allowed after work hours end (${minutesToTime(schedule.end_time)} PM). Current time: ${minutesToTime(checkInMinutes)} PM.`,
       );
     }
 

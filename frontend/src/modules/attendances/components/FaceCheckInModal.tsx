@@ -21,6 +21,7 @@ import {
   canvasToImageBlob,
 } from '@/utils/face-api.util';
 import { useFaceCheckIn, useFaceCheckOut } from '../api/face-check';
+import { PRIMARY_COLOR } from '@/theme';
 
 interface FaceCheckInModalProps {
   opened: boolean;
@@ -194,7 +195,11 @@ export function FaceCheckInModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={modalTitle}
+      title={
+        <Text fw={700} c={PRIMARY_COLOR} tt="uppercase">
+          {modalTitle}
+        </Text>
+      }
       size="lg"
       centered
       closeOnClickOutside={!loading}
@@ -202,7 +207,7 @@ export function FaceCheckInModal({
     >
       <Stack gap="md">
         <Alert icon={<IconAlertCircle size={16} />} color="blue" variant="light">
-          <Text size="sm">
+          <Text size="xs">
             Keep your face centered, well lit and still until the capture completes.
           </Text>
         </Alert>
@@ -227,7 +232,7 @@ export function FaceCheckInModal({
                 width: '100%',
                 borderRadius: 8,
                 backgroundColor: '#000',
-                aspectRatio: '4/3',
+                aspectRatio: '4/2',
               }}
             />
 
