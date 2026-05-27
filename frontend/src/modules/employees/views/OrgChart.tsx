@@ -26,6 +26,7 @@ import type { IEmployee } from '../types';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { employeeListUrl } from '@/routes/url';
 import { PRIMARY_COLOR } from '@/theme';
+import { useTranslation } from 'react-i18next';
 
 interface DepartmentNode {
   id: string;
@@ -217,6 +218,7 @@ function Connectors({
 }
 
 export default function OrgChartPage() {
+  const { t, i18n } = useTranslation();
   const { colorScheme } = useMantineColorScheme();
   const dark = colorScheme === 'dark';
   const theme = useMantineTheme();
@@ -376,12 +378,12 @@ export default function OrgChartPage() {
                     </Text>
                     {isManager && (
                       <Badge size="xs" color={PRIMARY_COLOR} variant="filled" radius="sm" px={4}>
-                        MGR
+                        {t('employee.managerShort')}
                       </Badge>
                     )}
                   </Group>
                   <Text size="10px" c="dimmed" lineClamp={1}>
-                    {emp.position?.position_name || '—'}
+                    {emp.position?.position_name || t('common.notAvailable')}
                   </Text>
                 </Stack>
                 <div
@@ -414,7 +416,7 @@ export default function OrgChartPage() {
                   </Text>
                   {isManager && (
                     <Badge size="xs" color={PRIMARY_COLOR} variant="filled" radius="sm">
-                      MGR
+                      {t('employee.managerShort')}
                     </Badge>
                   )}
                 </Group>
@@ -429,7 +431,9 @@ export default function OrgChartPage() {
                   color={emp.status === 'active' ? 'green' : 'gray'}
                   radius="sm"
                 >
-                  {emp.status}
+                  {emp.status === 'active'
+                    ? t('employee.activeEmployee')
+                    : t('employee.inactiveEmployee')}
                 </Badge>
               </Stack>
             </Group>
@@ -440,7 +444,7 @@ export default function OrgChartPage() {
               <Group gap={6} wrap="nowrap">
                 <IconId size={13} color="var(--mantine-color-dimmed)" style={{ flexShrink: 0 }} />
                 <Text size="xs" c="dimmed" w={60}>
-                  Code
+                  {t('importPreview.code')}
                 </Text>
                 <Text size="xs" fw={500}>
                   {emp.employee_code}
@@ -453,7 +457,7 @@ export default function OrgChartPage() {
                   style={{ flexShrink: 0 }}
                 />
                 <Text size="xs" c="dimmed" w={60}>
-                  Position
+                  {t('employee.position')}
                 </Text>
                 <Text size="xs" fw={500} lineClamp={2}>
                   {emp.position?.position_name}
@@ -462,7 +466,7 @@ export default function OrgChartPage() {
               <Group gap={6} wrap="nowrap">
                 <IconMail size={13} color="var(--mantine-color-dimmed)" style={{ flexShrink: 0 }} />
                 <Text size="xs" c="dimmed" w={60}>
-                  Email
+                  {t('employee.email')}
                 </Text>
                 <Text size="xs" fw={500} lineClamp={1}>
                   {emp.email}
@@ -476,7 +480,7 @@ export default function OrgChartPage() {
                     style={{ flexShrink: 0 }}
                   />
                   <Text size="xs" c="dimmed" w={60}>
-                    Phone
+                    {t('employee.phone')}
                   </Text>
                   <Text size="xs" fw={500}>
                     {emp.phone}
@@ -490,10 +494,12 @@ export default function OrgChartPage() {
                   style={{ flexShrink: 0 }}
                 />
                 <Text size="xs" c="dimmed" w={60}>
-                  Hired
+                  {t('employee.hireDate')}
                 </Text>
                 <Text size="xs" fw={500}>
-                  {new Date(emp.hire_date).toLocaleDateString('vi-VN')}
+                  {new Date(emp.hire_date).toLocaleDateString(
+                    i18n.language?.startsWith('en') ? 'en-GB' : 'vi-VN',
+                  )}
                 </Text>
               </Group>
             </Stack>
@@ -507,16 +513,19 @@ export default function OrgChartPage() {
     <Stack gap="lg">
       {/* header */}
       <PageHeader
-        breadcrumbs={[{ label: 'Employees', path: employeeListUrl }, { label: 'Org Chart' }]}
-        title="Organization Chart"
-        description="Company organizational structure by department"
+        breadcrumbs={[
+          { label: t('nav.employeeList'), path: employeeListUrl },
+          { label: t('employee.orgChart') },
+        ]}
+        title={t('employee.orgChart')}
+        description={t('employee.orgChartDescription')}
         right={
           <Group gap="sm">
             <Badge size="lg" variant="outline" color={dark ? 'violet.4' : PRIMARY_COLOR}>
-              {deptTree.length} Departments
+              {t('employee.orgChartDepartments', { count: deptTree.length })}
             </Badge>
             <Badge size="lg" variant="outline" color="green">
-              {employees.length} Employees
+              {t('employee.orgChartEmployees', { count: employees.length })}
             </Badge>
           </Group>
         }
@@ -567,7 +576,7 @@ export default function OrgChartPage() {
                     RMS Core
                   </Text>
                   <Text size="xs" c="rgba(255,255,255,0.7)">
-                    Organization
+                    {t('employee.organization')}
                   </Text>
                 </Stack>
               </Group>
@@ -616,7 +625,7 @@ export default function OrgChartPage() {
                           </Text>
                           <Group gap={4} wrap="nowrap">
                             <Badge size="xs" variant="light" color="blue" radius="sm">
-                              {dept.employees.length} members
+                              {t('employee.orgChartMembers', { count: dept.employees.length })}
                             </Badge>
                           </Group>
                         </Stack>

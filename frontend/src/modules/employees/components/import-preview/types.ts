@@ -1,3 +1,5 @@
+import i18n from '@/i18n';
+
 export interface PreviewEmployee {
   employee_code: string;
   full_name: string;
@@ -24,18 +26,25 @@ export interface ColumnDef {
   width?: number;
 }
 
-export const COLUMNS: ColumnDef[] = [
-  { key: 'employee_code', label: 'Code', required: true, width: 100 },
-  { key: 'full_name', label: 'Full Name', required: true, width: 140 },
-  { key: 'display_name', label: 'Display Name', width: 120 },
-  { key: 'email', label: 'Email', required: true, width: 180 },
-  { key: 'phone', label: 'Phone', width: 110 },
-  { key: 'identify_card', label: 'ID Card', required: true, width: 120 },
-  { key: 'gender', label: 'Gender', width: 80 },
-  { key: 'date_of_birth', label: 'Date of Birth', width: 120 },
-  { key: 'hire_date', label: 'Hire Date', width: 110 },
-  { key: 'contract_type', label: 'Contract Type', width: 110 },
-  { key: 'department_name', label: 'Department', required: true, width: 130 },
-  { key: 'position_name', label: 'Position', required: true, width: 130 },
-  { key: 'address', label: 'Address', width: 160 },
-];
+export function getImportColumns(): ColumnDef[] {
+  return [
+    { key: 'employee_code', label: i18n.t('importPreview.code'), required: true, width: 100 },
+    { key: 'full_name', label: i18n.t('importPreview.fullName'), required: true, width: 140 },
+    { key: 'display_name', label: i18n.t('importPreview.displayName'), width: 120 },
+    { key: 'email', label: i18n.t('importPreview.email'), required: true, width: 180 },
+    { key: 'phone', label: i18n.t('importPreview.phone'), width: 110 },
+    { key: 'identify_card', label: i18n.t('importPreview.idCard'), required: true, width: 120 },
+    { key: 'gender', label: i18n.t('importPreview.gender'), width: 80 },
+    { key: 'date_of_birth', label: i18n.t('importPreview.dateOfBirth'), width: 120 },
+    { key: 'hire_date', label: i18n.t('importPreview.hireDate'), width: 110 },
+    { key: 'contract_type', label: i18n.t('employee.contractType'), width: 110 },
+    {
+      key: 'department_name',
+      label: i18n.t('importPreview.department'),
+      required: true,
+      width: 130,
+    },
+    { key: 'position_name', label: i18n.t('importPreview.position'), required: true, width: 130 },
+    { key: 'address', label: i18n.t('importPreview.address'), width: 160 },
+  ];
+}

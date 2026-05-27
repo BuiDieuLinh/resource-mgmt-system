@@ -17,9 +17,10 @@ import {
 import { IconAlertTriangle, IconCheck, IconInfoCircle } from '@tabler/icons-react';
 import { PRIMARY_COLOR } from '@/theme';
 import { InlineCell } from './InlineCell';
-import { COLUMNS, type PreviewEmployee } from './types';
+import { getImportColumns, type PreviewEmployee } from './types';
 import { validateRow, dropServerErrorsForField, getColumnError } from './validation';
 import s from './ImportPreview.module.css';
+import { useTranslation } from 'react-i18next';
 
 export type { PreviewEmployee };
 
@@ -38,8 +39,10 @@ export function ImportPreviewModal({
   onConfirm,
   loading = false,
 }: ImportPreviewModalProps) {
+  const { t } = useTranslation();
   const [rows, setRows] = useState<PreviewEmployee[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const columns = getImportColumns();
 
   useEffect(() => {
     const initialRows = data.map((r, i) => {
@@ -121,18 +124,19 @@ export function ImportPreviewModal({
         <Group gap="sm">
           <Text fw={700} size="lg" c={PRIMARY_COLOR}>
             Import Preview
+            {t('importPreview.title')}
           </Text>
           <Badge size="md" variant="light" color={PRIMARY_COLOR}>
-            {rows.length} rows
+            {t('importPreview.rowsCount', { count: rows.length })}
           </Badge>
           {validCount > 0 && (
             <Badge size="md" variant="light" color="teal">
-              {validCount} valid
+              {t('importPreview.validCount', { count: validCount })}
             </Badge>
           )}
           {errorCount > 0 && (
             <Badge size="md" variant="light" color="red">
-              {errorCount} errors
+              {t('importPreview.errorCount', { count: errorCount })}
             </Badge>
           )}
         </Group>
@@ -150,13 +154,15 @@ export function ImportPreviewModal({
         <Group justify="space-between" align="center">
           <Group gap="sm">
             <Text size="sm" c="dimmed">
-              {selectedCount} of {rows.length} selected
+              {t('importPreview.selectedSummary', { selected: selectedCount, total: rows.length })}
             </Text>
             <Button size="xs" variant="subtle" onClick={selectValidOnly}>
-              Valid only
+              {t('importPreview.validOnly')}
             </Button>
             <Button size="xs" variant="subtle" onClick={toggleAll}>
-              {selected.size === rows.length ? 'Deselect all' : 'Select all'}
+              {selected.size === rows.length
+                ? t('importPreview.deselectAll')
+                : t('importPreview.selectAll')}
             </Button>
           </Group>
           <Group gap="xs">
@@ -167,21 +173,22 @@ export function ImportPreviewModal({
               w={100}
             />
             <Text size="xs" c="dimmed">
-              {rows.length > 0 ? Math.round((validCount / rows.length) * 100) : 0}% valid
+              {t('importPreview.percentValid', {
+                percent: rows.length > 0 ? Math.round((validCount / rows.length) * 100) : 0,
+              })}
             </Text>
           </Group>
         </Group>
 
         {errorCount > 0 && (
           <Alert icon={<IconAlertTriangle size={16} />} color="orange" p="xs">
-            {errorCount} row(s) have errors. Click any cell to edit inline — validation updates
-            instantly.
+            {t('messages.rowsHaveErrors', { count: errorCount })}
           </Alert>
         )}
 
         {!canImport && rows.length > 0 && (
           <Alert icon={<IconAlertTriangle size={16} />} color="red" p="xs">
-            No valid rows to import. Fix the errors above before importing.
+            {t('messages.noValidRows')}
           </Alert>
         )}
 
@@ -201,9 +208,9 @@ export function ImportPreviewModal({
                   #
                 </Table.Th>
                 <Table.Th w={80} className={s.th}>
-                  Status
+                  {t('fields.status')}
                 </Table.Th>
-                {COLUMNS.map((col) => (
+                {columns.map((col) => (
                   <Table.Th key={col.key} w={col.width} className={s.th}>
                     {col.label}
                     {col.required && (
@@ -255,22 +262,23 @@ export function ImportPreviewModal({
                         >
                           <Badge size="xs" color="red" variant="light" style={{ cursor: 'help' }}>
                             {row.errors!.length} err
+                            {t('importPreview.errShort', { count: row.errors!.length })}
                           </Badge>
                         </Tooltip>
                       ) : (
                         <Badge size="xs" color="teal" variant="light">
                           <IconCheck size={12} style={{ marginRight: 2 }} />
-                          OK
+                          {t('importPreview.ok')}
                         </Badge>
                       )}
                     </Table.Td>
 
-                    {COLUMNS.map((col, colIdx) => {
+                    {columns.map((col, colIdx) => {
                       const value = String(row[col.key] ?? '');
                       const errorMsg = getColumnError(row.errors, col);
                       const unmappedErrs =
                         colIdx === 0 && hasError
-                          ? row.errors?.filter((e) => !COLUMNS.some((c) => getColumnError([e], c)))
+                          ? row.errors?.filter((e) => !columns.some((c) => getColumnError([e], c)))
                           : [];
 
                       return (
@@ -293,24 +301,24 @@ export function ImportPreviewModal({
 
         <Text size="xs" c="dimmed">
           <IconInfoCircle size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-          Click any cell to edit. Enter to confirm, Escape to cancel. Dates must be YYYY-MM-DD.
+          {t('importPreview.editHint')}
         </Text>
 
         <Divider />
 
         <Group justify="space-between">
           <Text size="sm" c="dimmed">
-            {selectedCount} row(s) selected
+            {t('importPreview.selectedRows', { count: selectedCount })}
             {selectedWithErrors > 0 && (
               <Text span c="orange">
                 {' '}
-                · {selectedWithErrors} with errors
+                · {t('importPreview.selectedWithErrors', { count: selectedWithErrors })}
               </Text>
             )}
           </Text>
           <Group gap="sm">
             <Button variant="subtle" onClick={onClose} disabled={loading}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             {canImport && (
               <Button
@@ -320,7 +328,7 @@ export function ImportPreviewModal({
                 onClick={handleConfirm}
                 leftSection={<IconCheck size={16} />}
               >
-                Import {selectedCount} Employee{selectedCount !== 1 ? 's' : ''}
+                {t('importPreview.importEmployees', { count: selectedCount })}
               </Button>
             )}
           </Group>

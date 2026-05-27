@@ -10,7 +10,6 @@ import {
   Skeleton,
   SimpleGrid,
   useMantineColorScheme,
-  Paper,
   Tabs,
   Select,
   Box,
@@ -21,7 +20,6 @@ import {
   IconTrendingUp,
   IconAlertTriangle,
   IconChartBar,
-  IconBulbFilled,
 } from '@tabler/icons-react';
 import {
   PieChart,
@@ -40,7 +38,6 @@ import {
 } from 'recharts';
 import { useAuth } from '@/modules/auth/context/AuthContext';
 import { getHrStructure, getTurnoverReport, getInsights } from '../api/hr-reports';
-import type { AlertInsight } from '../api/hr-reports';
 import { EMPLOYEE_ROLE } from '@/constant';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useQuery } from '@tanstack/react-query';
@@ -57,7 +54,6 @@ function MetricCard({
   label,
   value,
   hint,
-  color,
   iconColor,
   icon,
   dark = false,
@@ -70,9 +66,7 @@ function MetricCard({
   icon: React.ReactNode;
   dark?: boolean;
 }) {
-  const surfaceBg = dark
-    ? `linear-gradient(145deg, ${color}22 0%, rgba(30,41,59,0.98) 62%)`
-    : `linear-gradient(145deg, ${color}12 0%, rgba(255,255,255,0.98) 62%)`;
+  const surfaceBg = dark ? 'var(--mantine-color-dark-7)' : '#ffffff';
 
   return (
     <Card
@@ -125,9 +119,7 @@ function AdminDashboard() {
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<string>(String(CURRENT_YEAR));
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'quarter' | 'year'>('month');
-  const cardSurface = dark
-    ? 'linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(30,41,59,0.96) 100%)'
-    : 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)';
+  const cardSurface = dark ? 'var(--mantine-color-dark-7)' : '#ffffff';
   const cardBorder = dark ? '1px solid rgba(100,116,139,0.28)' : '1px solid rgba(148,163,184,0.18)';
   const chartTextColor = dark ? 'var(--mantine-color-gray-2)' : undefined;
   const subtleTextColor = dark ? 'gray.4' : 'dimmed';
@@ -182,7 +174,7 @@ function AdminDashboard() {
     enabled: isAdmin,
   });
 
-  const { data: insightsData, isLoading: insightsLoading } = useQuery({
+  const { isLoading: insightsLoading } = useQuery({
     queryKey: ['insights', selectedDepartmentId],
     queryFn: () => getInsights({ departmentId: selectedDepartmentId || undefined }),
     enabled: isAdmin,
@@ -213,106 +205,79 @@ function AdminDashboard() {
 
   const hrStructure = hrData?.data;
   const turnover = turnoverData?.data;
-  const insights = insightsData?.data || [];
-
   return (
-    <Stack gap="xl">
+    <Stack gap="lg">
       <Card
-        radius="2xl"
+        radius="lg"
         p="lg"
         style={{
-          background:
-            'radial-gradient(circle at top left, rgba(59,130,246,0.24), transparent 32%), linear-gradient(135deg, #0f172a 0%, #1e293b 45%, #312e81 100%)',
-          color: 'white',
-          overflow: 'hidden',
-          position: 'relative',
+          background: cardSurface,
+          border: cardBorder,
+          boxShadow: dark
+            ? '0 10px 20px -20px rgba(0,0,0,0.72)'
+            : '0 10px 20px -20px rgba(15,23,42,0.1)',
         }}
       >
         <Group justify="space-between" align="flex-start" gap="xl">
           <Stack gap={6} maw={620}>
-            <Text size="xs" fw={700} tt="uppercase" c="rgba(255,255,255,0.58)">
+            <Title order={3} c={chartTextColor} style={{ letterSpacing: -0.4 }}>
               {t('dashboard.heroTag')}
-            </Text>
-            <Title order={2} c="white" style={{ letterSpacing: -0.8 }}>
-              {t('dashboard.heroTitle')}
             </Title>
-            <Text c="rgba(255,255,255,0.72)" size="sm" maw={480}>
+            <Text c={subtleTextColor} size="xs" maw={480}>
               {t('dashboard.heroDescription')}
             </Text>
           </Stack>
 
           <Group gap="xl" wrap="wrap">
             <Box>
-              <Text size="xs" c="rgba(255,255,255,0.5)">
+              <Text size="xs" c={subtleTextColor}>
                 {t('dashboard.selectedScopeDepartment')}
               </Text>
-              <Text size="sm" fw={700} c="white">
-                {selectedDepartmentId
-                  ? departmentOptions.find((item) => item.value === selectedDepartmentId)?.label
-                  : t('dashboard.allDepartments')}
-              </Text>
+              <Select
+                data={departmentOptions}
+                value={selectedDepartmentId ?? ''}
+                onChange={(value) => setSelectedDepartmentId(value || null)}
+                searchable
+                clearable={false}
+                checkIconPosition="right"
+              />
             </Box>
             <Box>
-              <Text size="xs" c="rgba(255,255,255,0.5)">
+              <Text size="xs" c={subtleTextColor}>
                 {t('dashboard.selectedScopeYear')}
               </Text>
-              <Text size="sm" fw={700} c="white">
-                {reportYear}
-              </Text>
+              <Select
+                w={100}
+                data={yearOptions}
+                value={selectedYear}
+                onChange={(value) => {
+                  if (value) setSelectedYear(value);
+                }}
+                clearable={false}
+                checkIconPosition="right"
+              />
             </Box>
             <Box>
-              <Text size="xs" c="rgba(255,255,255,0.5)">
+              <Text size="xs" c={subtleTextColor}>
                 {t('dashboard.selectedScopePeriod')}
               </Text>
-              <Text size="sm" fw={700} c="white" tt="capitalize">
-                {selectedPeriodLabel}
-              </Text>
+              <Select
+                data={[
+                  { value: 'month', label: t('dashboard.periodMonthly') },
+                  { value: 'quarter', label: t('dashboard.periodQuarterly') },
+                  { value: 'year', label: t('dashboard.periodYearly') },
+                ]}
+                value={selectedPeriod}
+                onChange={(value) => {
+                  if (value === 'month' || value === 'quarter' || value === 'year') {
+                    setSelectedPeriod(value);
+                  }
+                }}
+                clearable={false}
+                checkIconPosition="right"
+              />
             </Box>
           </Group>
-        </Group>
-      </Card>
-
-      <Card
-        radius="lg"
-        p="md"
-        style={{
-          background: cardSurface,
-          border: cardBorder,
-        }}
-      >
-        <Group align="end" grow>
-          <Select
-            label={t('dashboard.filterDepartment')}
-            data={departmentOptions}
-            value={selectedDepartmentId ?? ''}
-            onChange={(value) => setSelectedDepartmentId(value || null)}
-            searchable
-            clearable={false}
-          />
-          <Select
-            label={t('dashboard.filterYear')}
-            data={yearOptions}
-            value={selectedYear}
-            onChange={(value) => {
-              if (value) setSelectedYear(value);
-            }}
-            clearable={false}
-          />
-          <Select
-            label={t('dashboard.filterTurnoverPeriod')}
-            data={[
-              { value: 'month', label: t('dashboard.periodMonthly') },
-              { value: 'quarter', label: t('dashboard.periodQuarterly') },
-              { value: 'year', label: t('dashboard.periodYearly') },
-            ]}
-            value={selectedPeriod}
-            onChange={(value) => {
-              if (value === 'month' || value === 'quarter' || value === 'year') {
-                setSelectedPeriod(value);
-              }
-            }}
-            clearable={false}
-          />
         </Group>
       </Card>
 
@@ -372,6 +337,9 @@ function AdminDashboard() {
               background: cardSurface,
               border: cardBorder,
               height: '100%',
+              boxShadow: dark
+                ? '0 10px 20px -20px rgba(15,23,42,0.8)'
+                : '0 10px 20px -20px rgba(15,23,42,0.1)',
             }}
           >
             <Group justify="space-between" mb="md">
@@ -452,6 +420,9 @@ function AdminDashboard() {
               background: cardSurface,
               border: cardBorder,
               height: '100%',
+              boxShadow: dark
+                ? '0 10px 20px -20px rgba(15,23,42,0.8)'
+                : '0 10px 20px -20px rgba(15,23,42,0.1)',
             }}
           >
             <Group justify="space-between" mb="md">
@@ -503,15 +474,16 @@ function AdminDashboard() {
         </Grid.Col>
       </Grid>
 
-      {insights.length > 0 && (
+      {/* {insights.length > 0 && (
         <Card
           radius="lg"
           p="lg"
           style={{
-            background: dark
-              ? 'linear-gradient(180deg, rgba(66,32,6,0.96) 0%, rgba(51,31,7,0.98) 100%)'
-              : 'linear-gradient(180deg, #fffdf4 0%, #ffffff 100%)',
-            border: dark ? '1px solid rgba(250,204,21,0.24)' : '1px solid rgba(250,204,21,0.28)',
+            background: cardSurface,
+            border: cardBorder,
+            boxShadow: dark
+              ? '0 10px 20px -20px rgba(15,23,42,0.8)'
+              : '0 10px 20px -20px rgba(15,23,42,0.1)',
           }}
         >
           <Group justify="space-between" mb="md">
@@ -533,12 +505,12 @@ function AdminDashboard() {
                 key={index}
                 withBorder
                 p="md"
-                radius="lg"
+                radius="md"
                 style={{
-                  background: dark
-                    ? 'linear-gradient(180deg, rgba(51,31,7,0.98) 0%, rgba(30,41,59,0.96) 100%)'
-                    : 'linear-gradient(180deg, #ffffff 0%, #fffef7 100%)',
-                  borderColor: dark ? 'rgba(250,204,21,0.18)' : 'rgba(250,204,21,0.18)',
+                  background: dark ? 'var(--mantine-color-dark-6)' : '#ffffff',
+                  borderColor: dark
+                    ? 'rgba(100,116,139,0.24)'
+                    : 'rgba(148,163,184,0.16)',
                 }}
               >
                 <Group justify="space-between" mb={4}>
@@ -572,7 +544,7 @@ function AdminDashboard() {
             ))}
           </Stack>
         </Card>
-      )}
+      )} */}
     </Stack>
   );
 }
