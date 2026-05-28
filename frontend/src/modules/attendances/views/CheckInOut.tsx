@@ -76,6 +76,7 @@ export default function CheckInOutPage() {
   const { position, loading: gpsLoading, error: gpsError, getPosition } = useGPS();
   const [faceCheckInOpened, setFaceCheckInOpened] = useState(false);
   const [faceCheckMode, setFaceCheckMode] = useState<'check-in' | 'check-out'>('check-in');
+  const [faceCheckPosition, setFaceCheckPosition] = useState<typeof position>(null);
   const [_actionResult, setActionResult] = useState<{
     status: 'success' | 'error';
     label: string;
@@ -119,7 +120,13 @@ export default function CheckInOutPage() {
     if (!employee) return;
     setActionResult(null);
     setFaceCheckMode('check-in');
-    setFaceCheckInOpened(true);
+    try {
+      const gps = await getPosition();
+      setFaceCheckPosition(gps);
+      setFaceCheckInOpened(true);
+    } catch {
+      setFaceCheckPosition(null);
+    }
   };
 
   const handleFaceCheckResult = async (result: {
@@ -148,7 +155,13 @@ export default function CheckInOutPage() {
     if (!employee) return;
     setActionResult(null);
     setFaceCheckMode('check-out');
-    setFaceCheckInOpened(true);
+    try {
+      const gps = await getPosition();
+      setFaceCheckPosition(gps);
+      setFaceCheckInOpened(true);
+    } catch {
+      setFaceCheckPosition(null);
+    }
   };
 
   const locale = i18n.language?.startsWith('en') ? 'en-US' : 'vi-VN';
@@ -559,8 +572,8 @@ export default function CheckInOutPage() {
             await refetchToday();
           }}
           onResult={handleFaceCheckResult}
-          latitude={position?.latitude}
-          longitude={position?.longitude}
+          latitude={(faceCheckPosition ?? position)?.latitude}
+          longitude={(faceCheckPosition ?? position)?.longitude}
           action={faceCheckMode}
         />
       )}

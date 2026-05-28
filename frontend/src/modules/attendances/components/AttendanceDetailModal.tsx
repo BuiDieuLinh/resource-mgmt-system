@@ -197,6 +197,17 @@ function LogCard({ log, variant }: { log?: IAttendanceLogs; variant: 'check_in' 
             </Text>
           </Tooltip>
         </Group>
+
+        {log?.selfie_image_url && (
+          <Group gap="xs" wrap="nowrap">
+            <ThemeIcon variant="subtle" size="sm" color="gray">
+              <IconCamera size={14} />
+            </ThemeIcon>
+            <Text size="xs" c="dimmed">
+              {t('attendance.detailModal.faceVerificationSnapshot')}
+            </Text>
+          </Group>
+        )}
       </Stack>
     </Card>
   );
@@ -212,10 +223,14 @@ export function AttendanceDetailModal({
 }: AttendanceDetailModalProps) {
   const { t } = useTranslation();
   const status = record?.status;
-  const similarityPct =
-    typeof record?.similarity_score === 'number'
-      ? Math.round(record.similarity_score * 100 * 10) / 10
-      : null;
+  const verificationLog = checkInLog?.selfie_image_url
+    ? checkInLog
+    : checkOutLog?.selfie_image_url
+      ? checkOutLog
+      : undefined;
+  const selfieLogs = [checkInLog, checkOutLog].filter(
+    (log): log is IAttendanceLogs => !!log?.selfie_image_url,
+  );
 
   return (
     <Modal
@@ -259,14 +274,11 @@ export function AttendanceDetailModal({
                   {status}
                 </Badge>
               )}
-              {similarityPct != null && (
+              {verificationLog && (
                 <Group gap={4} wrap="nowrap">
                   <IconShieldCheck size={14} color="var(--mantine-color-teal-6)" />
                   <Text size="xs" c="dimmed">
                     {t('attendance.detailModal.faceMatch')}
-                  </Text>
-                  <Text size="xs" fw={700}>
-                    {similarityPct.toFixed(1)}%
                   </Text>
                 </Group>
               )}
@@ -300,8 +312,8 @@ export function AttendanceDetailModal({
           <LogCard log={checkOutLog} variant="check_out" />
         </SimpleGrid>
 
-        {/* Selfie verification — only when image exists */}
-        {record?.selfie_image_url && (
+        {/* Selfie verification — stored per attendance log */}
+        {selfieLogs.length > 0 && (
           <Card withBorder radius="md" p="md">
             <Group gap="xs" mb="sm" wrap="nowrap">
               <ThemeIcon variant="light" size="sm" color="violet">
@@ -310,28 +322,31 @@ export function AttendanceDetailModal({
               <Text size="sm" fw={600}>
                 {t('attendance.detailModal.faceVerificationSnapshot')}
               </Text>
-              {similarityPct != null && (
-                <Badge
-                  color="teal"
-                  variant="light"
-                  size="xs"
-                  radius="sm"
-                  ml="auto"
-                  leftSection={<IconShieldCheck size={11} />}
-                >
-                  {similarityPct.toFixed(1)}%
-                </Badge>
-              )}
             </Group>
-            <Center>
-              <Image
-                src={record.selfie_image_url}
-                alt={t('attendance.detailModal.checkInSelfie')}
-                radius="md"
-                mah={260}
-                fit="contain"
-              />
-            </Center>
+            <SimpleGrid cols={{ base: 1, sm: selfieLogs.length > 1 ? 2 : 1 }} spacing="sm">
+              {selfieLogs.map((log) => {
+                return (
+                  <Box key={log.id}>
+                    <Group justify="space-between" mb={6}>
+                      <Text size="xs" c="dimmed" fw={600} tt="uppercase">
+                        {log.action === 'check_in'
+                          ? t('attendance.detailModal.checkIn')
+                          : t('attendance.detailModal.checkOut')}
+                      </Text>
+                    </Group>
+                    <Center>
+                      <Image
+                        src={log.selfie_image_url}
+                        alt={t('attendance.detailModal.checkInSelfie')}
+                        radius="md"
+                        mah={260}
+                        fit="contain"
+                      />
+                    </Center>
+                  </Box>
+                );
+              })}
+            </SimpleGrid>
           </Card>
         )}
       </Stack>

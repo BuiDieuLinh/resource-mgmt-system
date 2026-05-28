@@ -49,6 +49,8 @@ export interface IAttendanceLogs {
   longitude: number;
   ip_address: string | null;
   user_agent: string | null;
+  selfie_image_url?: string | null;
+  similarity_score?: number | null;
 }
 
 export interface ILeaveRequest {

@@ -332,10 +332,10 @@ export class AttendancesService {
         break_start: policy?.break_start ?? null,
         break_end: policy?.break_end ?? null,
         flexible_start: policy?.is_flexible_enabled
-          ? (policy.flexible_start_minutes ?? null)
+          ? (policy.flexible_start ?? null)
           : null,
         flexible_end: policy?.is_flexible_enabled
-          ? (policy.flexible_end_minutes ?? null)
+          ? (policy.flexible_end ?? null)
           : null,
         check_in_time: timestamp,
         status: AttendanceStatus.pending,
