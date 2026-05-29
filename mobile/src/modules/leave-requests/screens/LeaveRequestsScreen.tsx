@@ -18,25 +18,19 @@ import { colors, spacing, radius } from '@/theme';
 import { getMyLeaveRequests, createLeaveRequest } from '../api';
 import type { LeaveRequest } from '@/models/leave-requests';
 import { useGetEmployeeByUser } from '@/modules/employees/api';
+import { useI18n } from '@/i18n';
 
-const statusConfig = {
-  pending: { label: 'Pending', variant: 'warning' as const, icon: 'time-outline' },
-  approved: { label: 'Approved', variant: 'success' as const, icon: 'checkmark-circle-outline' },
-  rejected: { label: 'Rejected', variant: 'error' as const, icon: 'close-circle-outline' },
+const statusVariant = {
+  pending: 'warning' as const,
+  approved: 'success' as const,
+  rejected: 'error' as const,
 };
 
-const leaveTypeLabel: Record<string, string> = {
-  annual: 'Annual Leave',
-  sick: 'Sick Leave',
-  maternity: 'Maternity',
-  paternity: 'Paternity',
-  unpaid: 'Unpaid Leave',
-};
-
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' });
+const formatDate = (iso: string, locale: string) =>
+  new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
 
 export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
+  const { t, locale } = useI18n();
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -74,7 +68,7 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
 
   const handleSubmit = async () => {
     if (!startDate || !endDate || !reason) {
-      Alert.alert('Missing Fields', 'Please fill in Start Date, End Date, and Reason');
+      Alert.alert(t('leave.missingFields'), t('leave.missingFieldsMessage'));
       return;
     }
 
@@ -100,7 +94,7 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
       await createLeaveRequest(payload);
       console.log('[LeaveRequest] Success');
 
-      Alert.alert('✅ Submitted', 'Your leave request has been submitted successfully');
+      Alert.alert(t('leave.submitted'), t('leave.submittedMessage'));
       setShowModal(false);
       setStartDate('');
       setEndDate('');
@@ -112,7 +106,7 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
     } catch (err: any) {
       console.error('[LeaveRequest] Error:', err);
       const message = err.response?.data?.message || err.message || 'Failed to submit';
-      Alert.alert('Submission Failed', message);
+      Alert.alert(t('leave.submissionFailed'), message);
     } finally {
       setSubmitting(false);
     }
@@ -121,7 +115,7 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
   const formatDisplayDate = (dateStr: string) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('vi-VN', {
+    return date.toLocaleDateString(locale, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -134,23 +128,23 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
   };
 
   const filters = [
-    { label: 'All', value: null },
-    { label: 'Pending', value: 'pending' },
-    { label: 'Approved', value: 'approved' },
-    { label: 'Rejected', value: 'rejected' },
+    { label: t('common.all'), value: null },
+    { label: t('leave.pending'), value: 'pending' },
+    { label: t('leave.approved'), value: 'approved' },
+    { label: t('leave.rejected'), value: 'rejected' },
   ];
 
   const leaveTypes = [
-    { label: 'Annual', value: 'annual' },
-    { label: 'Sick', value: 'sick' },
-    { label: 'Unpaid', value: 'unpaid' },
-    { label: 'Maternity', value: 'maternity' },
-    { label: 'Paternity', value: 'paternity' },
+    { label: t('leave.annual'), value: 'annual' },
+    { label: t('leave.sick'), value: 'sick' },
+    { label: t('leave.unpaid'), value: 'unpaid' },
+    { label: t('leave.maternity'), value: 'maternity' },
+    { label: t('leave.paternity'), value: 'paternity' },
   ];
 
   // Time options (in minutes from midnight)
   const timeOptions = [
-    { label: 'Full Day', value: '' },
+    { label: t('leave.fullDay'), value: '' },
     { label: '08:00', value: '480' },
     { label: '08:30', value: '510' },
     { label: '09:00', value: '540' },
@@ -175,7 +169,19 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
   ];
 
   const renderItem = ({ item }: { item: LeaveRequest }) => {
-    const cfg = statusConfig[item.status] ?? statusConfig.pending;
+    const statusLabel: Record<string, string> = {
+      pending: t('leave.pending'),
+      approved: t('leave.approved'),
+      rejected: t('leave.rejected'),
+    };
+    const leaveTypeLabel: Record<string, string> = {
+      annual: t('leave.annualLeave'),
+      sick: t('leave.sickLeave'),
+      maternity: t('leave.maternity'),
+      paternity: t('leave.paternity'),
+      unpaid: t('leave.unpaidLeave'),
+    };
+    const variant = statusVariant[item.status] ?? statusVariant.pending;
     return (
       <View>
         <Card style={styles.card}>
@@ -188,12 +194,16 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
                 {leaveTypeLabel[item.leave_type] ?? item.leave_type}
               </Text>
             </View>
-            <Badge label={cfg.label} variant={cfg.variant} size="sm" />
+            <Badge
+              label={statusLabel[item.status] ?? statusLabel.pending}
+              variant={variant}
+              size="sm"
+            />
           </View>
           <View style={styles.dateRow}>
             <Ionicons name="calendar-clear-outline" size={14} color={colors.gray400} />
             <Text style={styles.dateText}>
-              {formatDate(item.start_date)} → {formatDate(item.end_date)}
+              {formatDate(item.start_date, locale)} → {formatDate(item.end_date, locale)}
             </Text>
           </View>
           {item.reason && (
@@ -201,7 +211,9 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
               {item.reason}
             </Text>
           )}
-          <Text style={styles.createdAt}>Submitted {formatDate(item.created_at)}</Text>
+          <Text style={styles.createdAt}>
+            {t('leave.submitted')} {formatDate(item.created_at, locale)}
+          </Text>
         </Card>
       </View>
     );
@@ -211,7 +223,7 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
     <View style={styles.container}>
       <GradientHeader style={styles.header}>
         <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>Leave Requests</Text>
+          <Text style={styles.headerTitle}>{t('leave.leaveRequests')}</Text>
           <TouchableOpacity style={styles.addBtn} onPress={() => setShowModal(true)}>
             <Ionicons name="add" size={22} color={colors.white} />
           </TouchableOpacity>
@@ -250,7 +262,7 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
           !loading ? (
             <View style={styles.empty}>
               <Ionicons name="calendar-outline" size={48} color={colors.gray300} />
-              <Text style={styles.emptyText}>No leave requests found</Text>
+              <Text style={styles.emptyText}>{t('leave.noRequests')}</Text>
             </View>
           ) : null
         }
@@ -260,7 +272,7 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={styles.modal}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>New Leave Request</Text>
+            <Text style={styles.modalTitle}>{t('leave.newRequest')}</Text>
             <TouchableOpacity onPress={() => setShowModal(false)}>
               <Ionicons name="close" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
@@ -268,7 +280,7 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
 
           <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
             {/* Leave type */}
-            <Text style={styles.fieldLabel}>Leave Type *</Text>
+            <Text style={styles.fieldLabel}>{t('leave.leaveType')}</Text>
             <View style={styles.typeRow}>
               {leaveTypes.map((t) => (
                 <TouchableOpacity
@@ -288,14 +300,14 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
               ))}
             </View>
 
-            <Text style={styles.fieldLabel}>Start Date *</Text>
+            <Text style={styles.fieldLabel}>{t('leave.startDate')}</Text>
             <TouchableOpacity
               style={styles.dateInput}
               onPress={() => setShowStartCalendar(!showStartCalendar)}
             >
               <Ionicons name="calendar-outline" size={18} color={colors.primary} />
               <Text style={[styles.dateInputText, !startDate && styles.placeholderText]}>
-                {startDate ? formatDisplayDate(startDate) : 'Select start date'}
+                {startDate ? formatDisplayDate(startDate) : t('leave.selectStartDate')}
               </Text>
               <Ionicons
                 name={showStartCalendar ? 'chevron-up' : 'chevron-down'}
@@ -333,14 +345,14 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
               />
             )}
 
-            <Text style={styles.fieldLabel}>End Date *</Text>
+            <Text style={styles.fieldLabel}>{t('leave.endDate')}</Text>
             <TouchableOpacity
               style={styles.dateInput}
               onPress={() => setShowEndCalendar(!showEndCalendar)}
             >
               <Ionicons name="calendar-outline" size={18} color={colors.primary} />
               <Text style={[styles.dateInputText, !endDate && styles.placeholderText]}>
-                {endDate ? formatDisplayDate(endDate) : 'Select end date'}
+                {endDate ? formatDisplayDate(endDate) : t('leave.selectEndDate')}
               </Text>
               <Ionicons
                 name={showEndCalendar ? 'chevron-up' : 'chevron-down'}
@@ -374,7 +386,7 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
               />
             )}
 
-            <Text style={styles.fieldLabel}>Leave From (Optional)</Text>
+            <Text style={styles.fieldLabel}>{t('leave.leaveFrom')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timeScroll}>
               {timeOptions.map((t) => (
                 <TouchableOpacity
@@ -394,7 +406,7 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
               ))}
             </ScrollView>
 
-            <Text style={styles.fieldLabel}>Leave Until (Optional)</Text>
+            <Text style={styles.fieldLabel}>{t('leave.leaveUntil')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timeScroll}>
               {timeOptions.map((t) => (
                 <TouchableOpacity
@@ -414,12 +426,12 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
               ))}
             </ScrollView>
 
-            <Text style={styles.fieldLabel}>Reason *</Text>
+            <Text style={styles.fieldLabel}>{t('leave.reason')}</Text>
             <TextInput
               style={[styles.input, styles.textarea]}
               value={reason}
               onChangeText={setReason}
-              placeholder="Please provide a reason for your leave..."
+              placeholder={t('leave.reasonPlaceholder')}
               placeholderTextColor={colors.gray400}
               multiline
               numberOfLines={4}
@@ -427,7 +439,7 @@ export const LeaveRequestsScreen: React.FC<{ navigation: any }> = () => {
             />
 
             <Button
-              title={submitting ? 'Submitting...' : 'Submit Request'}
+              title={submitting ? t('leave.submitting') : t('leave.submitRequest')}
               onPress={handleSubmit}
               loading={submitting}
               fullWidth

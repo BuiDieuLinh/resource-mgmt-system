@@ -16,11 +16,12 @@ import { colors, spacing, radius } from '@/theme';
 import { useGetMyAttendance } from '../api/get-my-attendance';
 
 import type { IAttendance } from '@/models/attendances';
+import { useI18n } from '@/i18n';
 
-const formatTime = (iso?: string | null) => {
+const formatTime = (iso: string | null | undefined, locale: string) => {
   if (!iso) return '--:--';
 
-  return new Date(iso).toLocaleTimeString('vi-VN', {
+  return new Date(iso).toLocaleTimeString(locale, {
     hour: '2-digit',
     minute: '2-digit',
     timeZone: 'Asia/Ho_Chi_Minh',
@@ -46,23 +47,15 @@ const statusConfig: Record<
     variant: any;
   }
 > = {
-  approved: {
-    label: 'Approved',
-    variant: 'success',
-  },
-  pending: {
-    label: 'Pending',
-    variant: 'warning',
-  },
-  rejected: {
-    label: 'Rejected',
-    variant: 'error',
-  },
+  approved: { label: 'leave.approved', variant: 'success' },
+  pending: { label: 'leave.pending', variant: 'warning' },
+  rejected: { label: 'leave.rejected', variant: 'error' },
 };
 
 export const TimesheetScreen: React.FC<{
   navigation: any;
 }> = ({ navigation }) => {
+  const { t, locale } = useI18n();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
   const month = selectedMonth.getMonth() + 1;
@@ -93,7 +86,7 @@ export const TimesheetScreen: React.FC<{
     }
   };
 
-  const monthLabel = selectedMonth.toLocaleDateString('vi-VN', {
+  const monthLabel = selectedMonth.toLocaleDateString(locale, {
     month: 'long',
     year: 'numeric',
   });
@@ -101,7 +94,7 @@ export const TimesheetScreen: React.FC<{
   const renderRecord = ({ item }: { item: IAttendance }) => {
     const cfg = statusConfig[item.status ?? 'pending'];
 
-    const dayLabel = new Date(item.work_date).toLocaleDateString('vi-VN', {
+    const dayLabel = new Date(item.work_date).toLocaleDateString(locale, {
       weekday: 'short',
       day: '2-digit',
       month: '2-digit',
@@ -113,7 +106,7 @@ export const TimesheetScreen: React.FC<{
         <View style={styles.recordHeader}>
           <Text style={styles.recordDate}>{dayLabel}</Text>
 
-          <Badge label={cfg.label} variant={cfg.variant} size="sm" />
+          <Badge label={t(cfg.label)} variant={cfg.variant} size="sm" />
         </View>
 
         {/* Time */}
@@ -121,7 +114,7 @@ export const TimesheetScreen: React.FC<{
           <View style={styles.timeItem}>
             <Ionicons name="log-in-outline" size={14} color={colors.success} />
 
-            <Text style={styles.timeText}>{formatTime(item.check_in_time)}</Text>
+            <Text style={styles.timeText}>{formatTime(item.check_in_time, locale)}</Text>
           </View>
 
           <Ionicons name="arrow-forward" size={12} color={colors.gray400} />
@@ -129,7 +122,7 @@ export const TimesheetScreen: React.FC<{
           <View style={styles.timeItem}>
             <Ionicons name="log-out-outline" size={14} color={colors.error} />
 
-            <Text style={styles.timeText}>{formatTime(item.check_out_time)}</Text>
+            <Text style={styles.timeText}>{formatTime(item.check_out_time, locale)}</Text>
           </View>
 
           {item.work_minutes ? (
@@ -153,7 +146,7 @@ export const TimesheetScreen: React.FC<{
                   },
                 ]}
               >
-                Late {formatMinutes(item.late)}
+                {t('attendance.late')} {formatMinutes(item.late)}
               </Text>
             </View>
           ) : null}
@@ -195,7 +188,7 @@ export const TimesheetScreen: React.FC<{
             <Ionicons name="arrow-back" size={24} color={colors.white} />
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>My Timesheet</Text>
+          <Text style={styles.headerTitle}>{t('profile.myTimesheet')}</Text>
 
           <View style={{ width: 24 }} />
         </View>
@@ -218,19 +211,19 @@ export const TimesheetScreen: React.FC<{
           <View style={styles.summaryRow}>
             {[
               {
-                label: 'Planned',
+                label: t('attendance.planned'),
                 value: `${summary.plan_day}d`,
               },
               {
-                label: 'Actual',
+                label: t('attendance.actual'),
                 value: `${summary.actual_day}d`,
               },
               {
-                label: 'Absent',
+                label: t('attendance.absent'),
                 value: `${summary.absent}d`,
               },
               {
-                label: 'OT',
+                label: t('attendance.overtime'),
                 value: formatMinutes(summary.over_time) ?? '0m',
               },
             ].map((s) => (
@@ -255,7 +248,7 @@ export const TimesheetScreen: React.FC<{
           <View style={styles.empty}>
             <Ionicons name="calendar-outline" size={48} color={colors.gray300} />
 
-            <Text style={styles.emptyText}>No records this month</Text>
+            <Text style={styles.emptyText}>{t('attendance.noRecords')}</Text>
           </View>
         }
       />

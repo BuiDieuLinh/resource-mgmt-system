@@ -17,6 +17,7 @@ import { useForm } from '@/hooks/useForm';
 import { validateEmail, validatePassword } from '@/utils';
 import { Button, Input } from '@/components/ui';
 import { colors, spacing, shadow } from '@/theme';
+import { useI18n } from '@/i18n';
 
 interface LoginFormData {
   email: string;
@@ -29,6 +30,7 @@ interface LoginScreenProps {
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const { login: authLogin } = useAuth();
+  const { t } = useI18n();
 
   const logoAnim = useRef(new Animated.Value(0)).current;
   const formAnim = useRef(new Animated.Value(0)).current;
@@ -56,16 +58,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     { email: '', password: '' },
     async (formData) => {
       if (!validateEmail(formData.email)) {
-        Alert.alert('Invalid Email', 'Please enter a valid email address');
+        Alert.alert(t('auth.invalidEmail'), t('auth.invalidEmailMessage'));
         return;
       }
       if (!validatePassword(formData.password)) {
-        Alert.alert('Invalid Password', 'Password must be at least 6 characters');
+        Alert.alert(t('auth.invalidPassword'), t('auth.invalidPasswordMessage'));
         return;
       }
       const success = await authLogin(formData.email, formData.password);
       if (!success) {
-        Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
+        Alert.alert(t('auth.loginFailed'), t('auth.loginFailedMessage'));
       }
       // Navigation will happen automatically when isLoggedIn changes
     },
@@ -99,13 +101,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
             {/* Form */}
             <Animated.View style={[styles.formCard, formStyle]}>
-              <Text style={styles.welcomeText}>Welcome back</Text>
-              <Text style={styles.subText}>Sign in to your account</Text>
+              <Text style={styles.welcomeText}>{t('auth.title')}</Text>
+              <Text style={styles.subText}>{t('auth.subtitle')}</Text>
 
               <View style={styles.form}>
                 <Input
-                  label="Email"
-                  placeholder="Enter your email"
+                  label={t('auth.email')}
+                  placeholder={t('auth.emailPlaceholder')}
                   value={values.email}
                   onChangeText={(t) => handleChange('email', t)}
                   keyboardType="email-address"
@@ -115,8 +117,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                   editable={!isLoading}
                 />
                 <Input
-                  label="Password"
-                  placeholder="Enter your password"
+                  label={t('auth.password')}
+                  placeholder={t('auth.passwordPlaceholder')}
                   value={values.password}
                   onChangeText={(t) => handleChange('password', t)}
                   isPassword
@@ -124,7 +126,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                   editable={!isLoading}
                 />
                 <Button
-                  title={isLoading ? 'Signing in...' : 'Sign In'}
+                  title={isLoading ? t('auth.signingIn') : t('auth.signIn')}
                   onPress={handleSubmit}
                   loading={isLoading}
                   disabled={isLoading}
@@ -136,7 +138,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
               <View style={styles.footer}>
                 <Ionicons name="shield-checkmark-outline" size={14} color={colors.gray400} />
-                <Text style={styles.footerText}>Secured with end-to-end encryption</Text>
+                <Text style={styles.footerText}>{t('auth.secured')}</Text>
               </View>
             </Animated.View>
           </ScrollView>

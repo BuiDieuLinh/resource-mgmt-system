@@ -22,11 +22,12 @@ import { colors, gradients, spacing, shadow } from '@/theme';
 import { useFaceCheckIn, useFaceCheckOut } from '../api/check-in-out';
 import { useGetMyAttendance } from '../api/get-my-attendance';
 import { useGetEmployeeByUser } from '@/modules/employees/api';
+import { useI18n } from '@/i18n';
 
-const formatTime = (iso?: string | null): string => {
+const formatTime = (iso: string | null | undefined, locale: string): string => {
   if (!iso) return '--:--';
 
-  return new Date(iso).toLocaleTimeString('vi-VN', {
+  return new Date(iso).toLocaleTimeString(locale, {
     hour: '2-digit',
     minute: '2-digit',
     timeZone: 'Asia/Ho_Chi_Minh',
@@ -80,6 +81,7 @@ const getWorkDayInHoChiMinh = (date: Date) => {
 
 export const CheckInScreen: React.FC = () => {
   const { user } = useAuth();
+  const { t, locale } = useI18n();
   const cameraRef = useRef<CameraView | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [refreshing, setRefreshing] = useState(false);
@@ -135,37 +137,31 @@ export const CheckInScreen: React.FC = () => {
 
   const openCameraForAction = async (action: 'check-in' | 'check-out') => {
     if (action === 'check-in' && isPastCheckInTime) {
-      Alert.alert(
-        'Quá giờ check-in',
-        'Đã vượt quá giờ làm việc hôm nay nên không thể check-in trên mobile.',
-      );
+      Alert.alert(t('attendance.pastHoursTitle'), t('attendance.pastHoursMessage'));
       return;
     }
 
     if (loading) return;
 
     if (!employeeData?.id) {
-      Alert.alert('Missing employee', 'Không tìm thấy thông tin nhân viên.');
+      Alert.alert(t('attendance.missingEmployee'), t('attendance.missingEmployeeMessage'));
       return;
     }
 
     if (action === 'check-in' && !todaySchedule) {
-      Alert.alert('No work schedule', 'Hôm nay không có lịch làm việc để check-in.');
+      Alert.alert(t('attendance.noSchedule'), t('attendance.noScheduleMessage'));
       return;
     }
 
     if (!hasFaceDescriptor) {
-      Alert.alert(
-        'Face ID chưa đăng ký',
-        'Tài khoản này chưa có face descriptor. Hãy enroll khuôn mặt trên web trước.',
-      );
+      Alert.alert(t('attendance.faceMissingTitle'), t('attendance.faceMissingMessage'));
       return;
     }
 
     if (!permission?.granted) {
       const result = await requestPermission();
       if (!result.granted) {
-        Alert.alert('Camera permission', 'Cần cấp quyền camera để chụp selfie check-in.');
+        Alert.alert(t('attendance.cameraPermission'), t('attendance.cameraPermissionMessage'));
         return;
       }
     }
@@ -190,7 +186,7 @@ export const CheckInScreen: React.FC = () => {
       });
 
       if (!photo?.uri) {
-        throw new Error('Không thể chụp ảnh selfie');
+        throw new Error(t('attendance.cameraRequired'));
       }
 
       const payload = {
@@ -209,11 +205,15 @@ export const CheckInScreen: React.FC = () => {
       setPendingAction(null);
       await refetch();
 
-      const title = pendingAction === 'check-in' ? '✅ Checked In!' : '👋 Checked Out!';
-      Alert.alert(title, response.message || 'Face verification completed successfully.');
+      const title =
+        pendingAction === 'check-in' ? t('attendance.checkIn') : t('attendance.checkOut');
+      Alert.alert(title, response.message || t('attendance.faceSuccess'));
     } catch (err: any) {
-      const message = err.response?.data?.message || err.message || 'Face verification failed';
-      Alert.alert('Face Check Failed', Array.isArray(message) ? message.join('\n') : message);
+      const message = err.response?.data?.message || err.message || t('attendance.faceCheckFailed');
+      Alert.alert(
+        t('attendance.faceCheckFailed'),
+        Array.isArray(message) ? message.join('\n') : message,
+      );
     }
   };
 
@@ -222,10 +222,10 @@ export const CheckInScreen: React.FC = () => {
   };
 
   const handleCheckOut = async () => {
-    Alert.alert('Check Out', 'Are you sure you want to check out?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('attendance.checkOut'), t('attendance.checkOutConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Continue',
+        text: t('common.continue'),
         style: 'default',
         onPress: async () => {
           await openCameraForAction('check-out');
@@ -234,14 +234,14 @@ export const CheckInScreen: React.FC = () => {
     ]);
   };
 
-  const timeStr = currentTime.toLocaleTimeString('vi-VN', {
+  const timeStr = currentTime.toLocaleTimeString(locale, {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
     timeZone: 'Asia/Ho_Chi_Minh',
   });
 
-  const dateStr = currentTime.toLocaleDateString('vi-VN', {
+  const dateStr = currentTime.toLocaleDateString(locale, {
     weekday: 'long',
     day: '2-digit',
     month: 'long',
@@ -251,14 +251,14 @@ export const CheckInScreen: React.FC = () => {
 
   const getStatusBadge = () => {
     if (isCheckedOut) {
-      return <Badge label="Completed" variant="success" />;
+      return <Badge label={t('attendance.completed')} variant="success" />;
     }
 
     if (isCheckedIn) {
-      return <Badge label="Working" variant="info" />;
+      return <Badge label={t('home.working')} variant="info" />;
     }
 
-    return <Badge label="Not checked in" variant="default" />;
+    return <Badge label={t('home.notCheckedIn')} variant="default" />;
   };
 
   if (isLoading) {
@@ -273,12 +273,11 @@ export const CheckInScreen: React.FC = () => {
     <View style={styles.container}>
       <GradientHeader style={styles.header}>
         <Text style={styles.greeting}>
-          Good{' '}
           {currentTime.getHours() < 12
-            ? 'morning'
+            ? t('home.morning')
             : currentTime.getHours() < 18
-              ? 'afternoon'
-              : 'evening'}
+              ? t('home.afternoon')
+              : t('home.evening')}
           , {user?.email?.split('@')[0] ?? 'there'} 👋
         </Text>
 
@@ -287,7 +286,7 @@ export const CheckInScreen: React.FC = () => {
         <View style={styles.statusRow}>{getStatusBadge()}</View>
         {isPastCheckInTime && (
           <Badge
-            label="Quá giờ làm, không thể check-in"
+            label={t('attendance.pastHoursBadge')}
             variant="error"
             style={styles.overtimeBadge}
           />
@@ -322,20 +321,20 @@ export const CheckInScreen: React.FC = () => {
 
               <Text style={styles.mainButtonText}>
                 {loading
-                  ? 'Processing...'
+                  ? t('attendance.processing')
                   : isCheckedIn
-                    ? 'Face Check Out'
+                    ? t('attendance.faceCheckOut')
                     : isPastCheckInTime
-                      ? 'Check In Closed'
-                      : 'Face Check In'}
+                      ? t('attendance.checkInClosed')
+                      : t('attendance.faceCheckIn')}
               </Text>
 
               <Text style={styles.mainButtonSub}>
                 {isCheckedIn
-                  ? 'Capture selfie to end your shift'
+                  ? t('attendance.captureEnd')
                   : isPastCheckInTime
-                    ? 'Past working hours for today'
-                    : 'Capture selfie to start'}
+                    ? t('attendance.pastHours')
+                    : t('attendance.captureStart')}
               </Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -344,8 +343,8 @@ export const CheckInScreen: React.FC = () => {
         {isCheckedOut && (
           <View style={styles.completedSection}>
             <Ionicons name="checkmark-circle" size={80} color={colors.success} />
-            <Text style={styles.completedText}>Shift Complete!</Text>
-            <Text style={styles.completedSub}>Great work today 🎉</Text>
+            <Text style={styles.completedText}>{t('attendance.completed')}</Text>
+            <Text style={styles.completedSub}>{t('home.shiftEnded')}</Text>
           </View>
         )}
       </View>
@@ -357,37 +356,37 @@ export const CheckInScreen: React.FC = () => {
       >
         {record && (
           <Card style={styles.statsCard}>
-            <Text style={styles.statsTitle}>Today's Summary</Text>
+            <Text style={styles.statsTitle}>{t('attendance.summary')}</Text>
 
             <View style={styles.statsGrid}>
               <StatItem
                 icon="log-in-outline"
-                label="Check In"
-                value={formatTime(todayRecord?.check_in_time)}
+                label={t('attendance.checkIn')}
+                value={formatTime(todayRecord?.check_in_time, locale)}
                 color={colors.success}
               />
 
               <StatItem
                 icon="log-out-outline"
-                label="Check Out"
-                value={formatTime(todayRecord?.check_out_time)}
+                label={t('attendance.checkOut')}
+                value={formatTime(todayRecord?.check_out_time, locale)}
                 color={colors.error}
               />
 
               <StatItem
                 icon="time-outline"
-                label="Work Time"
+                label={t('attendance.workTime')}
                 value={formatMinutes(todayRecord?.work_minutes)}
                 color={colors.info}
               />
 
               <StatItem
                 icon="alert-circle-outline"
-                label="Late"
+                label={t('attendance.late')}
                 value={
                   todayRecord?.late && todayRecord.late > 0
                     ? formatMinutes(todayRecord.late)
-                    : 'On time'
+                    : t('attendance.onTime')
                 }
                 color={todayRecord?.late && todayRecord.late > 0 ? colors.warning : colors.success}
               />
@@ -404,10 +403,10 @@ export const CheckInScreen: React.FC = () => {
             />
             <Text style={styles.tipText}>
               {isPastCheckInTime
-                ? 'Đã quá giờ làm theo lịch hôm nay, hệ thống khóa check-in trên mobile.'
+                ? t('attendance.mobileLockedPastHours')
                 : !todaySchedule
-                  ? 'Hôm nay không có lịch làm việc nên không thể check-in.'
-                  : 'Check-in mobile đang dùng API face verification. Hãy đảm bảo tài khoản đã enroll khuôn mặt trên web trước khi chụp selfie.'}
+                  ? t('attendance.mobileLockedNoSchedule')
+                  : t('attendance.tip')}
             </Text>
           </View>
         </Card>
@@ -417,16 +416,16 @@ export const CheckInScreen: React.FC = () => {
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
-              {pendingAction === 'check-out' ? 'Face Check Out' : 'Face Check In'}
+              {pendingAction === 'check-out'
+                ? t('attendance.faceCheckOut')
+                : t('attendance.faceCheckIn')}
             </Text>
             <TouchableOpacity onPress={closeCamera} disabled={loading}>
               <Ionicons name="close" size={28} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.modalHint}>
-            Giữ khuôn mặt ở giữa khung hình, đủ sáng và nhìn thẳng vào camera.
-          </Text>
+          <Text style={styles.modalHint}>{t('attendance.faceHint')}</Text>
 
           <View style={styles.cameraCard}>
             {permission?.granted ? (
@@ -434,21 +433,21 @@ export const CheckInScreen: React.FC = () => {
             ) : (
               <View style={styles.cameraFallback}>
                 <Ionicons name="camera-outline" size={42} color={colors.gray500} />
-                <Text style={styles.cameraFallbackText}>Camera permission is required</Text>
+                <Text style={styles.cameraFallbackText}>{t('attendance.cameraRequired')}</Text>
               </View>
             )}
           </View>
 
           <View style={styles.modalActions}>
             <Button
-              title="Cancel"
+              title={t('common.cancel')}
               variant="outline"
               onPress={closeCamera}
               disabled={loading}
               style={styles.modalButton}
             />
             <Button
-              title={loading ? 'Verifying...' : 'Capture & Submit'}
+              title={loading ? t('attendance.verifying') : t('attendance.captureSubmit')}
               onPress={submitFaceAttendance}
               loading={loading}
               disabled={!permission?.granted}

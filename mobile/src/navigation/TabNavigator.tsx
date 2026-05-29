@@ -8,6 +8,7 @@ import { HomeScreen } from '../modules/home/screens/HomeScreen';
 import { LeaveRequestsScreen } from '../modules/leave-requests/screens/LeaveRequestsScreen';
 import { ProfileScreen } from '../modules/profile/screens/ProfileScreen';
 import { CheckInScreen } from '../modules/attendances/screens/CheckInScreen';
+import { useI18n } from '../i18n';
 
 const Tab = createBottomTabNavigator();
 
@@ -33,6 +34,8 @@ const TabIcon: React.FC<TabIconProps> = ({ name, focused, label }) => (
 );
 
 export const TabNavigator = () => {
+  const { t } = useI18n();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -46,7 +49,7 @@ export const TabNavigator = () => {
         component={HomeScreen}
         options={{
           tabBarIcon: ({ focused }: { focused: boolean }) => (
-            <TabIcon name="home" focused={focused} label="Home" />
+            <TabIcon name="home" focused={focused} label={t('nav.home')} />
           ),
         }}
       />
@@ -55,7 +58,7 @@ export const TabNavigator = () => {
         component={CheckInScreen}
         options={{
           tabBarIcon: ({ focused }: { focused: boolean }) => (
-            <TabIcon name="finger-print" focused={focused} label="Check-In" />
+            <TabIcon name="finger-print" focused={focused} label={t('nav.checkIn')} />
           ),
         }}
       />
@@ -64,7 +67,7 @@ export const TabNavigator = () => {
         component={LeaveRequestsScreen}
         options={{
           tabBarIcon: ({ focused }: { focused: boolean }) => (
-            <TabIcon name="calendar" focused={focused} label="Leave" />
+            <TabIcon name="calendar" focused={focused} label={t('nav.leave')} />
           ),
         }}
       />
@@ -73,7 +76,7 @@ export const TabNavigator = () => {
         component={ProfileScreen}
         options={{
           tabBarIcon: ({ focused }: { focused: boolean }) => (
-            <TabIcon name="person" focused={focused} label="Profile" />
+            <TabIcon name="person" focused={focused} label={t('nav.profile')} />
           ),
         }}
       />

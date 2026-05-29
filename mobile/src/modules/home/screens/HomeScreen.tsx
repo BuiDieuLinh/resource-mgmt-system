@@ -8,6 +8,7 @@ import { colors, gradients, spacing, radius, shadow } from '@/theme';
 import { getMyLeaveRequests } from '../../leave-requests/api';
 import { useGetMyAttendance } from '../../attendances/api/get-my-attendance';
 import type { IAttendance } from '@/models/attendances';
+import { useI18n } from '@/i18n';
 
 interface MenuItem {
   label: string;
@@ -18,9 +19,9 @@ interface MenuItem {
   badge?: string;
 }
 
-const formatTime = (iso?: string | null) => {
+const formatTime = (iso: string | null | undefined, locale: string) => {
   if (!iso) return '--:--';
-  return new Date(iso).toLocaleTimeString('vi-VN', {
+  return new Date(iso).toLocaleTimeString(locale, {
     hour: '2-digit',
     minute: '2-digit',
     timeZone: 'Asia/Ho_Chi_Minh',
@@ -29,6 +30,7 @@ const formatTime = (iso?: string | null) => {
 
 export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { user } = useAuth();
+  const { t, locale } = useI18n();
   const [todayRecord, setTodayRecord] = useState<IAttendance | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [pendingLeaves, setPendingLeaves] = useState(0);
@@ -96,14 +98,14 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       bg: colors.primarySurface,
     },
     {
-      label: 'My Timesheet',
+      label: t('home.myTimesheet'),
       icon: 'calendar-outline',
       screen: 'Timesheet',
       color: colors.info,
       bg: colors.infoLight,
     },
     {
-      label: 'Leave Requests',
+      label: t('leave.leaveRequests'),
       icon: 'calendar-clear-outline',
       screen: 'Leave',
       color: colors.warning,
@@ -111,21 +113,21 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       badge: pendingLeaves > 0 ? String(pendingLeaves) : undefined,
     },
     {
-      label: 'My Reviews',
+      label: t('home.myReviews'),
       icon: 'star-outline',
       screen: 'MyReviews',
       color: '#9333EA',
       bg: '#F3E8FF',
     },
     {
-      label: 'My Awards',
+      label: t('home.myAwards'),
       icon: 'trophy-outline',
       screen: 'MyAwards',
       color: '#F59E0B',
       bg: '#FEF3C7',
     },
     {
-      label: 'My Profile',
+      label: t('home.myProfile'),
       icon: 'person-outline',
       screen: 'Profile',
       color: colors.secondary,
@@ -134,7 +136,9 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   ];
 
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  menuItems[0].label = t('home.checkInOut');
+  const greeting =
+    hour < 12 ? t('home.morning') : hour < 18 ? t('home.afternoon') : t('home.evening');
   const displayName = user?.email?.split('@')[0] ?? 'there';
 
   return (
@@ -150,7 +154,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         {/* Today status card */}
         <View style={styles.todayCard}>
           <View style={styles.todayLeft}>
-            <Text style={styles.todayLabel}>Today's Status</Text>
+            <Text style={styles.todayLabel}>{t('home.todayStatus')}</Text>
             <View style={styles.todayStatus}>
               <View
                 style={[
@@ -165,18 +169,24 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                 ]}
               />
               <Text style={styles.statusText}>
-                {isCheckedOut ? 'Shift ended' : isCheckedIn ? 'Working' : 'Not checked in'}
+                {isCheckedOut
+                  ? t('home.shiftEnded')
+                  : isCheckedIn
+                    ? t('home.working')
+                    : t('home.notCheckedIn')}
               </Text>
             </View>
           </View>
           <View style={styles.todayTimes}>
             <View style={styles.timeItem}>
               <Ionicons name="log-in-outline" size={14} color={colors.success} />
-              <Text style={styles.timeValue}>{formatTime(todayRecord?.check_in_time)}</Text>
+              <Text style={styles.timeValue}>{formatTime(todayRecord?.check_in_time, locale)}</Text>
             </View>
             <View style={styles.timeItem}>
               <Ionicons name="log-out-outline" size={14} color={colors.error} />
-              <Text style={styles.timeValue}>{formatTime(todayRecord?.check_out_time)}</Text>
+              <Text style={styles.timeValue}>
+                {formatTime(todayRecord?.check_out_time, locale)}
+              </Text>
             </View>
           </View>
         </View>
@@ -208,8 +218,8 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               >
                 <Ionicons name="finger-print" size={24} color={colors.white} />
                 <View>
-                  <Text style={styles.ctaTitle}>Ready to start?</Text>
-                  <Text style={styles.ctaSub}>Tap to check in now</Text>
+                  <Text style={styles.ctaTitle}>{t('home.ready')}</Text>
+                  <Text style={styles.ctaSub}>{t('home.tapCheckIn')}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.7)" />
               </LinearGradient>
@@ -219,7 +229,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
         {/* Menu grid */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Access</Text>
+          <Text style={styles.sectionTitle}>{t('home.quickAccess')}</Text>
           <View style={styles.menuGrid}>
             {menuItems.map((item) => (
               <View key={item.label} style={styles.menuItemWrapper}>
@@ -248,7 +258,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           <View style={styles.dateRow}>
             <Ionicons name="calendar-outline" size={16} color={colors.primary} />
             <Text style={styles.dateText}>
-              {new Date().toLocaleDateString('vi-VN', {
+              {new Date().toLocaleDateString(locale, {
                 weekday: 'long',
                 day: '2-digit',
                 month: 'long',

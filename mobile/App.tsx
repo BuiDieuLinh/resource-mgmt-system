@@ -14,6 +14,7 @@ import { EmployeesScreen } from './src/modules/employees/screens/EmployeesScreen
 import { MyReviewsScreen, MyAwardsScreen } from './src/modules/performance';
 import { MyProfileScreen } from './src/modules/profile/screens/MyProfileScreen';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { I18nProvider } from './src/i18n';
 
 const Stack = createNativeStackNavigator();
 const queryClient = new QueryClient();
@@ -57,14 +58,16 @@ function AppNavigator() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <QueryClientProvider client={queryClient}>
-          <NavigationContainer>
-            <AppNavigator />
-            <StatusBar style="light" />
-          </NavigationContainer>
-        </QueryClientProvider>
-      </AuthProvider>
+      <I18nProvider>
+        <AuthProvider>
+          <QueryClientProvider client={queryClient}>
+            <NavigationContainer>
+              <AppNavigator />
+              <StatusBar style="light" />
+            </NavigationContainer>
+          </QueryClientProvider>
+        </AuthProvider>
+      </I18nProvider>
     </SafeAreaProvider>
   );
 }

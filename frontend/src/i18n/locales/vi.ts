@@ -78,7 +78,7 @@ const vi = {
     overview: 'Tổng quan',
     myTimesheet: 'Bảng công của tôi',
     leaveRequests: 'Đơn nghỉ phép',
-    performance: 'Hiệu suất',
+    performance: 'Đánh giá',
     reviewCycles: 'Chu kỳ đánh giá',
     performanceReview: 'Đánh giá hiệu suất',
     myReviews: 'Đánh giá của tôi',

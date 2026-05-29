@@ -14,11 +14,13 @@ import { Card, GradientHeader } from '@/components';
 import { colors, spacing } from '@/theme';
 import { useGetMyCycles, useGetMyReview } from '../api';
 import type { ReviewCycle } from '@/models/performances';
+import { useI18n } from '@/i18n';
 
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' });
+const formatDate = (iso: string, locale: string) =>
+  new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
 
 export const MyReviewsScreen: React.FC = () => {
+  const { t, locale } = useI18n();
   const { data: cyclesData, isLoading, refetch } = useGetMyCycles();
   const cycles = cyclesData?.data ?? [];
 
@@ -54,7 +56,7 @@ export const MyReviewsScreen: React.FC = () => {
                 </Text>
                 <View style={styles.metaRow}>
                   <Ionicons name="calendar-outline" size={12} color={colors.gray400} />
-                  <Text style={styles.metaText}>{formatDate(item.announce_date)}</Text>
+                  <Text style={styles.metaText}>{formatDate(item.announce_date, locale)}</Text>
                   {item.template && (
                     <>
                       <View style={styles.dot} />
@@ -74,8 +76,8 @@ export const MyReviewsScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <GradientHeader style={styles.header}>
-        <Text style={styles.headerTitle}>My Reviews</Text>
-        <Text style={styles.headerSubtitle}>Your performance evaluation history</Text>
+        <Text style={styles.headerTitle}>{t('performance.myReviews')}</Text>
+        <Text style={styles.headerSubtitle}>{t('performance.myReviewsSubtitle')}</Text>
       </GradientHeader>
 
       {/* List */}
@@ -90,7 +92,7 @@ export const MyReviewsScreen: React.FC = () => {
           !isLoading ? (
             <View style={styles.empty}>
               <Ionicons name="star-outline" size={48} color={colors.gray300} />
-              <Text style={styles.emptyText}>No review cycles available yet</Text>
+              <Text style={styles.emptyText}>{t('performance.noReviewCycles')}</Text>
             </View>
           ) : null
         }
@@ -114,31 +116,29 @@ export const MyReviewsScreen: React.FC = () => {
           <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
             {loadingReview ? (
               <View style={styles.loadingContainer}>
-                <Text style={styles.loadingText}>Loading review...</Text>
+                <Text style={styles.loadingText}>{t('performance.loadingReview')}</Text>
               </View>
             ) : !review ? (
               <Card variant="flat" style={styles.infoCard}>
                 <View style={styles.infoRow}>
                   <Ionicons name="information-circle-outline" size={18} color={colors.info} />
-                  <Text style={styles.infoText}>No review available for this cycle yet.</Text>
+                  <Text style={styles.infoText}>{t('performance.noReview')}</Text>
                 </View>
               </Card>
             ) : review.status !== 'published' ? (
               <Card variant="flat" style={styles.warningCard}>
                 <View style={styles.warningHeader}>
                   <Ionicons name="time-outline" size={18} color={colors.warning} />
-                  <Text style={styles.warningTitle}>Review in progress</Text>
+                  <Text style={styles.warningTitle}>{t('performance.reviewInProgress')}</Text>
                 </View>
-                <Text style={styles.warningText}>
-                  Your manager is working on your review. You'll be notified once it's published.
-                </Text>
+                <Text style={styles.warningText}>{t('performance.reviewInProgressText')}</Text>
               </Card>
             ) : (
               <View style={styles.reviewContent}>
                 {/* Score Summary */}
                 {review.total_score !== undefined && (
                   <Card style={styles.scoreCard}>
-                    <Text style={styles.sectionTitle}>Overall Score</Text>
+                    <Text style={styles.sectionTitle}>{t('performance.overallScore')}</Text>
                     <View style={styles.scoreDisplay}>
                       <Text style={styles.scoreValue}>{review.total_score.toFixed(1)}</Text>
                       <Text style={styles.scoreLabel}>/ 100</Text>
@@ -148,29 +148,29 @@ export const MyReviewsScreen: React.FC = () => {
 
                 {/* Attendance Summary */}
                 <Card style={styles.statsCard}>
-                  <Text style={styles.sectionTitle}>Attendance Summary</Text>
+                  <Text style={styles.sectionTitle}>{t('performance.attendanceSummary')}</Text>
                   <View style={styles.statsGrid}>
                     <View style={styles.statItem}>
                       <Text style={styles.statValue}>{review.attendance_days ?? '—'}</Text>
-                      <Text style={styles.statLabel}>Present</Text>
+                      <Text style={styles.statLabel}>{t('performance.present')}</Text>
                     </View>
                     <View style={styles.statItem}>
                       <Text style={[styles.statValue, { color: colors.warning }]}>
                         {review.late_count ?? '—'}
                       </Text>
-                      <Text style={styles.statLabel}>Late</Text>
+                      <Text style={styles.statLabel}>{t('attendance.late')}</Text>
                     </View>
                     <View style={styles.statItem}>
                       <Text style={[styles.statValue, { color: colors.error }]}>
                         {review.absent_count ?? '—'}
                       </Text>
-                      <Text style={styles.statLabel}>Absent</Text>
+                      <Text style={styles.statLabel}>{t('attendance.absent')}</Text>
                     </View>
                     <View style={styles.statItem}>
                       <Text style={[styles.statValue, { color: colors.success }]}>
                         {((review.overtime_minutes ?? 0) / 60).toFixed(1)}
                       </Text>
-                      <Text style={styles.statLabel}>OT (hrs)</Text>
+                      <Text style={styles.statLabel}>{t('attendance.overtime')}</Text>
                     </View>
                   </View>
                 </Card>
@@ -178,7 +178,7 @@ export const MyReviewsScreen: React.FC = () => {
                 {/* Criteria Details */}
                 {review.score_details && review.score_details.length > 0 && (
                   <Card style={styles.criteriaCard}>
-                    <Text style={styles.sectionTitle}>Criteria Scores</Text>
+                    <Text style={styles.sectionTitle}>{t('performance.criteriaScores')}</Text>
                     {review.score_details.map((detail) => (
                       <View key={detail.id} style={styles.criteriaItem}>
                         <View style={styles.criteriaHeader}>
@@ -198,7 +198,7 @@ export const MyReviewsScreen: React.FC = () => {
                   <Card style={styles.achievementsCard}>
                     <View style={styles.achievementsHeader}>
                       <Ionicons name="trophy" size={16} color={colors.warning} />
-                      <Text style={styles.achievementsTitle}>Key Achievements</Text>
+                      <Text style={styles.achievementsTitle}>{t('performance.achievements')}</Text>
                     </View>
                     <Text style={styles.achievementsText}>{review.achievements}</Text>
                   </Card>
@@ -209,14 +209,14 @@ export const MyReviewsScreen: React.FC = () => {
                   <Card style={styles.feedbackCard}>
                     <View style={styles.feedbackHeader}>
                       <Ionicons name="chatbubble-ellipses" size={16} color={colors.info} />
-                      <Text style={styles.feedbackTitle}>Manager Feedback</Text>
+                      <Text style={styles.feedbackTitle}>{t('performance.feedback')}</Text>
                     </View>
                     <Text style={styles.feedbackText}>{review.comment}</Text>
                   </Card>
                 )}
 
                 {!review.achievements && !review.comment && (
-                  <Text style={styles.noFeedback}>No feedback provided for this review.</Text>
+                  <Text style={styles.noFeedback}>{t('performance.noFeedback')}</Text>
                 )}
               </View>
             )}

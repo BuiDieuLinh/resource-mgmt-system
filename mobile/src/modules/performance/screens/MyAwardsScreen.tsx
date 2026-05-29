@@ -6,6 +6,7 @@ import { Card, Badge, GradientHeader } from '@/components';
 import { colors, spacing, radius } from '@/theme';
 import { useGetMyAwards } from '../api';
 import type { Award } from '@/models/performances';
+import { useI18n } from '@/i18n';
 
 const categoryConfig: Record<
   string,
@@ -17,30 +18,31 @@ const categoryConfig: Record<
   }
 > = {
   top_employee: {
-    label: 'Top Employee',
+    label: 'performance.topEmployee',
     icon: 'star',
     color: colors.warning,
     gradient: ['#FFD700', '#FFA500'] as const,
   },
   top_manager: {
-    label: 'Top Manager',
+    label: 'performance.topManager',
     icon: 'trophy',
     color: colors.primary,
     gradient: ['#667eea', '#764ba2'] as const,
   },
 };
 
-const getRankLabel = (rank: number) => {
-  if (rank === 1) return '🥇 1st Place';
-  if (rank === 2) return '🥈 2nd Place';
-  if (rank === 3) return '🥉 3rd Place';
+const getRankLabel = (rank: number, t: (key: string) => string) => {
+  if (rank === 1) return `1 ${t('performance.firstPlaceRank')}`;
+  if (rank === 2) return `2 ${t('performance.secondPlaceRank')}`;
+  if (rank === 3) return `3 ${t('performance.thirdPlaceRank')}`;
   return `#${rank}`;
 };
 
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' });
+const formatDate = (iso: string, locale: string) =>
+  new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
 
 export const MyAwardsScreen: React.FC = () => {
+  const { t, locale } = useI18n();
   const { data, isLoading, refetch } = useGetMyAwards();
   const awards = data?.data ?? [];
 
@@ -78,7 +80,7 @@ export const MyAwardsScreen: React.FC = () => {
               <View style={styles.iconBadge}>
                 <Ionicons name={config.icon} size={32} color={colors.white} />
               </View>
-              <Text style={styles.rankLabel}>{getRankLabel(item.rank)}</Text>
+              <Text style={styles.rankLabel}>{getRankLabel(item.rank, t)}</Text>
             </View>
 
             <Text style={styles.awardTitle}>{item.title}</Text>
@@ -94,12 +96,12 @@ export const MyAwardsScreen: React.FC = () => {
                 <Ionicons name="trophy-outline" size={12} color="rgba(255,255,255,0.8)" />
                 <Text style={styles.cycleText}>{item.cycle.title}</Text>
               </View>
-              <Text style={styles.dateText}>{formatDate(item.created_at)}</Text>
+              <Text style={styles.dateText}>{formatDate(item.created_at, locale)}</Text>
             </View>
           </LinearGradient>
 
           <View style={styles.categoryBadge}>
-            <Badge label={config.label} variant="default" size="sm" />
+            <Badge label={t(config.label)} variant="default" size="sm" />
           </View>
         </Card>
       </Animated.View>
@@ -111,8 +113,8 @@ export const MyAwardsScreen: React.FC = () => {
       <GradientHeader style={styles.header}>
         <View style={styles.headerContent}>
           <View>
-            <Text style={styles.headerTitle}>My Awards</Text>
-            <Text style={styles.headerSubtitle}>Your achievements and recognitions</Text>
+            <Text style={styles.headerTitle}>{t('performance.myAwards')}</Text>
+            <Text style={styles.headerSubtitle}>{t('performance.myAwardsSubtitle')}</Text>
           </View>
           <View style={styles.trophyIcon}>
             <Ionicons name="trophy" size={32} color={colors.white} />
@@ -123,17 +125,17 @@ export const MyAwardsScreen: React.FC = () => {
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
               <Text style={styles.statValue}>{awards.length}</Text>
-              <Text style={styles.statLabel}>Total Awards</Text>
+              <Text style={styles.statLabel}>{t('performance.totalAwards')}</Text>
             </View>
             <View style={styles.statBox}>
               <Text style={styles.statValue}>{awards.filter((a) => a.rank === 1).length}</Text>
-              <Text style={styles.statLabel}>1st Place</Text>
+              <Text style={styles.statLabel}>{t('performance.firstPlace')}</Text>
             </View>
             <View style={styles.statBox}>
               <Text style={styles.statValue}>
                 {awards.filter((a) => a.category === 'top_employee').length}
               </Text>
-              <Text style={styles.statLabel}>Employee</Text>
+              <Text style={styles.statLabel}>{t('performance.employee')}</Text>
             </View>
           </View>
         )}
@@ -153,10 +155,8 @@ export const MyAwardsScreen: React.FC = () => {
               <View style={styles.emptyIcon}>
                 <Ionicons name="trophy-outline" size={64} color={colors.gray300} />
               </View>
-              <Text style={styles.emptyTitle}>No awards yet</Text>
-              <Text style={styles.emptyText}>
-                Keep up the great work! Awards will appear here when you receive them.
-              </Text>
+              <Text style={styles.emptyTitle}>{t('performance.noAwards')}</Text>
+              <Text style={styles.emptyText}>{t('performance.noAwardsText')}</Text>
             </View>
           ) : null
         }

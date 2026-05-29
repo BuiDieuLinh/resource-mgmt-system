@@ -7,9 +7,16 @@ import { Card, GradientHeader } from '@/components';
 import { colors, spacing, radius } from '@/theme';
 import { getEmployeeByUser, useGetEmployeeByUser } from '../../employees/api';
 import type { Employee } from '@/models/employees';
+import { useI18n } from '@/i18n';
 
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' });
+const formatDate = (iso: string | undefined | null, locale: string, fallback: string) => {
+  if (!iso) return fallback;
+  return new Date(iso).toLocaleDateString(locale, {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
 
 const contractTypeLabel: Record<string, string> = {
   intern: 'Intern',
@@ -27,6 +34,7 @@ const levelLabel: Record<string, string> = {
 };
 
 export const MyProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const { t, locale } = useI18n();
   const { data: employeeData, isLoading: loading, refetch } = useGetEmployeeByUser();
   const employee = employeeData?.data;
 
@@ -34,7 +42,7 @@ export const MyProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) =
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading profile...</Text>
+          <Text style={styles.loadingText}>{t('profile.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -45,9 +53,9 @@ export const MyProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) =
       <SafeAreaView style={styles.safe}>
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
-          <Text style={styles.errorText}>Failed to load profile</Text>
+          <Text style={styles.errorText}>{t('profile.failedLoad')}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={styles.retryText}>{t('common.retry')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -93,7 +101,7 @@ export const MyProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           <Card style={styles.statCard}>
             <Ionicons name="calendar-outline" size={20} color={colors.primary} />
             <Text style={styles.statValue}>{employee.annual_leave_days}</Text>
-            <Text style={styles.statLabel}>Annual Days</Text>
+            <Text style={styles.statLabel}>{t('profile.annualDays')}</Text>
           </Card>
           <Card style={styles.statCard}>
             <Ionicons name="briefcase-outline" size={20} color={colors.info} />
@@ -103,15 +111,15 @@ export const MyProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                     (new Date().getTime() - new Date(employee.hire_date).getTime()) /
                       (1000 * 60 * 60 * 24 * 365),
                   )
-                : 'Not provided'}
+                : t('profile.notProvided')}
               y
             </Text>
-            <Text style={styles.statLabel}>Experience</Text>
+            <Text style={styles.statLabel}>{t('profile.experience')}</Text>
           </Card>
           <Card style={styles.statCard}>
             <Ionicons name="document-text-outline" size={20} color={colors.warning} />
             <Text style={styles.statValue}>{contractTypeLabel[employee.contract_type]}</Text>
-            <Text style={styles.statLabel}>Contract</Text>
+            <Text style={styles.statLabel}>{t('profile.contract')}</Text>
           </Card>
         </View>
 
@@ -119,28 +127,32 @@ export const MyProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         <Card style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="person-outline" size={18} color={colors.primary} />
-            <Text style={styles.sectionTitle}>Personal Information</Text>
+            <Text style={styles.sectionTitle}>{t('profile.personalInfo')}</Text>
           </View>
-          <InfoRow icon="mail-outline" label="Email" value={employee.email} />
-          <InfoRow icon="call-outline" label="Phone" value={employee.phone || 'Not provided'} />
+          <InfoRow icon="mail-outline" label={t('profile.email')} value={employee.email} />
+          <InfoRow
+            icon="call-outline"
+            label={t('profile.phone')}
+            value={employee.phone || t('profile.notProvided')}
+          />
           <InfoRow
             icon="male-female-outline"
-            label="Gender"
+            label={t('profile.gender')}
             value={
               employee?.gender
                 ? employee.gender.charAt(0).toUpperCase() + employee.gender.slice(1)
-                : 'Not provided'
+                : t('profile.notProvided')
             }
           />
           <InfoRow
             icon="calendar-outline"
-            label="Date of Birth"
-            value={formatDate(employee.date_of_birth || 'Not provided')}
+            label={t('profile.dateOfBirth')}
+            value={formatDate(employee.date_of_birth, locale, t('profile.notProvided'))}
           />
           <InfoRow
             icon="location-outline"
-            label="Address"
-            value={employee.address || 'Not provided'}
+            label={t('profile.address')}
+            value={employee.address || t('profile.notProvided')}
           />
         </Card>
 
@@ -148,27 +160,39 @@ export const MyProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         <Card style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="briefcase-outline" size={18} color={colors.info} />
-            <Text style={styles.sectionTitle}>Work Information</Text>
+            <Text style={styles.sectionTitle}>{t('profile.workInfo')}</Text>
           </View>
-          <InfoRow icon="id-card-outline" label="Employee Code" value={employee.employee_code} />
+          <InfoRow
+            icon="id-card-outline"
+            label={t('profile.employeeCode')}
+            value={employee.employee_code}
+          />
           <InfoRow
             icon="business-outline"
-            label="Department"
+            label={t('profile.department')}
             value={employee.position.department.department_name}
           />
-          <InfoRow icon="ribbon-outline" label="Position" value={employee.position.position_name} />
+          <InfoRow
+            icon="ribbon-outline"
+            label={t('profile.position')}
+            value={employee.position.position_name}
+          />
           <InfoRow
             icon="bar-chart-outline"
-            label="Level"
+            label={t('common.level')}
             value={levelLabel[employee.position.level]}
           />
           <InfoRow
             icon="calendar-outline"
-            label="Hire Date"
-            value={formatDate(employee.hire_date || 'Not provided')}
+            label={t('profile.hireDate')}
+            value={formatDate(employee.hire_date, locale, t('profile.notProvided'))}
           />
           {employee.manager && (
-            <InfoRow icon="people-outline" label="Manager" value={employee.manager.full_name} />
+            <InfoRow
+              icon="people-outline"
+              label={t('profile.manager')}
+              value={employee.manager.full_name}
+            />
           )}
         </Card>
       </ScrollView>

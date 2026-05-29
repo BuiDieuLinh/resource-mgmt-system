@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { apiClient } from '@/lib/api';
 import { Card } from '@/components';
 import { colors, gradients, spacing, radius } from '@/theme';
+import { useI18n } from '@/i18n';
 
 interface Employee {
   id: string;
@@ -17,6 +18,7 @@ interface Employee {
 }
 
 export const EmployeesScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const { t } = useI18n();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [filtered, setFiltered] = useState<Employee[]>([]);
   const [search, setSearch] = useState('');
@@ -97,7 +99,7 @@ export const EmployeesScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color={colors.white} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Employees</Text>
+          <Text style={styles.headerTitle}>{t('employees.employees')}</Text>
           <View style={{ width: 24 }} />
         </View>
         <View style={styles.searchWrapper}>
@@ -109,7 +111,7 @@ export const EmployeesScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search employees..."
+            placeholder={t('employees.search')}
             placeholderTextColor={colors.gray400}
             value={search}
             onChangeText={setSearch}
@@ -126,7 +128,7 @@ export const EmployeesScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           !loading ? (
             <View style={styles.empty}>
               <Ionicons name="people-outline" size={48} color={colors.gray300} />
-              <Text style={styles.emptyText}>No employees found</Text>
+              <Text style={styles.emptyText}>{t('employees.noEmployees')}</Text>
             </View>
           ) : null
         }
