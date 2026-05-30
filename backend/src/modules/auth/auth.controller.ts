@@ -117,6 +117,15 @@ export class AuthController {
     return ResponseHelper.success(data, 'Status updated');
   }
 
+  @Patch('admin/users/:id/soft-delete')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  async softDeleteUser(@Param('id') id: string) {
+    const data = await this.authService.softDeleteUser(id);
+    return ResponseHelper.success(data, 'User deactivated');
+  }
+
   @Patch('admin/users/:id/reset-password')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)

@@ -169,6 +169,10 @@ export class AuthService {
     return this.prisma.users.update({ where: { id }, data: { status } });
   }
 
+  async softDeleteUser(id: string) {
+    return this.updateUserStatus(id, UserStatus.inactive);
+  }
+
   async resetPassword(id: string) {
     const user = await this.prisma.users.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
@@ -198,9 +202,19 @@ export class AuthService {
     const user = await this.prisma.users.findUnique({ where: { id } });
     if (!user) return;
 
-    await this.prisma.users.update({
-      where: { id },
-      data: { status: UserStatus.inactive },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.employees.updateMany({
+        where: { auth_user_id: id },
+        data: { auth_user_id: null },
+      });
+
+      await tx.userRoles.deleteMany({
+        where: { userId: id },
+      });
+
+      await tx.users.delete({
+        where: { id },
+      });
     });
   }
 }
