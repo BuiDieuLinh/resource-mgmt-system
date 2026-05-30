@@ -741,6 +741,7 @@ const en = {
       publicHolidays: 'Public Holidays',
       evaluationTemplates: 'Evaluation Templates',
       notifications: 'Notifications',
+      useraccounts: 'User Accounts',
     },
     workPolicies: {
       title: 'Work Policies',
@@ -807,6 +808,8 @@ const en = {
       reminderEmailDescription:
         'Sent when a reminder log is dispatched (cycle deadline, contract ending, unreviewed employees).',
       reminderEmailBadge: 'Based on reminder settings above',
+      inApp: 'Notification In-app',
+      email: 'Email',
     },
   },
   dashboard: {

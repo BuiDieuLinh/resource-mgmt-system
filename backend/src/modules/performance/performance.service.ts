@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ResponseHelper } from '../../common/helpers/response.helper';
@@ -16,6 +17,8 @@ import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class PerformanceService {
+  private readonly logger = new Logger(PerformanceService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
@@ -59,7 +62,16 @@ export class PerformanceService {
       dto.assignments ?? [],
       creatorEmployeeId,
     );
-    await this.notifyReviewersForNewCycle(cycle.id, cycle.title, assignments);
+    void this.notifyReviewersForNewCycle(
+      cycle.id,
+      cycle.title,
+      assignments,
+    ).catch((err: unknown) => {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(
+        `Failed to notify reviewers for cycle ${cycle.id}: ${message}`,
+      );
+    });
 
     return ResponseHelper.success(cycle, 'Review cycle created');
   }

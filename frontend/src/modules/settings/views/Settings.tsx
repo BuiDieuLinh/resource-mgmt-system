@@ -1,5 +1,11 @@
 import { Stack, Tabs } from '@mantine/core';
-import { IconShieldCheck, IconCalendarEvent, IconTemplate, IconBell } from '@tabler/icons-react';
+import {
+  IconShieldCheck,
+  IconCalendarEvent,
+  IconTemplate,
+  IconBell,
+  IconUsers,
+} from '@tabler/icons-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { WorkPolicySettings } from '@/modules/work-policies/components/WorkPolicySettings';
 import { HolidaySettings } from '@/modules/holidays/components/HolidaySettings';
@@ -8,6 +14,7 @@ import { EMPLOYEE_ROLE } from '@/constant';
 import EvaluationTemplatesPage from '@/modules/performance/views/EvaluationTemplates';
 import { ReminderSettings } from '@/modules/reminders/components/ReminderSettings';
 import { useTranslation } from 'react-i18next';
+import { UserManagementTab } from '@/modules/auth/components/UserManagementTab';
 
 export default function SettingsPage() {
   const { t } = useTranslation();
@@ -15,6 +22,7 @@ export default function SettingsPage() {
   const isAdmin = user?.roles?.some((r) =>
     [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.HR].includes(r as any),
   );
+  const isSuperAdmin = user?.roles?.includes(EMPLOYEE_ROLE.ADMIN);
 
   return (
     <Stack gap="md">
@@ -42,6 +50,11 @@ export default function SettingsPage() {
               {t('settings.tabs.notifications')}
             </Tabs.Tab>
           )}
+          {isSuperAdmin && (
+            <Tabs.Tab value="users" leftSection={<IconUsers size={16} />}>
+              {t('settings.tabs.useraccounts')}
+            </Tabs.Tab>
+          )}
         </Tabs.List>
 
         {isAdmin && (
@@ -62,6 +75,11 @@ export default function SettingsPage() {
         {isAdmin && (
           <Tabs.Panel value="reminders">
             <ReminderSettings />
+          </Tabs.Panel>
+        )}
+        {isSuperAdmin && (
+          <Tabs.Panel value="users">
+            <UserManagementTab />
           </Tabs.Panel>
         )}
       </Tabs>

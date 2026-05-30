@@ -13,6 +13,42 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserStatus {
+  active
+  inactive
+}
+
+model Users {
+  id             String      @id @default(uuid()) @db.Uuid
+  email          String      @unique
+  password_hash  String
+  status         UserStatus  @default(active)
+  is_first_login Boolean     @default(true)
+  created_at     DateTime    @default(now())
+  userRoles      UserRoles[]
+
+  @@map("users")
+}
+
+model Roles {
+  id        String      @id @default(uuid()) @db.Uuid
+  name      String      @unique
+  userRoles UserRoles[]
+
+  @@map("roles")
+}
+
+model UserRoles {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  roleId String @db.Uuid
+  user   Users  @relation(fields: [userId], references: [id])
+  role   Roles  @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
 enum EmployeeStatus {
   active
   inactive

@@ -171,7 +171,7 @@ export class RemindersService {
           data: { status: 'sent', sent_at: now },
         });
       } catch (err) {
-        this.logger.error(`Failed to dispatch log ${log.id}: ${err.message}`);
+        this.logger.error(`Failed to dispatch log ${log.id}: ${err}`);
         await this.prisma.notificationLogs.update({
           where: { id: log.id },
           data: { status: 'failed' },
@@ -340,8 +340,12 @@ export class RemindersService {
   private async dispatchLog(log: any) {
     const emp = log.employee;
     const cycle = log.cycle;
-    const daysLeft = emp.terminated_at
-      ? dayjs(emp.terminated_at).diff(dayjs.utc(), 'day')
+    const targetDate =
+      log.trigger_type === 'contract_ending'
+        ? emp?.terminated_at
+        : cycle?.announce_date;
+    const daysLeft = targetDate
+      ? Math.max(dayjs(targetDate).diff(dayjs.utc(), 'day'), 0)
       : null;
 
     if (log.channel === 'inapp') {
@@ -422,7 +426,7 @@ export class RemindersService {
     cycle: any,
     daysLeft: number | null,
   ): { title: string; body: string; link: string; type: string } {
-    const displayDays = daysLeft ?? 15;
+    const displayDays = daysLeft ?? 0;
 
     switch (log.trigger_type) {
       case 'contract_ending':
@@ -430,7 +434,7 @@ export class RemindersService {
           type: 'eval_reminder_contract_ending',
           title: `${emp.full_name} sắp kết thúc ${emp.contract_type === 'intern' ? 'thực tập' : 'thử việc'}`,
           body: `${emp.full_name} còn ${displayDays} ngày trước khi kết thúc ${emp.contract_type === 'intern' ? 'thực tập' : 'thử việc'}.`,
-          link: `employees/${emp.id}/profile`,
+          link: `/employees/${emp.id}/profile`,
         };
       case 'cycle_deadline':
         return {

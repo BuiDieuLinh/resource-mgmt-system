@@ -788,6 +788,7 @@ const vi = {
       publicHolidays: 'Ngày nghỉ lễ',
       evaluationTemplates: 'Mẫu đánh giá',
       notifications: 'Thông báo',
+      useraccounts: 'Quản lý tài khoản',
     },
     workPolicies: {
       title: 'Chính sách làm việc',
@@ -854,6 +855,8 @@ const vi = {
       reminderEmailDescription:
         'Được gửi khi hệ thống phát thông báo nhắc việc như đến hạn chu kỳ, sắp hết hợp đồng, hoặc nhân viên chưa được đánh giá.',
       reminderEmailBadge: 'Dựa trên cấu hình nhắc việc phía trên',
+      inApp: 'Thông báo trong hệ thống',
+      email: 'Thông báo qua email',
     },
   },
   dashboard: {

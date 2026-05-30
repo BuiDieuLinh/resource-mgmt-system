@@ -1,4 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
+import Login from '@/modules/auth/views/Login';
+import ChangePassword from '@/modules/auth/views/ChangePassword';
 import Home from '../modules/home/views/Home';
 import Layout from '../modules/app/Layout';
 import { Employee } from '../modules';
@@ -61,6 +63,12 @@ function RoleBasedRedirect() {
 }
 
 export const router = createBrowserRouter([
+  { path: '/login', element: <Login /> },
+  {
+    path: '/change-password',
+    element: <ProtectedRoute />,
+    children: [{ index: true, element: <ChangePassword /> }],
+  },
   {
     path: '/',
     element: <ProtectedRoute />,

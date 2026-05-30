@@ -1,15 +1,13 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import { AUTH_API_URL, API_BASE_URL, STORAGE_KEYS } from '../constant/config';
+import { API_BASE_URL, STORAGE_KEYS } from '../constant/config';
 
-// ── Auth-core client (login, getMe) ──────────────────────────────────────────
 export const authClient = axios.create({
-  baseURL: AUTH_API_URL,
+  baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
   timeout: 10000,
 });
 
-// ── Backend NestJS client (employees, attendances, etc.) ─────────────────────
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json', Accept: 'application/json' },

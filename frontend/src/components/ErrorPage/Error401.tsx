@@ -10,7 +10,7 @@ export default function Error401() {
   const handleLogin = () => {
     logout();
     localStorage.removeItem('access_token');
-    navigate('/auth/login', { replace: true });
+    navigate('/login', { replace: true });
   };
 
   return (

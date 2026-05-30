@@ -31,7 +31,26 @@ export class MailService {
     private readonly config: ConfigService,
   ) {}
 
+  private isMailEnabled() {
+    const explicitValue = this.config.get<string>('MAIL_ENABLED');
+    if (explicitValue?.toLowerCase() === 'false') return false;
+    if (explicitValue?.toLowerCase() === 'true') return true;
+
+    return Boolean(
+      this.config.get<string>('MAIL_HOST') &&
+      this.config.get<string>('MAIL_USER') &&
+      this.config.get<string>('MAIL_PASS'),
+    );
+  }
+
   async sendWelcomeEmail(payload: WelcomeMailPayload) {
+    if (!this.isMailEnabled()) {
+      this.logger.warn(
+        `Mail disabled; skipped welcome email to ${payload.email}`,
+      );
+      return;
+    }
+
     const defaultPassword = this.config.get<string>(
       'DEFAULT_PASSWORD',
       '888888',
@@ -56,6 +75,13 @@ export class MailService {
   }
 
   async sendReminderEmail(payload: ReminderMailPayload) {
+    if (!this.isMailEnabled()) {
+      this.logger.warn(
+        `Mail disabled; skipped reminder email to ${payload.to}`,
+      );
+      return;
+    }
+
     this.logger.log(`Sending reminder email to ${payload.to}`);
     try {
       await this.mailer.sendMail({

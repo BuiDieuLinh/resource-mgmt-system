@@ -1,8 +1,6 @@
 import { Center, Loader } from '@mantine/core';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/modules/auth/context/AuthContext';
-import { useEffect } from 'react';
-import { AUTH_URL } from '@/constant/config';
 import { MENUS, type AppMenu } from '@/modules/app/Menu';
 
 function flattenMenuRoles(menus: AppMenu[]): { path: string; roles: string[] }[] {
@@ -43,17 +41,13 @@ export default function ProtectedRoute() {
   const { user, isLoading } = useAuth();
   const location = useLocation();
 
-  useEffect(() => {
-    if (!isLoading && !user) {
-      window.location.href = `${AUTH_URL}login`;
-    }
-  }, [isLoading, user]);
-
   if (isLoading || !user) {
-    return (
+    return isLoading ? (
       <Center h="100vh">
         <Loader />
       </Center>
+    ) : (
+      <Navigate to="/login" replace state={{ from: location.pathname }} />
     );
   }
 

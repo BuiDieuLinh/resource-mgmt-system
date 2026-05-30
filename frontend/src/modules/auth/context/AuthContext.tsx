@@ -1,32 +1,22 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { authApi, type AuthUser } from '../api/auth.api';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { AUTH_URL } from '@/constant/config';
 import { AUTH_ERROR_EVENT } from '@/lib/api';
 import { queryClient } from '@/lib/react-query';
 
 interface AuthState {
   user: AuthUser | null;
   isLoading: boolean;
+  login: (email: string, password: string) => Promise<{ is_first_login: boolean }>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
 
-const getAuthOrigin = () => {
-  try {
-    return new URL(AUTH_URL).origin;
-  } catch {
-    return 'http://localhost:5173';
-  }
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const setStoreUser = useAuthStore((s) => s.setUser);
-
-  const AUTH_LOGIN_URL = `${AUTH_URL}login`;
 
   const syncUser = (u: AuthUser | null) => {
     setUser(u);
@@ -34,25 +24,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const authOrigin = getAuthOrigin();
-
-    const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== authOrigin) return;
-      if (event.data?.type === 'auth:token' && event.data.token) {
-        localStorage.setItem('access_token', event.data.token);
-        authApi
-          .getMe()
-          .then((res) => syncUser(res.data.data))
-          .catch(() => localStorage.removeItem('access_token'))
-          .finally(() => setIsLoading(false));
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-
     const handleAuthError = (e: Event) => {
       const { type } = (e as CustomEvent).detail;
       queryClient.clear();
+      syncUser(null);
       if (type === '403') {
         window.location.replace('/403');
       } else if (type === 'expired') {
@@ -63,40 +38,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     window.addEventListener(AUTH_ERROR_EVENT, handleAuthError);
 
-    if (window.opener) {
-      const existingToken = localStorage.getItem('access_token');
-      if (existingToken) {
-        authApi
-          .getMe()
-          .then((res) => syncUser(res.data.data))
-          .catch(() => {
-            localStorage.removeItem('access_token');
-            window.location.href = AUTH_LOGIN_URL;
-          })
-          .finally(() => setIsLoading(false));
-        return () => {
-          window.removeEventListener('message', handleMessage);
-          window.removeEventListener(AUTH_ERROR_EVENT, handleAuthError);
-        };
-      }
-
-      window.opener.postMessage('auth:ready', authOrigin);
-
-      const timeout = setTimeout(() => {
-        if (!localStorage.getItem('access_token')) {
-          window.location.href = AUTH_LOGIN_URL;
-        } else {
-          setIsLoading(false);
-        }
-      }, 5000);
-
-      return () => {
-        window.removeEventListener('message', handleMessage);
-        window.removeEventListener(AUTH_ERROR_EVENT, handleAuthError);
-        clearTimeout(timeout);
-      };
-    }
-
     const token = localStorage.getItem('access_token');
     if (token) {
       authApi
@@ -104,26 +45,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .then((res) => syncUser(res.data.data))
         .catch(() => {
           localStorage.removeItem('access_token');
-          window.location.href = AUTH_LOGIN_URL;
+          syncUser(null);
         })
         .finally(() => setIsLoading(false));
     } else {
-      window.location.href = AUTH_LOGIN_URL;
+      setIsLoading(false);
     }
 
     return () => {
-      window.removeEventListener('message', handleMessage);
       window.removeEventListener(AUTH_ERROR_EVENT, handleAuthError);
     };
   }, []);
 
+  const login = async (email: string, password: string) => {
+    const res = await authApi.login(email, password);
+    const { access_token, user, is_first_login } = res.data.data;
+    localStorage.setItem('access_token', access_token);
+    syncUser(user);
+    return { is_first_login };
+  };
+
   const logout = () => {
     localStorage.removeItem('access_token');
-    window.location.href = AUTH_LOGIN_URL;
+    queryClient.clear();
+    syncUser(null);
+    window.location.replace('/login');
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 

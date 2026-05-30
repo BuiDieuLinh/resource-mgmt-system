@@ -37,7 +37,6 @@ import { useState } from 'react';
 import { MENUS } from './Menu';
 import classes from './Navbar.module.css';
 import { useAuth } from '@/modules/auth/context/AuthContext';
-import { AUTH_URL } from '@/constant/config';
 import { myProfileUrl, settingsUrl } from '@/routes/url';
 import { useGetNotifications, useMarkRead, useMarkAllRead } from '@/modules/notifications/api';
 import dayjs from 'dayjs';
@@ -60,7 +59,6 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
   const navigate = useNavigate();
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
   const { user, logout } = useAuth();
-  const AUTH_APP_URL = `${AUTH_URL}apps` || new URL(AUTH_URL).origin;
   const isSettingDisabled =
     !user?.roles.includes(EMPLOYEE_ROLE.ADMIN) && !user?.roles.includes(EMPLOYEE_ROLE.HR);
 
@@ -450,7 +448,7 @@ export function Navbar({ collapsed, onToggle }: NavbarProps) {
             <Menu.Divider />
             <Menu.Item
               leftSection={<IconHome style={{ width: rem(14) }} />}
-              onClick={() => window.open(AUTH_APP_URL, '_blank')}
+              onClick={() => navigate('/')}
             >
               {t('nav.backToHome')}
             </Menu.Item>

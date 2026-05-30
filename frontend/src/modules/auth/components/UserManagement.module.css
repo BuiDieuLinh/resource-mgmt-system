@@ -1,0 +1,66 @@
+.root {
+  background: transparent;
+}
+
+.toolbar {
+  padding: 16px 20px;
+  border-bottom: 1px solid #ede9f6;
+}
+
+.searchInput {
+  width: 320px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table thead tr th {
+  background: #faf8fd;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #ede9f6;
+}
+
+.row {
+  transition: background 0.15s;
+}
+
+.selectedRow {
+  background: #faf5ff !important;
+}
+
+.paginationBar {
+  border-top: 1px solid #ede9f6;
+}
+
+.modalIcon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.primaryBtn {
+  background: #2a0c50 !important;
+  color: #fff !important;
+}
+
+.primaryBtn:hover {
+  background: #3a106e !important;
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    padding: 14px 16px;
+  }
+
+  .searchInput {
+    width: 100%;
+  }
+}

@@ -21,7 +21,7 @@ import {
 } from 'src/modules/employees/utils/excel.util';
 import { WorkScheduleService } from 'src/modules/work-schedules/work-schedule.service';
 import { WorkScheduleDto } from 'src/modules/work-schedules/dto/work-schedule.dto';
-import { AuthCoreService } from 'src/modules/auth-core/auth-core.service';
+import { AuthService } from 'src/modules/auth/auth.service';
 import { MailService } from 'src/modules/mail/mail.service';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -39,7 +39,7 @@ export class EmployeeService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly workScheduleService: WorkScheduleService,
-    private readonly authCoreService: AuthCoreService,
+    private readonly authService: AuthService,
     private readonly mailService: MailService,
     private readonly config: ConfigService,
   ) {}
@@ -93,7 +93,7 @@ export class EmployeeService {
       gender: gender?.trim(),
     };
 
-    const authUser = await this.authCoreService.createUser(dto.email);
+    const authUser = await this.authService.createUser({ email: dto.email });
 
     let created: any;
     try {
@@ -101,7 +101,7 @@ export class EmployeeService {
         data: { ...data, auth_user_id: authUser.id },
       });
     } catch (err) {
-      await this.authCoreService.deleteUser(authUser.id);
+      await this.authService.deleteUser(authUser.id);
       throw err;
     }
 
@@ -110,7 +110,7 @@ export class EmployeeService {
         await this.workScheduleService.setSchedule(created.id, schedules);
       } catch (err) {
         await this.prisma.employees.delete({ where: { id: created.id } });
-        await this.authCoreService.deleteUser(authUser.id);
+        await this.authService.deleteUser(authUser.id);
         throw err;
       }
     }
@@ -367,7 +367,7 @@ export class EmployeeService {
     }
 
     if (dto.status && dto.status !== existing.status && existing.auth_user_id) {
-      await this.authCoreService.updateUserStatus(
+      await this.authService.updateUserStatus(
         existing.auth_user_id,
         dto.status,
       );
@@ -738,7 +738,9 @@ export class EmployeeService {
         const hireDate = parseDate(empData.hire_date) || new Date();
 
         // Create auth account first
-        const authUser = await this.authCoreService.createUser(empData.email);
+        const authUser = await this.authService.createUser({
+          email: empData.email,
+        });
         authUserId = authUser.id;
 
         const created = await this.prisma.employees.create({
@@ -770,7 +772,7 @@ export class EmployeeService {
         imported.push(empData.employee_code);
       } catch (error) {
         if (authUserId) {
-          await this.authCoreService.deleteUser(authUserId);
+          await this.authService.deleteUser(authUserId);
         }
         failed.push({
           employee_code: empData.employee_code,
