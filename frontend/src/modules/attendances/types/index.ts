@@ -103,6 +103,12 @@ export interface IHoliday {
   is_paid: boolean;
 }
 
+export interface IAttendanceTimelineItem {
+  date: string;
+  attendance: IAttendance | null;
+  leave_request: (ILeaveRequest & { is_half_day?: boolean }) | null;
+}
+
 export interface IEmployeeAttendanceDetail {
   employee: {
     id: string;
@@ -117,6 +123,7 @@ export interface IEmployeeAttendanceDetail {
     };
   };
   records: IAttendance[];
+  daily_timeline?: IAttendanceTimelineItem[];
   leave_requests: ILeaveRequest[];
   work_schedules: IWorkSchedule[];
   work_policy: IWorkPolicy | null;

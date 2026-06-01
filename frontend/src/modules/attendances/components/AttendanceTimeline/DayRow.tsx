@@ -12,6 +12,7 @@ interface Props {
   day: Date;
   record?: IAttendance;
   leaveRequests: ILeaveRequest[];
+  mergedLeaveRequest?: (ILeaveRequest & { is_half_day?: boolean }) | null;
   onLeaveClick: (lr: ILeaveRequest) => void;
   holidays?: IHoliday[];
   workSchedules?: IWorkSchedule[];
@@ -32,6 +33,7 @@ export function DayRow({
   day,
   record,
   leaveRequests,
+  mergedLeaveRequest,
   onLeaveClick,
   holidays = [],
   workSchedules = [],
@@ -71,7 +73,9 @@ export function DayRow({
     day: '2-digit',
     month: '2-digit',
   });
-  const dayLeaves = leaveRequests.filter((lr) => leaveOverlapsDay(lr, day));
+  const dayLeaves = mergedLeaveRequest
+    ? [mergedLeaveRequest]
+    : leaveRequests.filter((lr) => leaveOverlapsDay(lr, day));
 
   const lateMin = record?.late ?? 0;
   const earlyLeaveMin = record?.early_leave ?? 0;
