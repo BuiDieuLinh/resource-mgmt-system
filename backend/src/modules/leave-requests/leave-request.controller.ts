@@ -42,7 +42,9 @@ export class LeaveRequestController {
     @Query() query: QueryLeaveRequestDto,
     @CurrentUser() user: { employeeId: string; roles: string[] },
   ) {
-    const isAdmin = user.roles.some((r) => [Role.ADMIN].includes(r as Role));
+    const isAdmin = user.roles.some((r) =>
+      [Role.ADMIN, Role.HR].includes(r as Role),
+    );
     const isManager = user.roles.includes(Role.MANAGER);
     const isEmployeeOnly = !isAdmin && !isManager;
 
@@ -52,7 +54,7 @@ export class LeaveRequestController {
       const deptId = await this.leaveRequestService.getManagerDepartmentId(
         user.employeeId,
       );
-      if (deptId) query.department_id = deptId;
+      if (deptId) query.department_id = [deptId];
     }
     return this.leaveRequestService.findAll(query);
   }

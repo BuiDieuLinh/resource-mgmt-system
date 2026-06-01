@@ -71,7 +71,7 @@ export default function EmployeesPage() {
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
 
   const isEdit = Boolean(editEmployee);
-  const isAdmin = useHasRole(EMPLOYEE_ROLE.ADMIN);
+  const isAdmin = useHasRole(EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.HR);
 
   const {
     data,

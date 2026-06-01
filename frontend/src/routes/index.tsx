@@ -16,6 +16,8 @@ import {
   checkInOutUrl,
   myTimesheetUrl,
   myProfileUrl,
+  loginUrl,
+  changePasswordUrl,
 } from './url';
 import Error404 from '../components/ErrorPage/Error404';
 import Error401 from '../components/ErrorPage/Error401';
@@ -63,9 +65,9 @@ function RoleBasedRedirect() {
 }
 
 export const router = createBrowserRouter([
-  { path: '/login', element: <Login /> },
+  { path: loginUrl, element: <Login /> },
   {
-    path: '/change-password',
+    path: changePasswordUrl,
     element: <ProtectedRoute />,
     children: [{ index: true, element: <ChangePassword /> }],
   },

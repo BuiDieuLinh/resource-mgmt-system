@@ -7,8 +7,10 @@ import { queryClient } from '@/lib/react-query';
 interface AuthState {
   user: AuthUser | null;
   isLoading: boolean;
+  isFirstLogin: boolean;
   login: (email: string, password: string) => Promise<{ is_first_login: boolean }>;
   logout: () => void;
+  clearFirstLogin: () => void;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -16,6 +18,7 @@ const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
   const setStoreUser = useAuthStore((s) => s.setUser);
 
   const syncUser = (u: AuthUser | null) => {
@@ -61,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await authApi.login(email, password);
     const { access_token, user, is_first_login } = res.data.data;
     localStorage.setItem('access_token', access_token);
+    setIsFirstLogin(is_first_login);
     syncUser(user);
     return { is_first_login };
   };
@@ -69,11 +73,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('access_token');
     queryClient.clear();
     syncUser(null);
+    setIsFirstLogin(false);
     window.location.replace('/login');
   };
 
+  const clearFirstLogin = () => setIsFirstLogin(false);
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, isFirstLogin, login, logout, clearFirstLogin }}>
       {children}
     </AuthContext.Provider>
   );

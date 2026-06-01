@@ -801,20 +801,46 @@ export default function LeaveRequestsPage() {
         initialValues={reviewRequest}
         onSubmit={() => {}}
         onApprove={async (id, comment) => {
-          await updateMutation.mutateAsync({
-            id,
-            status: LEAVE_STATUS.APPROVED,
-            comment: comment.trim() || undefined,
-          });
-          setReviewRequest(null);
+          const notiId = notify.loading(t('leaveRequest.approving'));
+          try {
+            await updateMutation.mutateAsync({
+              id,
+              status: LEAVE_STATUS.APPROVED,
+              comment: comment.trim() || undefined,
+            });
+            notify.success(notiId, {
+              message: t('leaveRequest.actionSuccess', {
+                target: t('leaveRequest.singleRequest'),
+                status: t('labels.leaveStatus.approved'),
+              }),
+            });
+            setReviewRequest(null);
+          } catch (e: any) {
+            notify.error(notiId, {
+              message: e?.response?.data?.message || t('leaveRequest.actionFailed'),
+            });
+          }
         }}
         onReject={async (id, comment) => {
-          await updateMutation.mutateAsync({
-            id,
-            status: LEAVE_STATUS.REJECTED,
-            comment: comment.trim() || undefined,
-          });
-          setReviewRequest(null);
+          const notiId = notify.loading(t('leaveRequest.rejecting'));
+          try {
+            await updateMutation.mutateAsync({
+              id,
+              status: LEAVE_STATUS.REJECTED,
+              comment: comment.trim() || undefined,
+            });
+            notify.success(notiId, {
+              message: t('leaveRequest.actionSuccess', {
+                target: t('leaveRequest.singleRequest'),
+                status: t('labels.leaveStatus.rejected'),
+              }),
+            });
+            setReviewRequest(null);
+          } catch (e: any) {
+            notify.error(notiId, {
+              message: e?.response?.data?.message || t('leaveRequest.actionFailed'),
+            });
+          }
         }}
         loading={updateMutation.isPending}
       />

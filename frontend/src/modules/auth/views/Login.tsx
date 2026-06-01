@@ -17,10 +17,11 @@ import {
   IconHierarchy,
 } from '@tabler/icons-react';
 import { useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { DashboardIllustration } from '../components/DashboardIllustration';
 import { useAuth } from '../context/AuthContext';
+import { changePasswordUrl } from '@/routes/url';
 import classes from './AuthLayout.module.css';
 
 const PARTICLES = Array.from({ length: 28 }, (_, i) => ({
@@ -33,8 +34,7 @@ const PARTICLES = Array.from({ length: 28 }, (_, i) => ({
 }));
 
 export default function Login() {
-  const { user, login } = useAuth();
-  const navigate = useNavigate();
+  const { user, login, isFirstLogin } = useAuth();
   const location = useLocation();
   const { t } = useTranslation();
   const [error, setError] = useState('');
@@ -57,7 +57,10 @@ export default function Login() {
   });
 
   if (user) {
-    const next = (location.state as { from?: string } | null)?.from ?? '/';
+    if (isFirstLogin) return <Navigate to={changePasswordUrl} replace />;
+    const from = (location.state as { from?: string } | null)?.from;
+    // Không redirect về change-password sau khi đã đổi mật khẩu xong
+    const next = from && from !== changePasswordUrl ? from : '/';
     return <Navigate to={next} replace />;
   }
 
@@ -65,8 +68,7 @@ export default function Login() {
     setLoading(true);
     setError('');
     try {
-      const result = await login(values.email, values.password);
-      navigate(result.is_first_login ? '/change-password' : '/', { replace: true });
+      await login(values.email, values.password);
     } catch (err: any) {
       const message = err?.response?.data?.message;
       const normalized = Array.isArray(message) ? message[0] : message;

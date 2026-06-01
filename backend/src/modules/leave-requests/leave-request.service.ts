@@ -352,7 +352,7 @@ export class LeaveRequestService {
           department_id:
             query.department_id.length === 1
               ? query.department_id[0]
-              : { equals: query.department_id },
+              : { in: query.department_id },
         },
       };
     }
@@ -594,12 +594,26 @@ export class LeaveRequestService {
     const isHR = actorRoles.includes(Role.HR);
     const isManager = actorRoles.includes(Role.MANAGER);
 
-    const canApproveAsAdmin = isAdmin || isHR;
+    const requestOwnerEmployeeId = existing.employee?.id;
+
+    const isHRApprovingOwnRequest =
+      isHR &&
+      !isAdmin &&
+      actorEmployeeId != null &&
+      requestOwnerEmployeeId === actorEmployeeId;
+
+    const canApproveAsAdmin = isAdmin || (isHR && !isHRApprovingOwnRequest);
     const canApproveAsManager = isManager && !canApproveAsAdmin;
 
     if (actorEmployee && existing.employee?.id === actorEmployee.id) {
       throw new BadRequestException(
         'You cannot approve or reject your own leave request',
+      );
+    }
+
+    if (isHRApprovingOwnRequest) {
+      throw new BadRequestException(
+        'HR cannot approve their own leave request. Please contact an Admin.',
       );
     }
 

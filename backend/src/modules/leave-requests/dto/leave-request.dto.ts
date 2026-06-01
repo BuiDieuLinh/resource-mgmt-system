@@ -136,7 +136,7 @@ export class QueryLeaveRequestDto extends PaginationDto {
   })
   @IsArray()
   @IsString({ each: true })
-  department_id?: string;
+  department_id?: string[];
 
   @IsOptional()
   @Type(() => Number)

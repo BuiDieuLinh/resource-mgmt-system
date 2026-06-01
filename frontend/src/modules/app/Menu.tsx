@@ -73,7 +73,12 @@ export const MENUS: AppMenu[] = [
         labelKey: 'nav.checkInOut',
         path: checkInOutUrl,
         icon: IconLogin,
-        roles: [EMPLOYEE_ROLE.ADMIN, EMPLOYEE_ROLE.MANAGER, EMPLOYEE_ROLE.EMPLOYEE],
+        roles: [
+          EMPLOYEE_ROLE.ADMIN,
+          EMPLOYEE_ROLE.HR,
+          EMPLOYEE_ROLE.MANAGER,
+          EMPLOYEE_ROLE.EMPLOYEE,
+        ],
       },
       {
         label: 'Overview',

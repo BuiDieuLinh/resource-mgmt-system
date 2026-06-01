@@ -38,7 +38,7 @@ function getRequiredRoles(pathname: string): string[] | null {
 }
 
 export default function ProtectedRoute() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isFirstLogin } = useAuth();
   const location = useLocation();
 
   if (isLoading || !user) {
@@ -47,8 +47,16 @@ export default function ProtectedRoute() {
         <Loader />
       </Center>
     ) : (
-      <Navigate to="/login" replace state={{ from: location.pathname }} />
+      <Navigate
+        to="/login"
+        replace
+        state={location.pathname !== '/change-password' ? { from: location.pathname } : undefined}
+      />
     );
+  }
+
+  if (isFirstLogin && location.pathname !== '/change-password') {
+    return <Navigate to="/change-password" replace />;
   }
 
   if (location.pathname === '/') {

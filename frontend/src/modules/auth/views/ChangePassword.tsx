@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import classes from './AuthLayout.module.css';
 
 export default function ChangePassword() {
-  const { logout } = useAuth();
+  const { clearFirstLogin, logout } = useAuth();
   const { t } = useTranslation();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -36,8 +36,8 @@ export default function ChangePassword() {
     setError('');
     try {
       await authApi.changePassword(values.newPassword);
+      clearFirstLogin();
       logout();
-      return;
     } catch (err: any) {
       const message = err?.response?.data?.message;
       setError(

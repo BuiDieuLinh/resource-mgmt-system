@@ -1,4 +1,6 @@
 export const homeUrl = '/';
+export const loginUrl = '/login';
+export const changePasswordUrl = '/change-password';
 export const employeeListUrl = '/employees';
 export const employeeDepartmentsUrl = '/departments';
 export const employeePositionsUrl = '/positions';
