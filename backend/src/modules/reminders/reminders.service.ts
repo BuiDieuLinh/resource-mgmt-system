@@ -268,11 +268,21 @@ export class RemindersService {
           },
           orderBy: { sent_at: 'desc' },
         });
+        const existingPending = await this.prisma.notificationLogs.findFirst({
+          where: {
+            trigger_type: 'cycle_deadline',
+            channel,
+            recipient_id: recipient.id,
+            cycle_id: cycle.id,
+            status: 'pending',
+          },
+        });
 
         if (lastSent?.sent_at) {
           const daysSinceLast = now.diff(dayjs(lastSent.sent_at), 'day');
           if (daysSinceLast < repeatIntervalDays) continue;
         }
+        if (existingPending) continue;
 
         await this.prisma.notificationLogs.create({
           data: {
@@ -317,11 +327,21 @@ export class RemindersService {
           },
           orderBy: { sent_at: 'desc' },
         });
+        const existingPending = await this.prisma.notificationLogs.findFirst({
+          where: {
+            trigger_type: 'contract_ending',
+            channel,
+            recipient_id: recipient.id,
+            target_id: emp.id,
+            status: 'pending',
+          },
+        });
 
         if (lastSent?.sent_at) {
           const daysSinceLast = now.diff(dayjs(lastSent.sent_at), 'day');
           if (daysSinceLast < repeatIntervalDays) continue;
         }
+        if (existingPending) continue;
 
         await this.prisma.notificationLogs.create({
           data: {
