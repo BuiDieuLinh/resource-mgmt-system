@@ -36,27 +36,27 @@ export async function exportSummaryExcel(
   rows: any[],
   month: number,
   year: number,
-  departmentName = 'All Departments',
+  departmentName = 'Tất cả phòng ban',
 ) {
   const wb = new ExcelJS.Workbook();
   wb.creator = 'RMS Core';
   wb.created = new Date();
 
-  const ws = wb.addWorksheet('Attendance Summary');
+  const ws = wb.addWorksheet('Tổng hợp chấm công');
 
   const COL_COUNT = 14;
 
   // ── Title block ──────────────────────────────────────────────────────────
   ws.mergeCells(1, 1, 1, COL_COUNT);
   const titleCell = ws.getCell('A1');
-  titleCell.value = 'ATTENDANCE SUMMARY REPORT';
+  titleCell.value = 'BÁO CÁO TỔNG HỢP CHẤM CÔNG';
   titleCell.font = { bold: true, size: 14, color: { argb: 'FF4C3B8F' } };
   titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
   ws.getRow(1).height = 28;
 
   ws.mergeCells(2, 1, 2, COL_COUNT);
   ws.getCell('A2').value =
-    `Period: ${String(month).padStart(2, '0')}/${year}   |   Department: ${departmentName}   |   Exported: ${formatDate(new Date().toISOString())}`;
+    `Kỳ: Tháng ${String(month).padStart(2, '0')}/${year}   |   Phòng ban: ${departmentName}   |   Xuất ngày: ${formatDate(new Date().toISOString())}`;
   ws.getCell('A2').font = { size: 10, color: { argb: 'FF666666' } };
   ws.getCell('A2').alignment = { horizontal: 'center' };
   ws.getRow(2).height = 18;
@@ -65,20 +65,20 @@ export async function exportSummaryExcel(
 
   // ── Column headers ───────────────────────────────────────────────────────
   const headerRow = ws.addRow([
-    'No.',
-    'Employee',
-    'Department',
-    'Position',
-    'Planned (d)',
-    'Actual (d)',
-    'Late',
-    'Absent (d)',
-    'Annual Leave (d)',
-    'Unpaid Leave (d)',
-    'Holiday (d)',
-    'Overtime',
-    'Diff',
-    'Total (net)',
+    'STT',
+    'Nhân viên',
+    'Phòng ban',
+    'Chức danh',
+    'Ngày công KH',
+    'Ngày công TT',
+    'Đi trễ',
+    'Vắng mặt',
+    'Nghỉ phép năm',
+    'Nghỉ không lương',
+    'Ngày lễ',
+    'Tăng ca',
+    'Chênh lệch',
+    'Tổng (thực)',
   ]);
   headerRow.height = 22;
   headerRow.eachCell((cell) => {
@@ -142,7 +142,7 @@ export async function exportSummaryExcel(
   ws.addRow([]);
   const totalRow = ws.addRow([
     '',
-    'TOTAL',
+    'TỔNG CỘNG',
     '',
     '',
     rows.reduce((s, r) => s + (r.plan_day ?? 0), 0),
@@ -169,27 +169,27 @@ export async function exportSummaryExcel(
 
   // ── Column widths ────────────────────────────────────────────────────────
   ws.columns = [
-    { width: 5 }, // No.
-    { width: 24 }, // Employee
-    { width: 18 }, // Department
-    { width: 20 }, // Position
-    { width: 11 }, // Planned
-    { width: 11 }, // Actual
-    { width: 12 }, // Late
-    { width: 11 }, // Absent
-    { width: 14 }, // Annual Leave
-    { width: 13 }, // Unpaid Leave
-    { width: 11 }, // Holiday
-    { width: 12 }, // Overtime
-    { width: 8 }, // Diff
-    { width: 14 }, // Total (net)
+    { width: 5 }, // STT
+    { width: 24 }, // Nhân viên
+    { width: 20 }, // Phòng ban
+    { width: 22 }, // Chức danh
+    { width: 13 }, // Ngày công KH
+    { width: 13 }, // Ngày công TT
+    { width: 12 }, // Đi trễ
+    { width: 12 }, // Vắng mặt
+    { width: 16 }, // Nghỉ phép năm
+    { width: 18 }, // Nghỉ không lương
+    { width: 12 }, // Ngày lễ
+    { width: 12 }, // Tăng ca
+    { width: 12 }, // Chênh lệch
+    { width: 14 }, // Tổng (thực)
   ];
 
   ws.views = [{ state: 'frozen', ySplit: 4 }];
 
   await downloadWorkbook(
     wb,
-    `attendance_summary_${year}_${String(month).padStart(2, '0')}_${departmentName.replace(/\s+/g, '_')}.xlsx`,
+    `cham_cong_tong_hop_${year}_${String(month).padStart(2, '0')}_${departmentName.replace(/\s+/g, '_')}.xlsx`,
   );
 }
 
@@ -225,7 +225,7 @@ export async function exportEmployeeDetailExcel(
   wb.creator = 'RMS Core';
   wb.created = new Date();
 
-  const ws = wb.addWorksheet('Attendance Detail');
+  const ws = wb.addWorksheet('Chi tiết chấm công');
   const COL_COUNT = 8;
 
   const breakMins =
@@ -248,20 +248,20 @@ export async function exportEmployeeDetailExcel(
       const key = `${yy}-${mm}-${dd}`;
       const typeLabel =
         lr.leave_type === 'annual'
-          ? 'Annual Leave'
+          ? 'Nghỉ phép năm'
           : lr.leave_type === 'unpaid'
-            ? 'Unpaid Leave'
+            ? 'Nghỉ không lương'
             : lr.leave_type === 'sick'
-              ? 'Sick Leave'
+              ? 'Nghỉ ốm'
               : lr.leave_type === 'maternity'
-                ? 'Maternity'
+                ? 'Nghỉ thai sản'
                 : lr.leave_type === 'paternity'
-                  ? 'Paternity'
+                  ? 'Nghỉ thai sản (cha)'
                   : lr.leave_type;
       leaveMap.set(key, {
         type: lr.leave_type,
         partial: isPartial,
-        label: isPartial ? `${typeLabel} (partial)` : typeLabel,
+        label: isPartial ? `${typeLabel} (nửa ngày)` : typeLabel,
       });
     }
   }
@@ -319,29 +319,26 @@ export async function exportEmployeeDetailExcel(
   }
 
   // ── Info block (2-column layout) ─────────────────────────────────────────
-  // Row 1: Title
   ws.mergeCells(1, 1, 1, COL_COUNT);
   const titleCell = ws.getCell('A1');
-  titleCell.value = 'ATTENDANCE DETAIL REPORT';
+  titleCell.value = 'BÁO CÁO CHI TIẾT CHẤM CÔNG';
   titleCell.font = { bold: true, size: 13, color: { argb: 'FF4C3B8F' } };
   titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
   ws.getRow(1).height = 26;
 
-  // Rows 2–4: 2-column info (left col: label+value, right col: label+value)
   const leftInfo = [
-    ['Employee', employeeName],
-    ['Position', position],
-    ['Department', department],
+    ['Nhân viên', employeeName],
+    ['Chức danh', position],
+    ['Phòng ban', department],
   ];
   const rightInfo = [
-    ['Period', `${String(month).padStart(2, '0')}/${year}`],
-    ['Exported', formatDate(new Date().toISOString())],
+    ['Kỳ', `Tháng ${String(month).padStart(2, '0')}/${year}`],
+    ['Xuất ngày', formatDate(new Date().toISOString())],
     ['', ''],
   ];
 
   leftInfo.forEach(([label, value], i) => {
     const rowNum = i + 2;
-    // Left: cols 1-2 label, 3-4 value
     ws.mergeCells(rowNum, 1, rowNum, 2);
     ws.mergeCells(rowNum, 3, rowNum, 4);
     const lc = ws.getCell(rowNum, 1);
@@ -351,7 +348,6 @@ export async function exportEmployeeDetailExcel(
     vc.value = value;
     vc.font = { size: 10 };
 
-    // Right: cols 5-6 label, 7-8 value
     const [rl, rv] = rightInfo[i];
     ws.mergeCells(rowNum, 5, rowNum, 6);
     ws.mergeCells(rowNum, 7, rowNum, COL_COUNT);
@@ -364,26 +360,23 @@ export async function exportEmployeeDetailExcel(
     ws.getRow(rowNum).height = 16;
   });
 
-  // Row 5: spacer
   ws.addRow([]);
 
-  // ── Legend (above data table) ─────────────────────────────────────────────
+  // ── Legend ─────────────────────────────────────────────────────────────
   const legendItems = [
-    { label: 'Annual Leave', fill: FILL_ANNUAL },
-    { label: 'Sick / Maternity / Paternity', fill: FILL_SICK },
-    { label: 'Unpaid Leave', fill: FILL_UNPAID },
-    { label: 'Public Holiday', fill: FILL_HOLIDAY },
-    { label: 'Absent (no record)', fill: FILL_ABSENT },
+    { label: 'Nghỉ phép năm', fill: FILL_ANNUAL },
+    { label: 'Nghỉ ốm / Thai sản', fill: FILL_SICK },
+    { label: 'Nghỉ không lương', fill: FILL_UNPAID },
+    { label: 'Ngày lễ', fill: FILL_HOLIDAY },
+    { label: 'Vắng mặt (không có dữ liệu)', fill: FILL_ABSENT },
   ];
 
-  // Legend title
-  const legendTitleRow = ws.addRow(['Legend']);
+  const legendTitleRow = ws.addRow(['Chú thích']);
   ws.mergeCells(legendTitleRow.number, 1, legendTitleRow.number, COL_COUNT);
   legendTitleRow.getCell(1).font = { bold: true, size: 9, color: { argb: 'FF555555' } };
   legendTitleRow.getCell(1).alignment = { horizontal: 'left' };
   legendTitleRow.height = 13;
 
-  // 2-column legend: col1=color swatch, col2=label | col4=color swatch, col5=label
   const half = Math.ceil(legendItems.length / 2);
   for (let i = 0; i < half; i++) {
     const left = legendItems[i];
@@ -391,7 +384,6 @@ export async function exportEmployeeDetailExcel(
     const lr = ws.addRow([]);
     lr.height = 14;
 
-    // Left item
     const swatchL = lr.getCell(1);
     swatchL.fill = left.fill;
     swatchL.border = BORDER;
@@ -401,7 +393,6 @@ export async function exportEmployeeDetailExcel(
     labelL.font = { size: 9 };
     labelL.alignment = { vertical: 'middle' };
 
-    // Right item
     if (right) {
       const swatchR = lr.getCell(5);
       swatchR.fill = right.fill;
@@ -418,14 +409,14 @@ export async function exportEmployeeDetailExcel(
 
   // ── Column headers ───────────────────────────────────────────────────────
   const headerRow = ws.addRow([
-    'Date',
-    'Check-in',
-    'Check-out',
-    'Work Time',
-    'Late',
-    'Early Leave',
-    'Overtime',
-    'Note',
+    'Ngày',
+    'Giờ vào',
+    'Giờ ra',
+    'Thời gian làm',
+    'Đi trễ',
+    'Về sớm',
+    'Tăng ca',
+    'Ghi chú',
   ]);
   headerRow.height = 22;
   headerRow.eachCell((cell) => {
@@ -438,7 +429,7 @@ export async function exportEmployeeDetailExcel(
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // ── Data rows (all working days in month) ────────────────────────────────
+  // ── Data rows ────────────────────────────────────────────────────────────
   allDays.forEach((dateStr, i) => {
     const r = recordMap.get(dateStr);
     const leaveInfo = leaveMap.get(dateStr);
@@ -452,7 +443,7 @@ export async function exportEmployeeDetailExcel(
     const workTimeLabel = r?.work_minutes
       ? formatMinutes(r.work_minutes) + (breakMins > 0 ? `` : '')
       : holidayName
-        ? 'Holiday'
+        ? 'Ngày lễ'
         : leaveInfo
           ? leaveInfo.label
           : '—';
@@ -462,7 +453,7 @@ export async function exportEmployeeDetailExcel(
       : leaveInfo
         ? leaveInfo.label
         : isAbsent
-          ? 'Absent (no record)'
+          ? 'Vắng mặt (không có dữ liệu)'
           : '';
 
     const dataRow = ws.addRow([
@@ -515,14 +506,14 @@ export async function exportEmployeeDetailExcel(
   // ── Summary footer ───────────────────────────────────────────────────────
   ws.addRow([]);
   const totalRow = ws.addRow([
-    'TOTAL',
+    'TỔNG CỘNG',
     '',
     '',
     formatMinutes(records.reduce((s, r) => s + (r.work_minutes ?? 0), 0)),
     formatMinutes(records.reduce((s, r) => s + (r.late ?? 0), 0)),
     formatMinutes(records.reduce((s, r) => s + (r.early_leave ?? 0), 0)),
     formatMinutes(records.reduce((s, r) => s + (r.overtime ?? 0), 0)),
-    `${records.filter((r) => r.check_in_time).length} / ${allDays.length} days`,
+    `${records.filter((r) => r.check_in_time).length} / ${allDays.length} ngày`,
   ]);
   totalRow.height = 20;
   totalRow.eachCell((cell) => {
@@ -534,21 +525,21 @@ export async function exportEmployeeDetailExcel(
 
   // ── Column widths ────────────────────────────────────────────────────────
   ws.columns = [
-    { width: 14 }, // Date
-    { width: 12 }, // Check-in
-    { width: 12 }, // Check-out
-    { width: 16 }, // Work time
-    { width: 10 }, // Late
-    { width: 12 }, // Early leave
-    { width: 12 }, // Overtime
-    { width: 26 }, // Note
+    { width: 14 }, // Ngày
+    { width: 12 }, // Giờ vào
+    { width: 12 }, // Giờ ra
+    { width: 18 }, // Thời gian làm
+    { width: 12 }, // Đi trễ
+    { width: 12 }, // Về sớm
+    { width: 12 }, // Tăng ca
+    { width: 30 }, // Ghi chú
   ];
 
   ws.views = [{ state: 'frozen', ySplit: 10 }];
 
   await downloadWorkbook(
     wb,
-    `attendance_${employeeName.replace(/\s+/g, '_')}_${year}_${String(month).padStart(2, '0')}.xlsx`,
+    `cham_cong_${employeeName.replace(/\s+/g, '_')}_${year}_${String(month).padStart(2, '0')}.xlsx`,
   );
 }
 

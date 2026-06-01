@@ -483,19 +483,19 @@ export class EmployeeService {
     const worksheet = workbook.addWorksheet('Employees');
 
     worksheet.columns = [
-      { header: 'Employee Code', key: 'employee_code', width: 15 },
-      { header: 'Full Name', key: 'full_name', width: 25 },
-      { header: 'Display Name', key: 'display_name', width: 20 },
+      { header: 'Mã nhân viên', key: 'employee_code', width: 15 },
+      { header: 'Họ và tên', key: 'full_name', width: 25 },
+      { header: 'Tên hiển thị', key: 'display_name', width: 20 },
       { header: 'Email', key: 'email', width: 30 },
-      { header: 'Phone', key: 'phone', width: 15 },
-      { header: 'Identity Card', key: 'identify_card', width: 18 },
-      { header: 'Gender', key: 'gender', width: 10 },
-      { header: 'Date of Birth', key: 'date_of_birth', width: 15 },
-      { header: 'Hire Date', key: 'hire_date', width: 15 },
-      { header: 'Contract Type', key: 'contract_type', width: 15 },
-      { header: 'Department', key: 'department', width: 20 },
-      { header: 'Position', key: 'position', width: 20 },
-      { header: 'Status', key: 'status', width: 12 },
+      { header: 'Số điện thoại', key: 'phone', width: 15 },
+      { header: 'CCCD/CMND', key: 'identify_card', width: 18 },
+      { header: 'Giới tính', key: 'gender', width: 10 },
+      { header: 'Ngày sinh', key: 'date_of_birth', width: 15 },
+      { header: 'Ngày vào làm', key: 'hire_date', width: 15 },
+      { header: 'Loại hợp đồng', key: 'contract_type', width: 15 },
+      { header: 'Phòng ban', key: 'department', width: 20 },
+      { header: 'Chức danh', key: 'position', width: 20 },
+      { header: 'Trạng thái', key: 'status', width: 12 },
     ];
 
     worksheet.getRow(1).font = { bold: true };
