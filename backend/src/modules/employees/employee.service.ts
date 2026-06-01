@@ -230,6 +230,11 @@ export class EmployeeService {
           },
           orderBy: { start_date: 'desc' },
         },
+        awards: {
+          include: {
+            employee: { select: { id: true, full_name: true, email: true } },
+          },
+        },
       },
     });
     if (!employee) throw new NotFoundException('Employee not found');

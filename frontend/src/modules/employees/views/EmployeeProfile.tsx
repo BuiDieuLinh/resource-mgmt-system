@@ -31,6 +31,8 @@ import {
   IconUserCheck,
   IconArrowLeft,
   IconCamera,
+  IconTrophy,
+  IconEye,
 } from '@tabler/icons-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGetEmployee } from '../api/get-employee';
@@ -57,6 +59,7 @@ import type { IAward } from '../../performance/types';
 import { FaceEnrollmentModal } from '../components/FaceEnrollmentModal';
 import { useGetEmployeeByUserId } from '../api/get-employee-by-user';
 import { useTranslation } from 'react-i18next';
+import { CATEGORY_LABEL, RANK_COLORS } from '../../performance/constants/awards';
 
 function InfoRow({
   icon,
@@ -176,7 +179,7 @@ export default function EmployeeProfile() {
   const { id } = useParams<{ id: string }>();
 
   const { data, isLoading: _loading, error, refetch } = useGetEmployee(id!);
-  const { data: empData } = useGetEmployeeByUserId(); // Get current user's employee data
+  const { data: empData } = useGetEmployeeByUserId();
   const isLoading = useDelayedLoading(_loading);
   const { data: policyData } = useGetActivePolicy();
   const [previewAward, setPreviewAward] = useState<IAward | null>(null);
@@ -246,6 +249,7 @@ export default function EmployeeProfile() {
     );
 
   const employee = data.data;
+  const myAwards = employee.awards || [];
   const currentUserEmployee = empData?.data;
   const hasFaceRegistered =
     employee.face_descriptor &&
@@ -660,11 +664,11 @@ export default function EmployeeProfile() {
                 </>
               )}
 
-              {/* {myAwards.length > 0 && (
+              {myAwards.length > 0 && (
                 <>
                   <Divider />
                   <div>
-                    <SectionTitle>Awards & Recognition</SectionTitle>
+                    <SectionTitle>{t('employee.awardsRecognition')}</SectionTitle>
                     <Stack gap="sm" mt="sm">
                       {myAwards.map((award) => (
                         <Group
@@ -701,14 +705,14 @@ export default function EmployeeProfile() {
                             leftSection={<IconEye size={14} />}
                             onClick={() => setPreviewAward(award)}
                           >
-                            Preview
+                            {t('actions.preview')}
                           </Button>
                         </Group>
                       ))}
                     </Stack>
                   </div>
                 </>
-              )} */}
+              )}
             </Stack>
           </Card>
         </Grid.Col>

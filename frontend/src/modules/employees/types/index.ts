@@ -1,3 +1,4 @@
+import type { IAward } from '@/modules/performance/types';
 import type { EmployeeStatus } from '../../../constant';
 
 export interface IEmployee {
@@ -48,6 +49,7 @@ export interface IEmployee {
   work_schedules?: IWorkSchedule[];
   employment_histories?: IEmploymentHistory[];
   created_at: string;
+  awards?: IAward[];
 }
 
 export interface IEmploymentHistory {

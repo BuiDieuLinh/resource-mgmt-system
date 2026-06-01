@@ -9,7 +9,7 @@ import {
   IsArray,
   ValidateIf,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { WorkScheduleDto } from 'src/modules/work-schedules/dto/work-schedule.dto';
 import { EmployeeStatus, ContractType } from '@prisma/client';
 
@@ -57,6 +57,7 @@ export class CreateEmployeeDto {
   contract_type?: ContractType;
 
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @ValidateIf((o) => o.manager_id !== null)
   @IsUUID()
   manager_id?: string | null;

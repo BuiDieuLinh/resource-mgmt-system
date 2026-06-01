@@ -10,6 +10,8 @@ import {
 import type { IAward } from '../types';
 import { COMPANY_NAME, COMPANY_TAGLINE, COMPANY_LOGO_URL } from '@/constant/config';
 import s from './AwardRevealPage.module.css';
+import { useTranslation } from 'react-i18next';
+import { RANK_COLORS } from '../constants/awards';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const R = [
@@ -17,23 +19,23 @@ const R = [
     color: '#B8860B',
     accent: '#F5C842',
     glow: 'rgba(245,200,66,0.35)',
-    label: '1st Place',
+    label: 'performance.awards.rank1',
     emoji: '🥇',
     stars: 5,
   },
   {
-    color: '#5a7a9a',
+    color: RANK_COLORS[1],
     accent: '#8ab4d4',
     glow: 'rgba(138,180,212,0.25)',
-    label: '2nd Place',
-    emoji: '�',
+    label: 'performance.awards.rank2',
+    emoji: '🥈',
     stars: 4,
   },
   {
-    color: '#8B4513',
+    color: RANK_COLORS[2],
     accent: '#D2691E',
     glow: 'rgba(210,105,30,0.25)',
-    label: '3rd Place',
+    label: 'performance.awards.rank3',
     emoji: '🥉',
     stars: 3,
   },
@@ -41,25 +43,33 @@ const R = [
 
 const CAT = {
   top_employee: {
-    label: 'Outstanding Employee',
+    labelKey: 'labels.awardCategory.top_employee',
     color: '#2563eb',
     bg: 'rgba(37,99,235,0.08)',
     border: 'rgba(37,99,235,0.2)',
   },
   top_manager: {
-    label: 'Outstanding Manager',
+    labelKey: 'labels.awardCategory.top_manager',
     color: '#7c3aed',
     bg: 'rgba(124,58,237,0.08)',
     border: 'rgba(124,58,237,0.2)',
   },
 } as const;
 
+function resolveAwardEmployeeName(award: IAward): string {
+  return award.employee?.full_name ?? award.employee?.display_name ?? award.employee_id ?? '—';
+}
+
 // ─── Company footer ───────────────────────────────────────────────────────────
 function CompanyFooter() {
+  const { t } = useTranslation();
   return (
     <Box className={s.footer}>
       <Text size="xs" className={s.footerText}>
-        {COMPANY_NAME} · {new Date().getFullYear()}
+        {t('performance.awards.companyFooter', {
+          company: COMPANY_NAME,
+          year: new Date().getFullYear(),
+        })}
       </Text>
     </Box>
   );
@@ -136,9 +146,10 @@ function LightBg() {
 
 // ─── Award card ───────────────────────────────────────────────────────────────
 function AwardCard({ award, idx, visible }: { award: IAward; idx: number; visible: boolean }) {
+  const { t } = useTranslation();
   const r = R[(award.rank - 1) % 3];
   const isFirst = award.rank === 1;
-  const name = award.employee?.full_name ?? '—';
+  const name = resolveAwardEmployeeName(award);
   const initials = name
     .split(' ')
     .map((n: string) => n[0])
@@ -171,7 +182,7 @@ function AwardCard({ award, idx, visible }: { award: IAward; idx: number; visibl
           <Group gap={5} align="center">
             <Text style={{ fontSize: isFirst ? 18 : 15 }}>{r.emoji}</Text>
             <Text size="xs" fw={700} style={{ color: r.color, letterSpacing: 0.5 }}>
-              {r.label}
+              {t(r.label)}
             </Text>
           </Group>
 
@@ -225,9 +236,10 @@ function PersonalReveal({
   onClose: () => void;
   previewMode: boolean;
 }) {
+  const { t } = useTranslation();
   const r = R[(award.rank - 1) % 3];
   const cat = CAT[award.category as keyof typeof CAT] ?? CAT.top_employee;
-  const name = award.employee?.full_name ?? '—';
+  const name = resolveAwardEmployeeName(award);
   const initials = name
     .split(' ')
     .map((n: string) => n[0])
@@ -247,7 +259,7 @@ function PersonalReveal({
           onClick={onClose}
           className={s.closeBtn}
         >
-          Close
+          {t('common.close')}
         </Button>
       )}
 
@@ -290,7 +302,9 @@ function PersonalReveal({
               </Text>
             </Stack>
           </Group>
-          <Text className={s.ceremonyLabel}>✦ Award Ceremony · {award.cycle?.title} ✦</Text>
+          <Text className={s.ceremonyLabel}>
+            ✦ {t('performance.awards.ceremony')} · {award.cycle?.title} ✦
+          </Text>
           <Text size="sm" c="dimmed">
             {award.cycle?.announce_date
               ? new Date(award.cycle.announce_date).toLocaleDateString('en-GB', {
@@ -390,17 +404,17 @@ function PersonalReveal({
               </Box>
               <Stack gap={1}>
                 <Text fw={700} size="sm" style={{ color: r.color, letterSpacing: 1 }}>
-                  {r.emoji} {r.label}
+                  {r.emoji} {t(r.label)}
                 </Text>
                 <Text size="xs" c="dimmed">
-                  {cat.label}
+                  {t(cat.labelKey)}
                 </Text>
               </Stack>
             </Group>
 
             <Stack gap={6}>
               <Text size="xs" c="dimmed" className={s.sectionLabel}>
-                Award Title
+                {t('performance.awards.awardTitle')}
               </Text>
               <Title order={2} style={{ color: '#1a1a2e', fontWeight: 900, lineHeight: 1.2 }}>
                 {award.title}
@@ -410,7 +424,7 @@ function PersonalReveal({
             {award.description && (
               <Stack gap={6}>
                 <Text size="xs" c="dimmed" className={s.sectionLabel}>
-                  Achievements
+                  {t('performance.awards.achievements')}
                 </Text>
                 <Text size="sm" style={{ color: '#444', lineHeight: 1.85 }}>
                   {award.description}
@@ -426,7 +440,7 @@ function PersonalReveal({
                     style={{ background: `linear-gradient(90deg, ${r.color}88, transparent)` }}
                   />
                   <Text size="xs" c="dimmed">
-                    Management Board
+                    {t('performance.awards.managementBoard')}
                   </Text>
                   <Text fw={600} size="sm" style={{ color: '#1a1a2e' }}>
                     {COMPANY_NAME}
@@ -445,7 +459,7 @@ function PersonalReveal({
                       border: 'none',
                     }}
                   >
-                    Congratulations! 🎉
+                    {t('performance.awards.congratulations')}
                   </Button>
                 )}
               </Group>
@@ -456,7 +470,10 @@ function PersonalReveal({
 
       <Box className={s.personalFooter}>
         <Text size="xs" c="dimmed">
-          {COMPANY_NAME} · {new Date().getFullYear()}
+          {t('performance.awards.companyFooter', {
+            company: COMPANY_NAME,
+            year: new Date().getFullYear(),
+          })}
         </Text>
       </Box>
     </Box>
@@ -472,6 +489,7 @@ interface Props {
 }
 
 export function AwardRevealPage({ awards, onClose, previewMode = false, personal = false }: Props) {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const [confetti, setConfetti] = useState(false);
 
@@ -521,7 +539,7 @@ export function AwardRevealPage({ awards, onClose, previewMode = false, personal
                 onClick={onClose}
                 className={s.closeBtnAll}
               >
-                Close
+                {t('common.close')}
               </Button>
             )}
 
@@ -555,8 +573,10 @@ export function AwardRevealPage({ awards, onClose, previewMode = false, personal
 
               {/* Center title */}
               <Stack align="center" gap={4} style={{ flex: 1, textAlign: 'center' }}>
-                <Text className={s.eventLabel}>✦ Award Ceremony ✦</Text>
-                <Title className={s.shimmerTitle}>{first?.cycle?.title ?? 'Award Ceremony'}</Title>
+                <Text className={s.eventLabel}>✦ {t('performance.awards.ceremony')} ✦</Text>
+                <Title className={s.shimmerTitle}>
+                  {first?.cycle?.title ?? t('performance.awards.ceremony')}
+                </Title>
               </Stack>
 
               {/* Date */}
@@ -564,7 +584,7 @@ export function AwardRevealPage({ awards, onClose, previewMode = false, personal
                 {first?.cycle?.announce_date && (
                   <>
                     <Text size="xs" className={s.dateLabel}>
-                      Announce Date
+                      {t('performance.awards.announceDate')}
                     </Text>
                     <Text fw={600} size="sm" className={s.dateValue}>
                       {new Date(first.cycle.announce_date).toLocaleDateString('en-GB', {
@@ -611,7 +631,7 @@ export function AwardRevealPage({ awards, onClose, previewMode = false, personal
                         fontWeight: 700,
                       }}
                     >
-                      🏆 {meta.label}
+                      🏆 {t(meta.labelKey)}
                     </Badge>
                     <Box
                       className={s.catDividerLine}

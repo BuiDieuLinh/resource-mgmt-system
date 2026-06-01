@@ -5,6 +5,7 @@ import type {
   AwardCategory,
   ContractType,
 } from '@/constant';
+import type { IEmployee } from '@/modules/employees/types';
 
 export type { ScoreType, ReviewStatus, ReviewPeriodType, AwardCategory, ContractType };
 
@@ -104,7 +105,7 @@ export interface IAward {
   is_seen: boolean;
   created_at: string;
   cycle?: IReviewCycle;
-  employee?: any;
+  employee?: IEmployee;
 }
 
 // Form value types

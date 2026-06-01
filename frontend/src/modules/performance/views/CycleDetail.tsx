@@ -39,8 +39,8 @@ import { notify } from '@/components/Notification';
 import type { IAward, IPerformanceReview } from '../types';
 import { performanceCyclesUrl } from '@/routes/url';
 import { useTranslation } from 'react-i18next';
+import { CATEGORY_LABEL, RANK_COLORS } from '../constants/awards';
 
-const RANK_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
 const STATUS_COLOR: Record<string, string> = {
   draft: 'gray',
   submitted: 'blue',
@@ -252,7 +252,7 @@ export default function CycleDetailPage() {
       title: t('common.category'),
       render: (r) => (
         <Badge size="sm" variant="light" color={r.category === 'top_manager' ? 'violet' : 'blue'}>
-          {t(`labels.awardCategory.${r.category}` as const)}
+          {CATEGORY_LABEL[r.category] ?? t(`labels.awardCategory.${r.category}` as const)}
         </Badge>
       ),
     },
