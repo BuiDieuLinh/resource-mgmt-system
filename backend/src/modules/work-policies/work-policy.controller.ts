@@ -10,7 +10,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { WorkPolicyService } from './work-policy.service';
-import { CreateWorkPolicyDto } from './dto/work-policy.dto';
+import {
+  CreateWorkPolicyDto,
+  UpdateWorkPolicyDto,
+} from './dto/work-policy.dto';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -39,7 +42,7 @@ export class WorkPolicyController {
 
   @Patch(':id')
   @Roles(Role.HR, Role.ADMIN)
-  update(@Param('id') id: string, @Body() dto: CreateWorkPolicyDto) {
+  update(@Param('id') id: string, @Body() dto: UpdateWorkPolicyDto) {
     return this.workPolicyService.update(id, dto);
   }
 

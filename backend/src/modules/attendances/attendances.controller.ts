@@ -106,6 +106,15 @@ export class AttendancesController {
     return this.attendancesService.checkOut(dto, req);
   }
 
+  @Get('today-status')
+  @Roles(Role.EMPLOYEE, Role.MANAGER, Role.HR, Role.ADMIN)
+  getTodayStatus(
+    @Query('employee_id') employeeId: string,
+    @Req() req: Request,
+  ) {
+    return this.attendancesService.getTodayStatus(employeeId, req);
+  }
+
   @Get('my')
   findMy(
     @CurrentUser() user: { employeeId: string },

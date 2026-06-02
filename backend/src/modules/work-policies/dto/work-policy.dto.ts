@@ -27,6 +27,12 @@ export class CreateWorkPolicyDto {
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(720)
+  check_in_cutoff_minutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
   @Max(1439)
   break_start?: number;
 
@@ -52,6 +58,12 @@ export class CreateWorkPolicyDto {
   @IsDateString()
   effective_from: string;
 
+  @IsOptional()
+  @IsDateString()
+  effective_to?: string;
+}
+
+export class UpdateWorkPolicyDto {
   @IsOptional()
   @IsDateString()
   effective_to?: string;

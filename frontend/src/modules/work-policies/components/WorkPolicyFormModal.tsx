@@ -13,15 +13,23 @@ import {
   Loader,
   Box,
   Badge,
+  Alert,
   Paper,
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { useForm } from '@mantine/form';
 import { useEffect, useState, useRef } from 'react';
-import { IconClock, IconCalendar, IconCoffee, IconMapPin, IconX } from '@tabler/icons-react';
+import {
+  IconClock,
+  IconCalendar,
+  IconCoffee,
+  IconMapPin,
+  IconX,
+  IconAlertCircle,
+} from '@tabler/icons-react';
 import { PRIMARY_COLOR } from '@/theme';
 import { TIME_OPTIONS, minutesToTime, timeToMinutes } from '../utils/time';
-import type { IWorkPolicy, IWorkPolicyPayload } from '../types';
+import type { IWorkPolicy, IWorkPolicyPayload, IWorkPolicyUpdatePayload } from '../types';
 import { DATE_FORMAT } from '@/constant';
 import { toISO } from '@/utils/date';
 import { useTranslation } from 'react-i18next';
@@ -31,7 +39,7 @@ interface Props {
   onClose: () => void;
   mode: 'add' | 'edit';
   initialValues?: IWorkPolicy | null;
-  onSubmit: (payload: IWorkPolicyPayload, id?: string) => Promise<void>;
+  onSubmit: (payload: IWorkPolicyPayload | IWorkPolicyUpdatePayload, id?: string) => Promise<void>;
   loading?: boolean;
 }
 
@@ -39,6 +47,7 @@ interface FormValues {
   is_flexible_enabled: boolean;
   flexible_start: number;
   flexible_end: number;
+  check_in_cutoff_minutes: number | null;
   break_start: string;
   break_end: string;
   office_latitude: number | null;
@@ -59,6 +68,7 @@ const EMPTY: FormValues = {
   is_flexible_enabled: false,
   flexible_start: 10,
   flexible_end: 10,
+  check_in_cutoff_minutes: null,
   break_start: '12:00',
   break_end: '13:00',
   office_latitude: null,
@@ -77,6 +87,7 @@ export function WorkPolicyFormModal({
   loading,
 }: Props) {
   const { t } = useTranslation();
+  const isEditMode = mode === 'edit';
   const form = useForm<FormValues>({ initialValues: EMPTY });
   const [addressValue, setAddressValue] = useState('');
   const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
@@ -94,6 +105,7 @@ export function WorkPolicyFormModal({
         is_flexible_enabled: initialValues.is_flexible_enabled,
         flexible_start: initialValues.flexible_start ?? 10,
         flexible_end: initialValues.flexible_end ?? 10,
+        check_in_cutoff_minutes: initialValues.check_in_cutoff_minutes ?? null,
         break_start:
           initialValues.break_start != null ? minutesToTime(initialValues.break_start) : '12:00',
         break_end:
@@ -165,6 +177,16 @@ export function WorkPolicyFormModal({
   };
 
   const handleSubmit = async (values: FormValues) => {
+    if (isEditMode) {
+      await onSubmit(
+        {
+          effective_to: toISO(values.effective_to),
+        },
+        initialValues?.id,
+      );
+      return;
+    }
+
     await onSubmit(
       {
         is_flexible_enabled: values.is_flexible_enabled,
@@ -172,6 +194,7 @@ export function WorkPolicyFormModal({
         break_end: timeToMinutes(values.break_end),
         flexible_start: values.is_flexible_enabled ? values.flexible_start : null,
         flexible_end: values.is_flexible_enabled ? values.flexible_end : null,
+        check_in_cutoff_minutes: values.check_in_cutoff_minutes,
         office_latitude: values.office_latitude,
         office_longitude: values.office_longitude,
         max_distance_meters: values.office_latitude != null ? values.max_distance_meters : null,
@@ -198,6 +221,12 @@ export function WorkPolicyFormModal({
     >
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack gap="md">
+          {isEditMode && (
+            <Alert variant="light" color="yellow" radius="md" icon={<IconAlertCircle size={16} />}>
+              {t('workPolicy.modal.editHint')}
+            </Alert>
+          )}
+
           {/* Break + Flexible — same row, equal height via align="stretch" */}
           <Grid gutter="md" align="stretch">
             <Grid.Col span={6}>
@@ -216,6 +245,7 @@ export function WorkPolicyFormModal({
                       label={t('workPolicy.start')}
                       data={TIME_OPTIONS}
                       searchable
+                      disabled={isEditMode}
                       leftSection={<IconClock size={13} />}
                       {...form.getInputProps('break_start')}
                     />
@@ -227,6 +257,7 @@ export function WorkPolicyFormModal({
                       label={t('workPolicy.end')}
                       data={TIME_OPTIONS}
                       searchable
+                      disabled={isEditMode}
                       leftSection={<IconClock size={13} />}
                       {...form.getInputProps('break_end')}
                     />
@@ -246,6 +277,7 @@ export function WorkPolicyFormModal({
                   size="sm"
                   label={t('workPolicy.enableGraceWindow')}
                   mb={form.values.is_flexible_enabled ? 'xs' : 0}
+                  disabled={isEditMode}
                   {...form.getInputProps('is_flexible_enabled', { type: 'checkbox' })}
                 />
                 {form.values.is_flexible_enabled && (
@@ -257,6 +289,7 @@ export function WorkPolicyFormModal({
                         min={0}
                         max={120}
                         suffix=" min"
+                        disabled={isEditMode}
                         {...form.getInputProps('flexible_start')}
                       />
                     </Grid.Col>
@@ -267,6 +300,7 @@ export function WorkPolicyFormModal({
                         min={0}
                         max={120}
                         suffix=" min"
+                        disabled={isEditMode}
                         {...form.getInputProps('flexible_end')}
                       />
                     </Grid.Col>
@@ -275,6 +309,36 @@ export function WorkPolicyFormModal({
               </Paper>
             </Grid.Col>
           </Grid>
+
+          <Paper withBorder p="sm" radius="md">
+            <Stack gap={6}>
+              <Group gap={6}>
+                <IconClock size={14} />
+                <Text size="sm" fw={600}>
+                  {t('workPolicy.checkInCutoff')}
+                </Text>
+              </Group>
+              <Group justify="space-between" align="center" wrap="nowrap">
+                <Text size="xs" c="dimmed" style={{ flex: 1 }}>
+                  {t('workPolicy.checkInCutoffLabel')}
+                </Text>
+                <NumberInput
+                  size="xs"
+                  min={0}
+                  max={720}
+                  suffix=" min"
+                  allowDecimal={false}
+                  clampBehavior="strict"
+                  disabled={isEditMode}
+                  w={140}
+                  {...form.getInputProps('check_in_cutoff_minutes')}
+                />
+              </Group>
+              <Text size="xs" c="dimmed">
+                {t('workPolicy.checkInCutoffDescription')}
+              </Text>
+            </Stack>
+          </Paper>
 
           <Paper withBorder p="sm" radius="md">
             <Group gap={6} mb="xs">
@@ -293,6 +357,7 @@ export function WorkPolicyFormModal({
                   size="xs"
                   label={t('workPolicy.officeAddress')}
                   placeholder={t('workPolicy.modal.officeAddressPlaceholder')}
+                  disabled={isEditMode}
                   leftSection={
                     searching ? (
                       <Loader size={12} />
@@ -314,7 +379,7 @@ export function WorkPolicyFormModal({
                   }
                   value={addressValue}
                   onChange={(e) => handleAddressChange(e.currentTarget.value)}
-                  readOnly={hasLocation}
+                  readOnly={isEditMode || hasLocation}
                   styles={
                     hasLocation
                       ? { input: { color: 'var(--mantine-color-teal-7)', fontWeight: 500 } }
@@ -363,7 +428,7 @@ export function WorkPolicyFormModal({
                 min={10}
                 max={5000}
                 suffix=" m"
-                disabled={!hasLocation}
+                disabled={isEditMode || !hasLocation}
                 style={{ width: 110 }}
                 {...form.getInputProps('max_distance_meters')}
               />
@@ -403,6 +468,7 @@ export function WorkPolicyFormModal({
                   placeholder={DATE_FORMAT}
                   valueFormat={DATE_FORMAT}
                   required
+                  disabled={isEditMode}
                   {...form.getInputProps('effective_from')}
                 />
               </Grid.Col>
@@ -413,7 +479,7 @@ export function WorkPolicyFormModal({
                   placeholder={t('workPolicy.noEndDate')}
                   valueFormat={DATE_FORMAT}
                   clearable
-                  minDate={form.values.effective_from ?? undefined}
+                  minDate={isEditMode ? new Date() : (form.values.effective_from ?? undefined)}
                   {...form.getInputProps('effective_to')}
                 />
               </Grid.Col>

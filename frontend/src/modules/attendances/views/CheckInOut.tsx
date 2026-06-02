@@ -67,7 +67,8 @@ export default function CheckInOutPage() {
     employee?.work_schedules?.[0];
 
   const { data: todayData, refetch: refetchToday } = useGetTodayAttendance(employee?.id);
-  const todayRecord = todayData?.data;
+  const todayRecord = todayData?.data?.attendance;
+  const todayStatus = todayData?.data;
 
   const hasCheckedIn = !!todayRecord?.check_in_time;
   const hasCheckedOut = !!todayRecord?.check_out_time;
@@ -196,7 +197,19 @@ export default function CheckInOutPage() {
       : t('attendance.checkInOut.notCheckedIn');
   const statusColor = hasCheckedOut ? '#94a3b8' : hasCheckedIn ? '#5eead4' : '#93c5fd';
 
-  const hasFaceRegistered = !!employee?.face_descriptor?.length;
+  const hasFaceRegistered = todayStatus?.has_face_registered ?? !!employee?.face_descriptor?.length;
+  const isCheckInBlocked =
+    !todayStatus?.can_check_in ||
+    !canAct ||
+    !hasFaceRegistered ||
+    !todayStatus?.is_office_ip_allowed;
+  const disableReasonText = todayStatus?.disable_reason_code
+    ? t(`attendance.checkInOut.disableReasons.${todayStatus.disable_reason_code}`, {
+        start: todayStatus.check_in_window?.start_time,
+        end: todayStatus.check_in_window?.end_time,
+        latest: todayStatus.check_in_window?.latest_check_in_time,
+      })
+    : null;
   return (
     <Stack gap="md">
       <PageHeader
@@ -334,14 +347,17 @@ export default function CheckInOutPage() {
                     size="md"
                     radius="xl"
                     leftSection={<IconLogin size={18} />}
-                    disabled={hasCheckedIn || !canAct || isPastWorkEnd || !hasFaceRegistered}
+                    disabled={hasCheckedIn || hasCheckedOut || isCheckInBlocked}
                     onClick={handleCheckIn}
                     style={{
                       background:
-                        hasCheckedIn || isPastWorkEnd
+                        hasCheckedIn || hasCheckedOut || isCheckInBlocked
                           ? 'rgba(255,255,255,0.08)'
                           : 'rgba(255,255,255,0.95)',
-                      color: hasCheckedIn || isPastWorkEnd ? 'rgba(255,255,255,0.3)' : '#3b82f6',
+                      color:
+                        hasCheckedIn || hasCheckedOut || isCheckInBlocked
+                          ? 'rgba(255,255,255,0.3)'
+                          : '#3b82f6',
                       border: 'none',
                       fontWeight: 700,
                     }}
@@ -377,6 +393,16 @@ export default function CheckInOutPage() {
                     {t('attendance.checkInOut.workHoursEnded', {
                       time: minutesToTime(workEnd),
                     })}
+                  </Text>
+                )}
+                {!hasCheckedIn && !hasCheckedOut && disableReasonText && isCheckInBlocked && (
+                  <Text size="xs" ta="center" mt="xs" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                    {disableReasonText}
+                    {todayStatus?.check_in_window?.latest_check_in_time
+                      ? ` ${t('attendance.checkInOut.latestCheckInAt', {
+                          time: todayStatus.check_in_window.latest_check_in_time,
+                        })}`
+                      : ''}
                   </Text>
                 )}
                 {!hasFaceRegistered && (

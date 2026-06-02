@@ -178,6 +178,17 @@ const en = {
       breakTime: 'Break {{start}} - {{end}}',
       tooFarFromOffice: 'Too far from office - move closer to check in',
       workHoursEnded: 'Check-in unavailable - work hours ended at {{time}}',
+      latestCheckInAt: 'Latest check-in time: {{time}}',
+      disableReasons: {
+        face_required: 'You need to register your face before checking in.',
+        office_network_required: 'Check-in is only allowed from the configured office network.',
+        already_checked_in: 'You have already checked in for this shift.',
+        full_leave: 'You are on approved leave for the full working session today.',
+        no_schedule: 'No work schedule is assigned for today.',
+        check_in_not_started: 'Check-in is not available yet. You can start from {{start}}.',
+        check_in_closed: 'The allowed check-in window has ended.',
+        check_in_unavailable: 'Check-in is currently unavailable.',
+      },
       faceNotRegistered: 'You have not registered your face for check-in yet.',
       goToProfile: 'Go to profile to register your face',
       locationNotice:
@@ -574,6 +585,10 @@ const en = {
     officeAddress: 'Address',
     optional: 'optional',
     allowedRadius: 'Radius',
+    checkInCutoff: 'Check-in Window',
+    checkInCutoffLabel: 'Latest allowed check-in after shift start',
+    checkInCutoffDescription:
+      'Example: 30 means employees can only check in within 30 minutes from the valid start of their working session.',
     effectiveRange: 'Effective Period',
     effectiveFrom: 'From',
     effectiveTo: 'To',
@@ -583,6 +598,9 @@ const en = {
       addWorkPolicy: 'ADD WORK POLICY',
       editWorkPolicy: 'EDIT WORK POLICY',
       officeAddressPlaceholder: 'Search office address...',
+      editHint: 'Only the policy end date can be updated here.',
+      editLockedNotice:
+        'If you need different break time, flexibility, or office location, create a new policy and close this one with an end date.',
     },
   },
 
@@ -801,7 +819,10 @@ const en = {
       disabled: 'Disabled',
       noGeoFence: 'No geo-fence',
       ongoing: 'ongoing',
-      activeRange: 'Break: {{break}}  ·  Flex: {{flex}}  ·  {{geo}}',
+      activeRange: 'Break: {{break}}  ·  Flex: {{flex}}  ·  Check-in: {{cutoff}}  ·  {{geo}}',
+      noCheckInCutoff: 'No cutoff',
+      checkInCutoffValue_one: '{{count}} minute after start',
+      checkInCutoffValue_other: '{{count}} minutes after start',
       deleteTitle: 'Delete Work Policy',
       deleteMessage:
         'Are you sure you want to delete the work policy for "{{dateRange}}"? This action cannot be undone.',
@@ -813,6 +834,12 @@ const en = {
       updateSuccess: 'Policy updated',
       createSuccess: 'Policy created',
       saveFailed: 'Save failed',
+      confirmCreateTitle: 'Confirm New Work Policy',
+      confirmCreateMessage:
+        'Are you sure you want to create this work policy? It will apply to future attendance based on its effective period.',
+      confirmUpdateTitle: 'Confirm Work Policy Update',
+      confirmUpdateMessage:
+        'Are you sure you want to end this work policy with the selected effective to date?',
     },
     holidays: {
       title: 'Public Holidays',

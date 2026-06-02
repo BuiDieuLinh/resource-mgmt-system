@@ -178,6 +178,7 @@ model WorkPolicies {
   is_flexible_enabled Boolean @default(false)
   flexible_start      Int?
   flexible_end        Int?
+  check_in_cutoff_minutes Int?
 
   break_start Int?
   break_end   Int?

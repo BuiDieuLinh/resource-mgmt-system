@@ -30,6 +30,7 @@ import { useTranslation } from 'react-i18next';
 interface FaceEnrollmentModalProps {
   opened: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
   employeeId: string;
   employeeName: string;
 }
@@ -69,6 +70,7 @@ const videoConstraints = {
 export function FaceEnrollmentModal({
   opened,
   onClose,
+  onSuccess,
   employeeId,
   employeeName,
 }: FaceEnrollmentModalProps) {
@@ -139,7 +141,6 @@ export function FaceEnrollmentModal({
         return;
       }
 
-      // Create an image element to analyze
       const img = document.createElement('img');
       img.src = imageSrc;
 
@@ -239,6 +240,7 @@ export function FaceEnrollmentModal({
       notify.success(t('employee.faceEnrollment.faceRegistered'), {
         message: t('employee.faceEnrollment.faceRegisteredSuccess'),
       });
+      onSuccess?.();
       handleClose();
     } catch (error: any) {
       const message =

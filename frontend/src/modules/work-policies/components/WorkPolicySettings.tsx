@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Stack, Group, Button, Badge, ActionIcon, Tooltip, Box, Text } from '@mantine/core';
-import { IconPlus, IconEdit, IconTrash, IconShieldCheck } from '@tabler/icons-react';
+import { IconPlus, IconEdit, IconShieldCheck } from '@tabler/icons-react';
 import { notify } from '@/components/Notification';
 import { formatDate } from '@/constant';
 import { SettingRow, SettingsCard, SectionLabel } from '@/components/SettingsUI';
@@ -10,10 +10,9 @@ import { useConfirm } from '@/hooks/useConfirm';
 import { useGetWorkPolicies } from '../api/get-work-policies';
 import { useCreateWorkPolicy } from '../api/create-work-policy';
 import { useUpdateWorkPolicy } from '../api/update-work-policy';
-import { useDeleteWorkPolicy } from '../api/delete-work-policy';
 import { WorkPolicyFormModal } from './WorkPolicyFormModal';
 import { minutesToTime } from '../utils/time';
-import type { IWorkPolicy, IWorkPolicyPayload } from '../types';
+import type { IWorkPolicy, IWorkPolicyPayload, IWorkPolicyUpdatePayload } from '../types';
 import { useTranslation } from 'react-i18next';
 
 function isActive(p: IWorkPolicy) {
@@ -31,40 +30,20 @@ export function WorkPolicySettings() {
   const isLoading = useDelayedLoading(_loading);
   const createMutation = useCreateWorkPolicy();
   const updateMutation = useUpdateWorkPolicy();
-  const deleteMutation = useDeleteWorkPolicy();
   const policies = data?.data ?? [];
   const isEdit = Boolean(editPolicy);
-
   const { confirm, ConfirmComponent } = useConfirm();
 
-  const handleDelete = (id: string, dateRange: string) => {
-    confirm({
-      title: t('settings.workPolicies.deleteTitle'),
-      message: t('settings.workPolicies.deleteMessage', { dateRange }),
-      confirmLabel: t('common.delete'),
-      cancelLabel: t('common.cancel'),
-      type: 'delete',
-      onConfirm: async () => {
-        const notiId = notify.loading(t('settings.workPolicies.deleting'));
-        try {
-          await deleteMutation.mutateAsync(id);
-          notify.success(notiId, { message: t('settings.workPolicies.deleteSuccess') });
-        } catch (e: any) {
-          notify.error(notiId, {
-            message: e?.response?.data?.message || t('settings.workPolicies.deleteFailed'),
-          });
-        }
-      },
-    });
-  };
-
-  const handleSubmit = async (payload: IWorkPolicyPayload, id?: string) => {
+  const submitConfirmed = async (
+    payload: IWorkPolicyPayload | IWorkPolicyUpdatePayload,
+    id?: string,
+  ) => {
     const notiId = notify.loading(
       isEdit ? t('settings.workPolicies.updating') : t('settings.workPolicies.creating'),
     );
     try {
       if (isEdit && id) await updateMutation.mutateAsync({ id, payload });
-      else await createMutation.mutateAsync(payload);
+      else await createMutation.mutateAsync(payload as IWorkPolicyPayload);
       notify.success(notiId, {
         message: isEdit
           ? t('settings.workPolicies.updateSuccess')
@@ -77,6 +56,24 @@ export function WorkPolicySettings() {
         message: e?.response?.data?.message || t('settings.workPolicies.saveFailed'),
       });
     }
+  };
+
+  const handleSubmit = async (
+    payload: IWorkPolicyPayload | IWorkPolicyUpdatePayload,
+    id?: string,
+  ) => {
+    confirm({
+      title: isEdit
+        ? t('settings.workPolicies.confirmUpdateTitle')
+        : t('settings.workPolicies.confirmCreateTitle'),
+      message: isEdit
+        ? t('settings.workPolicies.confirmUpdateMessage')
+        : t('settings.workPolicies.confirmCreateMessage'),
+      confirmLabel: isEdit ? t('common.update') : t('common.save'),
+      cancelLabel: t('common.cancel'),
+      type: 'warning',
+      onConfirm: () => submitConfirmed(payload, id),
+    });
   };
 
   if (isLoading)
@@ -125,6 +122,12 @@ export function WorkPolicySettings() {
             const flexText = p.is_flexible_enabled
               ? `+${p.flexible_start ?? 0} / -${p.flexible_end ?? 0} min`
               : t('settings.workPolicies.disabled');
+            const cutoffText =
+              p.check_in_cutoff_minutes != null
+                ? t('settings.workPolicies.checkInCutoffValue', {
+                    count: p.check_in_cutoff_minutes,
+                  })
+                : t('settings.workPolicies.noCheckInCutoff');
             const geoText =
               p.office_latitude != null && p.office_longitude != null
                 ? `GPS ≤${p.max_distance_meters ?? 100}m`
@@ -140,6 +143,7 @@ export function WorkPolicySettings() {
                 description={t('settings.workPolicies.activeRange', {
                   break: breakText,
                   flex: flexText,
+                  cutoff: cutoffText,
                   geo: geoText,
                 })}
                 noDivider={i === policies.length - 1}
@@ -153,26 +157,15 @@ export function WorkPolicySettings() {
                         size="sm"
                         variant="subtle"
                         color="gray"
+                        disabled={!active}
                         onClick={(e) => {
                           e.stopPropagation();
+                          if (!active) return;
                           setEditPolicy(p);
                           setOpened(true);
                         }}
                       >
                         <IconEdit size={15} />
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label={t('common.delete')} withArrow>
-                      <ActionIcon
-                        size="sm"
-                        variant="subtle"
-                        color="red"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(p.id, dateRange);
-                        }}
-                      >
-                        <IconTrash size={15} />
                       </ActionIcon>
                     </Tooltip>
                   </Group>

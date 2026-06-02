@@ -12,7 +12,8 @@ export function CheckInOutButton() {
   const employee = empData?.data;
 
   const { data: todayData, refetch: refetchToday } = useGetTodayAttendance(employee?.id);
-  const todayRecord = todayData?.data;
+  const todayRecord = todayData?.data?.attendance;
+  const todayStatus = todayData?.data;
 
   const hasCheckedIn = !!todayRecord?.check_in_time;
   const hasCheckedOut = !!todayRecord?.check_out_time;
@@ -89,7 +90,9 @@ export function CheckInOutButton() {
         variant="light"
         color="blue"
         leftSection={<IconLogin size={17} />}
-        disabled={hasCheckedIn || checkInMutation.isPending}
+        disabled={
+          hasCheckedIn || hasCheckedOut || !todayStatus?.can_check_in || checkInMutation.isPending
+        }
         loading={checkInMutation.isPending}
         onClick={handleCheckIn}
       >

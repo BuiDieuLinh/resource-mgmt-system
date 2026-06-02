@@ -1,7 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ResponseHelper } from 'src/common/helpers/response.helper';
-import { CreateWorkPolicyDto } from './dto/work-policy.dto';
+import {
+  CreateWorkPolicyDto,
+  UpdateWorkPolicyDto,
+} from './dto/work-policy.dto';
 
 @Injectable()
 export class WorkPolicyService {
@@ -32,6 +39,7 @@ export class WorkPolicyService {
         is_flexible_enabled: dto.is_flexible_enabled,
         flexible_start: dto.flexible_start ?? null,
         flexible_end: dto.flexible_end ?? null,
+        check_in_cutoff_minutes: dto.check_in_cutoff_minutes ?? null,
         break_start: dto.break_start ?? null,
         break_end: dto.break_end ?? null,
         office_latitude: dto.office_latitude ?? null,
@@ -44,23 +52,34 @@ export class WorkPolicyService {
     return ResponseHelper.success(created, 'Work policy created');
   }
 
-  async update(id: string, dto: CreateWorkPolicyDto) {
+  async update(id: string, dto: UpdateWorkPolicyDto) {
     const existing = await this.prisma.workPolicies.findUnique({
       where: { id },
     });
     if (!existing) throw new NotFoundException(`Policy ${id} not found`);
+
+    const now = new Date();
+    const isActive =
+      existing.effective_from <= now &&
+      (!existing.effective_to || existing.effective_to >= now);
+    if (!isActive) {
+      throw new BadRequestException(
+        `Work policy ${id} is inactive and cannot be updated.`,
+      );
+    }
+
+    if (dto.effective_to) {
+      const effectiveTo = new Date(dto.effective_to);
+      if (effectiveTo < existing.effective_from) {
+        throw new BadRequestException(
+          'effective_to must be greater than or equal to effective_from',
+        );
+      }
+    }
+
     const updated = await this.prisma.workPolicies.update({
       where: { id },
       data: {
-        is_flexible_enabled: dto.is_flexible_enabled,
-        flexible_start: dto.flexible_start ?? null,
-        flexible_end: dto.flexible_end ?? null,
-        break_start: dto.break_start ?? null,
-        break_end: dto.break_end ?? null,
-        office_latitude: dto.office_latitude ?? null,
-        office_longitude: dto.office_longitude ?? null,
-        max_distance_meters: dto.max_distance_meters ?? null,
-        effective_from: new Date(dto.effective_from),
         effective_to: dto.effective_to ? new Date(dto.effective_to) : null,
       },
     });
@@ -68,11 +87,8 @@ export class WorkPolicyService {
   }
 
   async remove(id: string) {
-    const existing = await this.prisma.workPolicies.findUnique({
-      where: { id },
-    });
-    if (!existing) throw new NotFoundException(`Policy ${id} not found`);
-    await this.prisma.workPolicies.delete({ where: { id } });
-    return ResponseHelper.success(null, 'Work policy deleted');
+    throw new BadRequestException(
+      `Work policy ${id} cannot be deleted. Set effective_to to end the policy and create a new one for future changes.`,
+    );
   }
 }

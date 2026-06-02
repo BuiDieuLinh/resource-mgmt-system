@@ -244,13 +244,464 @@ export class AttendancesService {
     };
   }
 
+  private formatDateOnly(date: Date) {
+    return date.toISOString().slice(0, 10);
+  }
+
+  private addUtcDays(date: Date, days: number) {
+    const next = new Date(date);
+    next.setUTCDate(next.getUTCDate() + days);
+    return next;
+  }
+
+  private getScheduleDayOfWeek(workDate: Date) {
+    const day = workDate.getUTCDay();
+    return day === 0 ? 6 : day - 1;
+  }
+
+  private isOvernightSchedule(schedule: {
+    start_time: number;
+    end_time: number;
+  }) {
+    return schedule.end_time <= schedule.start_time;
+  }
+
+  private normalizeMinuteForSchedule(
+    minute: number,
+    schedule: { start_time: number; end_time: number },
+    treatAsNextDay = false,
+  ) {
+    if (!this.isOvernightSchedule(schedule)) {
+      return minute;
+    }
+
+    if (treatAsNextDay || minute < schedule.start_time) {
+      return minute + 1440;
+    }
+
+    return minute;
+  }
+
+  private getNormalizedScheduleEnd(schedule: {
+    start_time: number;
+    end_time: number;
+  }) {
+    return this.isOvernightSchedule(schedule)
+      ? schedule.end_time + 1440
+      : schedule.end_time;
+  }
+
+  private formatScheduleMinute(minute: number) {
+    const normalized = ((minute % 1440) + 1440) % 1440;
+    return minutesToTime(normalized);
+  }
+
+  private mapTodayStatusReasonCode(reason: string | null) {
+    if (!reason) return null;
+    if (reason.includes('Already checked in today')) {
+      return 'already_checked_in';
+    }
+    if (reason.includes('approved leave for the full working session')) {
+      return 'full_leave';
+    }
+    if (reason.includes('No work schedule found for employee today')) {
+      return 'no_schedule';
+    }
+    if (reason.includes('Check-in is available from')) {
+      return 'check_in_not_started';
+    }
+    if (reason.includes('Check-in is not allowed after')) {
+      return 'check_in_closed';
+    }
+    return 'check_in_unavailable';
+  }
+
+  private normalizeAttendanceMinute(
+    minute: number,
+    attendance: { scheduled_start: number; scheduled_end: number },
+  ) {
+    if (attendance.scheduled_end <= 1440) {
+      return minute;
+    }
+
+    if (minute < attendance.scheduled_start % 1440) {
+      return minute + 1440;
+    }
+
+    return minute;
+  }
+
+  private async resolveScheduleContext(employeeId: string, timestamp: Date) {
+    const localWorkDate = toLocalWorkDate(timestamp);
+    const previousWorkDate = this.addUtcDays(localWorkDate, -1);
+    const localMinutes = dateToMinutes(timestamp);
+
+    const [todaySchedule, previousSchedule] = await this.prisma.$transaction([
+      this.prisma.employeeWorkSchedules.findFirst({
+        where: {
+          employee_id: employeeId,
+          day_of_week: this.getScheduleDayOfWeek(localWorkDate),
+        },
+      }),
+      this.prisma.employeeWorkSchedules.findFirst({
+        where: {
+          employee_id: employeeId,
+          day_of_week: this.getScheduleDayOfWeek(previousWorkDate),
+        },
+      }),
+    ]);
+
+    if (previousSchedule && this.isOvernightSchedule(previousSchedule)) {
+      const normalizedMinutes = this.normalizeMinuteForSchedule(
+        localMinutes,
+        previousSchedule,
+        true,
+      );
+      if (
+        normalizedMinutes <= this.getNormalizedScheduleEnd(previousSchedule)
+      ) {
+        return {
+          workDate: previousWorkDate,
+          schedule: previousSchedule,
+          normalizedMinutes,
+          isContinuationOfPreviousShift: true,
+        };
+      }
+    }
+
+    if (todaySchedule) {
+      return {
+        workDate: localWorkDate,
+        schedule: todaySchedule,
+        normalizedMinutes: localMinutes,
+        isContinuationOfPreviousShift: false,
+      };
+    }
+
+    throw new BadRequestException('No work schedule found for employee today');
+  }
+
+  private buildScheduledSegments(
+    schedule: { start_time: number; end_time: number },
+    policy?: { break_start?: number | null; break_end?: number | null } | null,
+  ) {
+    const segments: Array<{ start: number; end: number }> = [];
+    const normalizedEnd = this.getNormalizedScheduleEnd(schedule);
+    const breakStart = policy?.break_start ?? null;
+    const breakEnd = policy?.break_end ?? null;
+    const normalizedBreakStart =
+      breakStart != null
+        ? this.normalizeMinuteForSchedule(breakStart, schedule)
+        : null;
+    const normalizedBreakEnd =
+      breakEnd != null
+        ? this.normalizeMinuteForSchedule(
+            breakEnd,
+            schedule,
+            breakStart != null && breakEnd != null && breakEnd <= breakStart,
+          )
+        : null;
+
+    if (
+      normalizedBreakStart != null &&
+      normalizedBreakEnd != null &&
+      normalizedBreakStart > schedule.start_time &&
+      normalizedBreakEnd < normalizedEnd &&
+      normalizedBreakEnd > normalizedBreakStart
+    ) {
+      segments.push({ start: schedule.start_time, end: normalizedBreakStart });
+      segments.push({ start: normalizedBreakEnd, end: normalizedEnd });
+      return segments;
+    }
+
+    segments.push({ start: schedule.start_time, end: normalizedEnd });
+    return segments;
+  }
+
+  private subtractIntervalFromSegments(
+    segments: Array<{ start: number; end: number }>,
+    interval?: { start: number; end: number } | null,
+  ) {
+    if (!interval || interval.end <= interval.start) {
+      return segments;
+    }
+
+    const nextSegments: Array<{ start: number; end: number }> = [];
+    for (const segment of segments) {
+      if (interval.end <= segment.start || interval.start >= segment.end) {
+        nextSegments.push(segment);
+        continue;
+      }
+
+      if (interval.start > segment.start) {
+        nextSegments.push({ start: segment.start, end: interval.start });
+      }
+      if (interval.end < segment.end) {
+        nextSegments.push({ start: interval.end, end: segment.end });
+      }
+    }
+
+    return nextSegments.filter((segment) => segment.end > segment.start);
+  }
+
+  private resolveLeaveIntervalForWorkDate(
+    leave: {
+      start_date: Date;
+      end_date: Date;
+      leave_start_minutes?: number | null;
+      leave_end_minutes?: number | null;
+    } | null,
+    workDate: Date,
+    schedule: { start_time: number; end_time: number },
+  ) {
+    if (!leave) return null;
+
+    const workDateKey = this.formatDateOnly(workDate);
+    const startDateKey = this.formatDateOnly(leave.start_date);
+    const endDateKey = this.formatDateOnly(leave.end_date);
+    const nextDateKey = this.formatDateOnly(this.addUtcDays(workDate, 1));
+    const normalizedScheduleEnd = this.getNormalizedScheduleEnd(schedule);
+
+    let start = schedule.start_time;
+    let end = normalizedScheduleEnd;
+
+    if (startDateKey === endDateKey && workDateKey === startDateKey) {
+      start = leave.leave_start_minutes ?? schedule.start_time;
+      end =
+        leave.leave_end_minutes != null
+          ? this.normalizeMinuteForSchedule(
+              leave.leave_end_minutes,
+              schedule,
+              this.isOvernightSchedule(schedule) &&
+                leave.leave_end_minutes <=
+                  (leave.leave_start_minutes ?? schedule.start_time),
+            )
+          : normalizedScheduleEnd;
+    } else if (
+      workDateKey === startDateKey &&
+      leave.leave_start_minutes != null
+    ) {
+      start = leave.leave_start_minutes;
+    } else if (
+      this.isOvernightSchedule(schedule) &&
+      nextDateKey === startDateKey &&
+      nextDateKey === endDateKey
+    ) {
+      start =
+        leave.leave_start_minutes != null
+          ? this.normalizeMinuteForSchedule(
+              leave.leave_start_minutes,
+              schedule,
+              true,
+            )
+          : schedule.start_time;
+      end =
+        leave.leave_end_minutes != null
+          ? this.normalizeMinuteForSchedule(
+              leave.leave_end_minutes,
+              schedule,
+              true,
+            )
+          : normalizedScheduleEnd;
+    } else if (workDateKey === endDateKey && leave.leave_end_minutes != null) {
+      end = this.normalizeMinuteForSchedule(
+        leave.leave_end_minutes,
+        schedule,
+        this.isOvernightSchedule(schedule),
+      );
+    } else if (
+      this.isOvernightSchedule(schedule) &&
+      nextDateKey === endDateKey
+    ) {
+      end = this.normalizeMinuteForSchedule(
+        leave.leave_end_minutes ?? schedule.end_time,
+        schedule,
+        true,
+      );
+    }
+
+    return {
+      start: Math.max(schedule.start_time, start),
+      end: Math.min(normalizedScheduleEnd, end),
+    };
+  }
+
+  private async resolveDailyCheckInWindow(
+    employeeId: string,
+    workDate: Date,
+    schedule: { start_time: number; end_time: number },
+    policy?: WorkPolicies | null,
+  ) {
+    const leave = await this.prisma.leaveRequests.findFirst({
+      where: {
+        employee_id: employeeId,
+        status: LeaveStatus.approved,
+        start_date: { lte: workDate },
+        end_date: { gte: workDate },
+      },
+      select: {
+        start_date: true,
+        end_date: true,
+        leave_start_minutes: true,
+        leave_end_minutes: true,
+      },
+      orderBy: { created_at: 'desc' },
+    });
+
+    const scheduledSegments = this.buildScheduledSegments(schedule, policy);
+    const leaveInterval = this.resolveLeaveIntervalForWorkDate(
+      leave,
+      workDate,
+      schedule,
+    );
+    const remainingSegments = this.subtractIntervalFromSegments(
+      scheduledSegments,
+      leaveInterval,
+    );
+
+    if (remainingSegments.length === 0) {
+      throw new BadRequestException(
+        'Check-in is not allowed because you are on approved leave for the full working session today',
+      );
+    }
+
+    const firstSegment = remainingSegments[0];
+    const lastSegment = remainingSegments[remainingSegments.length - 1];
+    const configuredCutoff = policy?.check_in_cutoff_minutes ?? null;
+    const latestCheckInMinutes =
+      configuredCutoff != null
+        ? Math.min(firstSegment.start + configuredCutoff, firstSegment.end)
+        : lastSegment.end;
+
+    return {
+      effectiveStart: firstSegment.start,
+      effectiveEnd: lastSegment.end,
+      latestCheckInMinutes,
+      shiftedByLeave: firstSegment.start > schedule.start_time,
+    };
+  }
+
+  async getTodayStatus(employeeId: string, req: Request) {
+    const timestamp = new Date();
+    const employee = await this.prisma.employees.findUnique({
+      where: { id: employeeId },
+      select: { id: true, face_descriptor: true },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    let scheduleContext: Awaited<
+      ReturnType<AttendancesService['resolveScheduleContext']>
+    > | null = null;
+    let checkInWindow: Awaited<
+      ReturnType<AttendancesService['resolveDailyCheckInWindow']>
+    > | null = null;
+    let record: any = null;
+    let canCheckIn = false;
+    let reason: string | null = null;
+
+    try {
+      scheduleContext = await this.resolveScheduleContext(
+        employeeId,
+        timestamp,
+      );
+      record = await this.prisma.attendances.findUnique({
+        where: {
+          employee_id_work_date: {
+            employee_id: employeeId,
+            work_date: scheduleContext.workDate,
+          },
+        },
+      });
+
+      const policyRes = await this.workPolicyService.getActive(timestamp);
+      const policy = policyRes.data;
+      checkInWindow = await this.resolveDailyCheckInWindow(
+        employeeId,
+        scheduleContext.workDate,
+        scheduleContext.schedule,
+        policy,
+      );
+
+      this.attendanceValidationService.validateCheckInEligibility({
+        normalizedCurrentMinutes: scheduleContext.normalizedMinutes,
+        effectiveStart: checkInWindow.effectiveStart,
+        latestCheckInMinutes: checkInWindow.latestCheckInMinutes,
+        shiftedByLeave: checkInWindow.shiftedByLeave,
+        hasCheckedIn: !!record?.check_in_time,
+      });
+
+      canCheckIn = true;
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        reason = error.message;
+      } else {
+        throw error;
+      }
+    }
+
+    const forwarded = req.headers['x-forwarded-for'];
+    let ip = Array.isArray(forwarded)
+      ? forwarded[0]
+      : forwarded?.split(',')[0] || req.socket.remoteAddress;
+    ip = ip?.replace('::ffff:', '');
+
+    const configuredOfficeIps = [process.env.OFFICIAL_IP, process.env.OFFICE_IP]
+      .flatMap((value) => (value ?? '').split(','))
+      .map((value) => value.trim())
+      .filter(Boolean);
+    const officeIpCheckSkipped = configuredOfficeIps.length === 0;
+    const clientIp = ip ?? '';
+    const isOfficeIpAllowed =
+      officeIpCheckSkipped ||
+      [...configuredOfficeIps, '127.0.0.1', '::1'].includes(clientIp);
+    const resolvedDisableReasonCode = !employee.face_descriptor?.length
+      ? 'face_required'
+      : !isOfficeIpAllowed
+        ? 'office_network_required'
+        : this.mapTodayStatusReasonCode(reason);
+
+    return ResponseHelper.success({
+      attendance: record,
+      can_check_in:
+        canCheckIn && !!employee.face_descriptor?.length && isOfficeIpAllowed,
+      disable_reason_code: resolvedDisableReasonCode,
+      check_in_window: checkInWindow
+        ? {
+            work_date: this.formatDateOnly(scheduleContext!.workDate),
+            start_time: this.formatScheduleMinute(checkInWindow.effectiveStart),
+            end_time: this.formatScheduleMinute(checkInWindow.effectiveEnd),
+            latest_check_in_time: this.formatScheduleMinute(
+              checkInWindow.latestCheckInMinutes,
+            ),
+          }
+        : null,
+      has_face_registered: !!employee.face_descriptor?.length,
+      is_office_ip_allowed: isOfficeIpAllowed,
+      office_ip_check_skipped: officeIpCheckSkipped,
+    });
+  }
+
   async checkInWithFace(
     dto: CheckInFaceDto,
     selfie: Express.Multer.File,
     req: Request,
   ) {
     const timestamp = dto.timestamp ? new Date(dto.timestamp) : new Date();
-    const workDate = toLocalWorkDate(timestamp);
+    const scheduleContext = await this.resolveScheduleContext(
+      dto.employee_id,
+      timestamp,
+    );
+    const {
+      workDate,
+      schedule,
+      normalizedMinutes: checkInMinutes,
+    } = scheduleContext;
 
     const employee = await this.prisma.employees.findUnique({
       where: { id: dto.employee_id },
@@ -261,27 +712,14 @@ export class AttendancesService {
       throw new NotFoundException('Employee not found');
     }
 
-    const dayOfWeek = workDate.getDay() === 0 ? 6 : workDate.getDay() - 1;
-    const schedule = await this.prisma.employeeWorkSchedules.findFirst({
-      where: {
-        employee_id: dto.employee_id,
-        day_of_week: dayOfWeek,
-      },
-    });
-    if (!schedule)
-      throw new BadRequestException(
-        'No work schedule found for employee today',
-      );
-
-    const checkInMinutes = dateToMinutes(timestamp);
-    if (checkInMinutes > schedule.end_time) {
-      throw new BadRequestException(
-        `Check-in not allowed after work hours end (${minutesToTime(schedule.end_time)} PM). Current time: ${minutesToTime(checkInMinutes)} PM.`,
-      );
-    }
-
     const policyRes = await this.workPolicyService.getActive(timestamp);
     const policy = policyRes.data;
+    const checkInWindow = await this.resolveDailyCheckInWindow(
+      dto.employee_id,
+      workDate,
+      schedule,
+      policy,
+    );
 
     this.attendanceValidationService.validateGps(
       policy as WorkPolicies,
@@ -297,9 +735,13 @@ export class AttendancesService {
         },
       },
     });
-    if (existing?.check_in_time) {
-      throw new BadRequestException('Already checked in today');
-    }
+    this.attendanceValidationService.validateCheckInEligibility({
+      normalizedCurrentMinutes: checkInMinutes,
+      effectiveStart: checkInWindow.effectiveStart,
+      latestCheckInMinutes: checkInWindow.latestCheckInMinutes,
+      shiftedByLeave: checkInWindow.shiftedByLeave,
+      hasCheckedIn: !!existing?.check_in_time,
+    });
 
     const faceResult = this.faceVerificationService.verify(
       employee.face_descriptor,
@@ -327,8 +769,8 @@ export class AttendancesService {
       create: {
         employee_id: dto.employee_id,
         work_date: workDate,
-        scheduled_start: schedule.start_time,
-        scheduled_end: schedule.end_time,
+        scheduled_start: checkInWindow.effectiveStart,
+        scheduled_end: checkInWindow.effectiveEnd,
         break_start: policy?.break_start ?? null,
         break_end: policy?.break_end ?? null,
         flexible_start: policy?.is_flexible_enabled
@@ -342,6 +784,8 @@ export class AttendancesService {
       },
       update: {
         check_in_time: timestamp,
+        scheduled_start: checkInWindow.effectiveStart,
+        scheduled_end: checkInWindow.effectiveEnd,
       },
     });
 
@@ -359,7 +803,7 @@ export class AttendancesService {
       },
     });
 
-    const late = Math.max(0, checkInMinutes - schedule.start_time);
+    const late = Math.max(0, checkInMinutes - checkInWindow.effectiveStart);
 
     await this.prisma.attendances.update({
       where: { id: attendance.id },
@@ -385,7 +829,11 @@ export class AttendancesService {
     req: Request,
   ) {
     const timestamp = dto.timestamp ? new Date(dto.timestamp) : new Date();
-    const workDate = toLocalWorkDate(timestamp);
+    const scheduleContext = await this.resolveScheduleContext(
+      dto.employee_id,
+      timestamp,
+    );
+    const workDate = scheduleContext.workDate;
 
     const attendance = await this.prisma.attendances.findUnique({
       where: {
@@ -440,8 +888,14 @@ export class AttendancesService {
       },
     });
 
-    const checkInMin = dateToMinutes(attendance.check_in_time);
-    const checkOutMin = dateToMinutes(timestamp);
+    const checkInMin = this.normalizeAttendanceMinute(
+      dateToMinutes(attendance.check_in_time),
+      attendance,
+    );
+    const checkOutMin = this.normalizeAttendanceMinute(
+      dateToMinutes(timestamp),
+      attendance,
+    );
     const gross = Math.max(0, checkOutMin - checkInMin);
 
     let breakDeduction = 0;
@@ -481,27 +935,24 @@ export class AttendancesService {
 
   async checkIn(dto: CheckInDto, req: Request) {
     const timestamp = dto.timestamp ? new Date(dto.timestamp) : new Date();
-    const workDate = toLocalWorkDate(timestamp);
-
-    const dayOfWeek = workDate.getDay() === 0 ? 6 : workDate.getDay() - 1;
-    const schedule = await this.prisma.employeeWorkSchedules.findFirst({
-      where: { employee_id: dto.employee_id, day_of_week: dayOfWeek },
-    });
-    if (!schedule)
-      throw new BadRequestException(
-        'No work schedule found for employee today',
-      );
-
-    const checkInMinutes = dateToMinutes(timestamp);
-    // Temporarily allow check-in after scheduled work hours.
-    // if (checkInMinutes > schedule.end_time) {
-    //   throw new BadRequestException(
-    //     `Check-in not allowed after work hours end (${schedule.end_time} min). Current time: ${checkInMinutes} min.`,
-    //   );
-    // }
+    const scheduleContext = await this.resolveScheduleContext(
+      dto.employee_id,
+      timestamp,
+    );
+    const {
+      workDate,
+      schedule,
+      normalizedMinutes: checkInMinutes,
+    } = scheduleContext;
 
     const policyRes = await this.workPolicyService.getActive(timestamp);
     const policy = policyRes.data;
+    const checkInWindow = await this.resolveDailyCheckInWindow(
+      dto.employee_id,
+      workDate,
+      schedule,
+      policy,
+    );
 
     this.attendanceValidationService.validateGps(
       policy as WorkPolicies,
@@ -517,9 +968,13 @@ export class AttendancesService {
         },
       },
     });
-    if (existing?.check_in_time) {
-      throw new BadRequestException('Already checked in today');
-    }
+    this.attendanceValidationService.validateCheckInEligibility({
+      normalizedCurrentMinutes: checkInMinutes,
+      effectiveStart: checkInWindow.effectiveStart,
+      latestCheckInMinutes: checkInWindow.latestCheckInMinutes,
+      shiftedByLeave: checkInWindow.shiftedByLeave,
+      hasCheckedIn: !!existing?.check_in_time,
+    });
 
     const deviceInfo = this.deviceInfoService.extract(req);
 
@@ -535,8 +990,8 @@ export class AttendancesService {
       create: {
         employee_id: dto.employee_id,
         work_date: workDate,
-        scheduled_start: schedule.start_time,
-        scheduled_end: schedule.end_time,
+        scheduled_start: checkInWindow.effectiveStart,
+        scheduled_end: checkInWindow.effectiveEnd,
         break_start: policy?.break_start ?? null,
         break_end: policy?.break_end ?? null,
         flexible_start: isFlexibleEnabled ? policy?.flexible_start : null,
@@ -546,6 +1001,8 @@ export class AttendancesService {
       },
       update: {
         check_in_time: timestamp,
+        scheduled_start: checkInWindow.effectiveStart,
+        scheduled_end: checkInWindow.effectiveEnd,
         flexible_start: isFlexibleEnabled ? policy?.flexible_start : null,
         flexible_end: isFlexibleEnabled ? policy?.flexible_end : null,
       },
@@ -563,7 +1020,7 @@ export class AttendancesService {
       },
     });
 
-    const late = Math.max(0, checkInMinutes - schedule.start_time);
+    const late = Math.max(0, checkInMinutes - checkInWindow.effectiveStart);
 
     await this.prisma.attendances.update({
       where: { id: attendance.id },
@@ -578,7 +1035,11 @@ export class AttendancesService {
 
   async checkOut(dto: CheckOutDto, req: Request) {
     const timestamp = dto.timestamp ? new Date(dto.timestamp) : new Date();
-    const workDate = toLocalWorkDate(timestamp);
+    const scheduleContext = await this.resolveScheduleContext(
+      dto.employee_id,
+      timestamp,
+    );
+    const workDate = scheduleContext.workDate;
 
     const attendance = await this.prisma.attendances.findUnique({
       where: {
@@ -608,8 +1069,14 @@ export class AttendancesService {
       },
     });
 
-    const checkInMin = dateToMinutes(attendance.check_in_time);
-    const checkOutMin = dateToMinutes(timestamp);
+    const checkInMin = this.normalizeAttendanceMinute(
+      dateToMinutes(attendance.check_in_time),
+      attendance,
+    );
+    const checkOutMin = this.normalizeAttendanceMinute(
+      dateToMinutes(timestamp),
+      attendance,
+    );
     const gross = Math.max(0, checkOutMin - checkInMin);
 
     let breakDeduction = 0;

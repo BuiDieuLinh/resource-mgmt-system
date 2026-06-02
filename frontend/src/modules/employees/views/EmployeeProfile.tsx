@@ -351,14 +351,16 @@ export default function EmployeeProfile() {
                         {hasFaceRegistered ? t('employee.registered') : t('employee.notRegistered')}
                       </Text>
                     </div>
-                    <Button
-                      size="xs"
-                      variant={hasFaceRegistered ? 'light' : 'filled'}
-                      leftSection={<IconCamera size={14} />}
-                      onClick={() => setFaceEnrollmentOpened(true)}
-                    >
-                      {hasFaceRegistered ? t('common.update') : t('employee.register')}
-                    </Button>
+                    {!hasFaceRegistered && (
+                      <Button
+                        size="xs"
+                        variant="filled"
+                        leftSection={<IconCamera size={14} />}
+                        onClick={() => setFaceEnrollmentOpened(true)}
+                      >
+                        {t('employee.register')}
+                      </Button>
+                    )}
                   </Group>
                 </Stack>
               </>
@@ -731,6 +733,7 @@ export default function EmployeeProfile() {
         <FaceEnrollmentModal
           opened={faceEnrollmentOpened}
           onClose={() => setFaceEnrollmentOpened(false)}
+          onSuccess={() => window.location.reload()}
           employeeId={employee.id}
           employeeName={employee.full_name}
         />

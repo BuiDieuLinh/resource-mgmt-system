@@ -130,10 +130,15 @@ export class AlertsService {
   async checkHighTurnoverAlert(): Promise<void> {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
     const terminations = await this.prisma.employees.count({
       where: {
         status: 'inactive',
+        terminated_at: {
+          gte: monthStart,
+          lt: nextMonthStart,
+        },
       },
     });
 
@@ -385,7 +390,7 @@ export class AlertsService {
       await this.prisma.notifications.create({
         data: {
           user_id: employeeId,
-          type: 'timesheet_approved',
+          type: 'eval_deadline_reminder',
           title: alertData.title,
           body: alertData.message,
           is_read: false,

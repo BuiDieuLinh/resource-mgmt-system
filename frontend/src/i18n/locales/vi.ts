@@ -178,6 +178,17 @@ const vi = {
       breakTime: 'Nghỉ {{start}} - {{end}}',
       tooFarFromOffice: 'Bạn đang ở quá xa văn phòng, hãy di chuyển gần hơn để check in',
       workHoursEnded: 'Không thể check in, giờ làm đã kết thúc lúc {{time}}',
+      latestCheckInAt: 'Giờ check in muộn nhất: {{time}}',
+      disableReasons: {
+        face_required: 'Bạn cần đăng ký khuôn mặt trước khi check in.',
+        office_network_required: 'Chỉ được check in khi đang ở mạng văn phòng đã cấu hình.',
+        already_checked_in: 'Bạn đã check in cho ca làm việc này rồi.',
+        full_leave: 'Hôm nay bạn đang nghỉ phép cho toàn bộ phiên làm việc.',
+        no_schedule: 'Hôm nay chưa có lịch làm việc được gán.',
+        check_in_not_started: 'Chưa tới giờ được check in. Bạn có thể bắt đầu từ {{start}}.',
+        check_in_closed: 'Đã quá thời gian cho phép check in.',
+        check_in_unavailable: 'Hiện tại chưa thể check in.',
+      },
       faceNotRegistered: 'Bạn chưa đăng ký khuôn mặt để check in.',
       goToProfile: 'Đi đến hồ sơ để đăng ký khuôn mặt',
       locationNotice:
@@ -618,6 +629,10 @@ const vi = {
     officeAddress: 'Địa chỉ',
     optional: 'không bắt buộc',
     allowedRadius: 'Bán kính',
+    checkInCutoff: 'Khung giờ chấm công',
+    checkInCutoffLabel: 'Thời gian tối đa được chấm công sau giờ bắt đầu ca',
+    checkInCutoffDescription:
+      'Ví dụ: 30 nghĩa là chỉ được chấm công trong vòng 30 phút kể từ lúc bắt đầu phiên làm việc hợp lệ.',
     effectiveRange: 'Thời gian áp dụng',
     effectiveFrom: 'Từ ngày',
     effectiveTo: 'Đến ngày',
@@ -627,6 +642,9 @@ const vi = {
       addWorkPolicy: 'THÊM CHÍNH SÁCH LÀM VIỆC',
       editWorkPolicy: 'CHỈNH SỬA CHÍNH SÁCH LÀM VIỆC',
       officeAddressPlaceholder: 'Tìm địa chỉ văn phòng...',
+      editHint: 'Chỉ được cập nhật ngày kết thúc của chính sách tại đây.',
+      editLockedNotice:
+        'Nếu cần đổi giờ nghỉ, khung linh hoạt hoặc vị trí văn phòng, hãy tạo chính sách mới và kết thúc chính sách hiện tại bằng effective_to.',
     },
   },
   performance: {
@@ -846,7 +864,9 @@ const vi = {
       disabled: 'Tắt',
       noGeoFence: 'Không giới hạn GPS',
       ongoing: 'đang áp dụng',
-      activeRange: 'Nghỉ: {{break}}  ·  Linh hoạt: {{flex}}  ·  {{geo}}',
+      activeRange: 'Nghỉ: {{break}}  ·  Linh hoạt: {{flex}}  ·  Chấm công: {{cutoff}}  ·  {{geo}}',
+      noCheckInCutoff: 'Không giới hạn',
+      checkInCutoffValue: '{{count}} phút sau giờ bắt đầu',
       deleteTitle: 'Xóa chính sách làm việc',
       deleteMessage:
         'Bạn có chắc muốn xóa chính sách làm việc cho giai đoạn "{{dateRange}}"? Hành động này không thể hoàn tác.',
@@ -858,6 +878,12 @@ const vi = {
       updateSuccess: 'Đã cập nhật chính sách',
       createSuccess: 'Đã tạo chính sách',
       saveFailed: 'Lưu thất bại',
+      confirmCreateTitle: 'Xác nhận tạo chính sách làm việc',
+      confirmCreateMessage:
+        'Bạn có chắc muốn tạo chính sách làm việc này không? Chính sách sẽ được áp dụng cho dữ liệu chấm công trong giai đoạn hiệu lực.',
+      confirmUpdateTitle: 'Xác nhận cập nhật chính sách làm việc',
+      confirmUpdateMessage:
+        'Bạn có chắc muốn kết thúc chính sách làm việc này theo ngày hiệu lực kết thúc đã chọn không?',
     },
     holidays: {
       title: 'Ngày nghỉ lễ',

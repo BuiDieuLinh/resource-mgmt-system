@@ -1,10 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import { URL_API_WORK_POLICIES } from '@/constant/config';
-import type { IWorkPolicyPayload } from '../types';
+import type { IWorkPolicyUpdatePayload } from '../types';
 import { workPoliciesKeys } from './keys';
 
-const updateWorkPolicy = async ({ id, payload }: { id: string; payload: IWorkPolicyPayload }) => {
+const updateWorkPolicy = async ({
+  id,
+  payload,
+}: {
+  id: string;
+  payload: IWorkPolicyUpdatePayload;
+}) => {
   const res = await apiClient.patch(`${URL_API_WORK_POLICIES}/${id}`, payload);
   return res.data;
 };
