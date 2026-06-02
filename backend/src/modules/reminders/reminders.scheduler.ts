@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { RemindersService } from './reminders.service';
 
 @Injectable()
@@ -25,7 +25,9 @@ export class RemindersScheduler {
   /**
    * Every 30 minutes — process pending logs and dispatch notifications
    */
-  @Cron('30 * * * *', { timeZone: process.env.APP_TIMEZONE })
+  @Cron(CronExpression.EVERY_30_MINUTES, {
+    timeZone: process.env.APP_TIMEZONE,
+  })
   async processPendingReminders() {
     this.logger.log('[Reminder] Processing pending reminder logs...');
     try {

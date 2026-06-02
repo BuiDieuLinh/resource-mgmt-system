@@ -25,6 +25,7 @@ import { notify } from '@/components/Notification';
 import { loadFaceApiModels, analyzeFaceFrame, averageFaceDescriptors } from '@/utils/face-api.util';
 import { PRIMARY_COLOR } from '@/theme';
 import { useUpdateRegisteredFaceDescriptor } from '../api/update-face-descriptor';
+import { useTranslation } from 'react-i18next';
 
 interface FaceEnrollmentModalProps {
   opened: boolean;
@@ -34,26 +35,26 @@ interface FaceEnrollmentModalProps {
 }
 
 type EnrollmentPose = {
-  label: string;
-  hint: string;
-  instruction: string;
+  labelKey: string;
+  hintKey: string;
+  instructionKey: string;
 };
 
 const ENROLLMENT_POSES: EnrollmentPose[] = [
   {
-    label: 'Photo 1: Front view',
-    hint: 'Keep your face centered and look directly at the camera.',
-    instruction: 'Look straight at the camera',
+    labelKey: 'employee.faceEnrollment.photo1Label',
+    hintKey: 'employee.faceEnrollment.photo1Hint',
+    instructionKey: 'employee.faceEnrollment.photo1Instruction',
   },
   {
-    label: 'Photo 2: Left side',
-    hint: 'Turn your face slightly to the left, about 10-15 degrees. Keep both eyes visible.',
-    instruction: 'Turn your face slightly left',
+    labelKey: 'employee.faceEnrollment.photo2Label',
+    hintKey: 'employee.faceEnrollment.photo2Hint',
+    instructionKey: 'employee.faceEnrollment.photo2Instruction',
   },
   {
-    label: 'Photo 3: Right side',
-    hint: 'Turn your face slightly to the right, about 10-15 degrees. Keep both eyes visible.',
-    instruction: 'Turn your face slightly right',
+    labelKey: 'employee.faceEnrollment.photo3Label',
+    hintKey: 'employee.faceEnrollment.photo3Hint',
+    instructionKey: 'employee.faceEnrollment.photo3Instruction',
   },
 ];
 
@@ -71,6 +72,7 @@ export function FaceEnrollmentModal({
   employeeId,
   employeeName,
 }: FaceEnrollmentModalProps) {
+  const { t } = useTranslation();
   const updateRegisteredFaceDescriptor = useUpdateRegisteredFaceDescriptor();
   const [loading, setLoading] = useState(false);
   const [modelsLoading, setModelsLoading] = useState(true);
@@ -101,8 +103,8 @@ export function FaceEnrollmentModal({
       await loadFaceApiModels();
       setModelsLoading(false);
     } catch (error: any) {
-      notify.error('Failed to load face recognition models', {
-        message: error.message || 'Please try again.',
+      notify.error(t('employee.faceEnrollment.loadModelsFailed'), {
+        message: error.message || t('common.tryAgain'),
       });
       setModelsLoading(false);
       handleClose();
@@ -130,7 +132,9 @@ export function FaceEnrollmentModal({
     try {
       const imageSrc = webcamRef.current.getScreenshot();
       if (!imageSrc) {
-        notify.error('Failed to capture image', { message: 'Please try again.' });
+        notify.error(t('employee.faceEnrollment.captureFailed'), {
+          message: t('common.tryAgain'),
+        });
         setCapturing(false);
         return;
       }
@@ -147,23 +151,25 @@ export function FaceEnrollmentModal({
 
       if (!analysis) {
         setValidationStatus('error');
-        setValidationMessage(
-          'No face detected. Please ensure your face is clearly visible and try again.',
-        );
+        setValidationMessage(t('employee.faceEnrollment.noFaceDetected'));
         setCapturing(false);
         return;
       }
 
       if (analysis.faceRatio < MIN_FACE_RATIO) {
         setValidationStatus('error');
-        setValidationMessage('Face is too small. Please move closer to the camera and try again.');
+        setValidationMessage(t('employee.faceEnrollment.faceTooSmall'));
         setCapturing(false);
         return;
       }
 
       const pose = ENROLLMENT_POSES[activePoseIndex];
       setValidationStatus('success');
-      setValidationMessage(`Captured: ${pose.label}`);
+      setValidationMessage(
+        t('employee.faceEnrollment.capturedPose', {
+          pose: t(pose.labelKey),
+        }),
+      );
 
       setCapturedImages((current) => [...current, imageSrc]);
       setCapturedDescriptors((current) => {
@@ -174,7 +180,7 @@ export function FaceEnrollmentModal({
           if (averageDescriptor) {
             setFaceDescriptor(averageDescriptor);
             setValidationStatus('success');
-            setValidationMessage('All photos captured! Face data is ready to save.');
+            setValidationMessage(t('employee.faceEnrollment.readyToSave'));
           }
         } else {
           setActivePoseIndex(next.length);
@@ -183,11 +189,11 @@ export function FaceEnrollmentModal({
         return next;
       });
     } catch (error: any) {
-      notify.error('Failed to process image', {
-        message: error.message || 'Please try again.',
+      notify.error(t('employee.faceEnrollment.processFailed'), {
+        message: error.message || t('common.tryAgain'),
       });
       setValidationStatus('error');
-      setValidationMessage('Failed to process the image. Please try again.');
+      setValidationMessage(t('employee.faceEnrollment.processFailed'));
     } finally {
       setCapturing(false);
     }
@@ -212,7 +218,9 @@ export function FaceEnrollmentModal({
 
   const handleSave = async () => {
     if (!faceDescriptor) {
-      notify.error('No face descriptor', { message: 'No face descriptor to save' });
+      notify.error(t('employee.faceEnrollment.noDescriptorTitle'), {
+        message: t('employee.faceEnrollment.noDescriptorMessage'),
+      });
       return;
     }
 
@@ -225,20 +233,27 @@ export function FaceEnrollmentModal({
 
       setSaveResult({
         status: 'success',
-        title: 'Face registered',
-        message: 'Face registered successfully.',
+        title: t('employee.faceEnrollment.faceRegistered'),
+        message: t('employee.faceEnrollment.faceRegisteredSuccess'),
       });
-      notify.success('Face registered', { message: 'Face registered successfully!' });
+      notify.success(t('employee.faceEnrollment.faceRegistered'), {
+        message: t('employee.faceEnrollment.faceRegisteredSuccess'),
+      });
       handleClose();
     } catch (error: any) {
-      const message = error?.response?.data?.message || error?.message || 'Failed to register face';
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        t('employee.faceEnrollment.registerFailed');
       const isDuplicate = message.toLowerCase().includes('already registered');
       setSaveResult({
         status: 'error',
-        title: isDuplicate ? 'Face already registered' : 'Failed to register face',
+        title: isDuplicate
+          ? t('employee.faceEnrollment.faceAlreadyRegistered')
+          : t('employee.faceEnrollment.registerFailed'),
         message,
       });
-      notify.error('Failed to register face', {
+      notify.error(t('employee.faceEnrollment.registerFailed'), {
         message,
       });
     } finally {
@@ -254,7 +269,7 @@ export function FaceEnrollmentModal({
       onClose={handleClose}
       title={
         <Text size="xl" fw={700} c={PRIMARY_COLOR}>
-          REGISTER FACE - {employeeName}
+          {t('employee.faceEnrollment.title', { name: employeeName })}
         </Text>
       }
       size="lg"
@@ -264,10 +279,7 @@ export function FaceEnrollmentModal({
     >
       <Stack gap="md">
         <Alert icon={<IconAlertCircle size={16} />} color="blue" variant="light">
-          <Text size="sm">
-            Capture 3 photos of your face from different angles. Click the "Capture Photo" button
-            for each pose.
-          </Text>
+          <Text size="sm">{t('employee.faceEnrollment.description')}</Text>
         </Alert>
 
         {modelsLoading ? (
@@ -275,7 +287,7 @@ export function FaceEnrollmentModal({
             <Stack align="center" gap="sm">
               <Loader size="lg" />
               <Text size="sm" c="dimmed">
-                Loading face recognition models...
+                {t('employee.faceEnrollment.loadingModels')}
               </Text>
             </Stack>
           </Center>
@@ -300,10 +312,10 @@ export function FaceEnrollmentModal({
             {!faceDescriptor && activePoseIndex < ENROLLMENT_POSES.length && (
               <Alert icon={<IconCamera size={16} />} color="indigo" variant="light">
                 <Text size="sm" fw={700}>
-                  {ENROLLMENT_POSES[activePoseIndex].instruction}
+                  {t(ENROLLMENT_POSES[activePoseIndex].instructionKey)}
                 </Text>
                 <Text size="xs" c="dimmed" mt={2}>
-                  {ENROLLMENT_POSES[activePoseIndex].hint}
+                  {t(ENROLLMENT_POSES[activePoseIndex].hintKey)}
                 </Text>
               </Alert>
             )}
@@ -311,7 +323,7 @@ export function FaceEnrollmentModal({
             {capturedImages.length > 0 && (
               <Box>
                 <Text size="sm" fw={700} mb="xs">
-                  Captured Photos:
+                  {t('employee.faceEnrollment.capturedPhotos')}
                 </Text>
                 <Group gap="sm">
                   {capturedImages.map((img, index) => (
@@ -353,7 +365,9 @@ export function FaceEnrollmentModal({
         <Box>
           <Group justify="space-between" mb={6}>
             <Text size="sm" fw={700}>
-              {faceDescriptor ? 'Ready to save' : ENROLLMENT_POSES[activePoseIndex]?.label}
+              {faceDescriptor
+                ? t('employee.faceEnrollment.readyToSaveShort')
+                : t(ENROLLMENT_POSES[activePoseIndex]?.labelKey ?? '')}
             </Text>
             <Badge color={faceDescriptor ? 'teal' : capturing ? 'blue' : 'gray'}>
               {capturedDescriptors.length}/{ENROLLMENT_POSES.length}
@@ -411,10 +425,10 @@ export function FaceEnrollmentModal({
               disabled={loading || modelsLoading || capturing}
               leftSection={<IconRefresh size={16} />}
             >
-              Restart
+              {t('employee.faceEnrollment.restart')}
             </Button>
             <Button variant="default" onClick={handleClose} disabled={loading || capturing}>
-              Cancel
+              {t('common.cancel')}
             </Button>
           </Group>
           <Group>
@@ -425,7 +439,7 @@ export function FaceEnrollmentModal({
                 disabled={modelsLoading || capturing}
                 loading={capturing}
               >
-                Capture Photo
+                {t('employee.faceEnrollment.capturePhoto')}
               </Button>
             )}
             <Button
@@ -435,7 +449,7 @@ export function FaceEnrollmentModal({
               loading={loading}
               color="teal"
             >
-              Save Face Data
+              {t('employee.faceEnrollment.saveFaceData')}
             </Button>
           </Group>
         </Group>

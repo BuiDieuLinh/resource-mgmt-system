@@ -22,7 +22,19 @@ export class WifiGuard implements CanActivate {
 
     this.logger.log(`Client IP: ${ip}`);
 
-    const allowedIps = [process.env.OFFICE_IP, '127.0.0.1', '::1'];
+    const configuredOfficeIps = [process.env.OFFICIAL_IP, process.env.OFFICE_IP]
+      .flatMap((value) => (value ?? '').split(','))
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    if (configuredOfficeIps.length === 0) {
+      this.logger.warn(
+        'No OFFICIAL_IP/OFFICE_IP configured. Skipping Wi-Fi IP check.',
+      );
+      return true;
+    }
+
+    const allowedIps = [...configuredOfficeIps, '127.0.0.1', '::1'];
 
     return allowedIps.includes(ip);
   }
